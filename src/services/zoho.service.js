@@ -337,7 +337,10 @@ export async function makePdfThumb(file, maxDim = 480) {
     canvas.height = Math.ceil(viewport.height);
     await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
     const url = canvas.toDataURL("image/jpeg", 0.8);
-    doc.destroy();
+    // La limpieza (liberar el documento) es un extra, no algo de lo que la
+    // miniatura dependa: si falla (varía según la versión de pdf.js cómo se
+    // expone), no debe tirar abajo el resultado que ya generamos.
+    try { doc.destroy && doc.destroy(); } catch (e) { /* no crítico */ }
     console.log(`📎 Miniatura de PDF generada para "${file.name}" (${Math.round(url.length / 1024)} KB)`);
     return url;
   } catch (e) {
