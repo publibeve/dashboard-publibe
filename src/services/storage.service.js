@@ -1,4 +1,4 @@
-import { supabase } from "./supabaseClient";
+import { supabase, waitForSession } from "./supabaseClient";
 
 /**
  * Reemplazo de `window.storage` (API exclusiva del entorno de Artifacts de
@@ -29,6 +29,11 @@ export async function readJSON(key, shared = false, fallback = null) {
       return fallback;
     }
   }
+  // kv_store está cerrada a "solo autenticados" (RLS) — si esto se llama
+  // antes de iniciar sesión (ej: el primer montaje de la app, con la
+  // pantalla de login en pantalla), se espera a que haya sesión en vez de
+  // fallar. Ver el comentario de waitForSession() en supabaseClient.js.
+  await waitForSession();
   try {
     const { data, error } = await supabase
       .from("kv_store")
@@ -53,6 +58,7 @@ export async function writeJSON(key, value, shared = false) {
       return false;
     }
   }
+  await waitForSession();
   try {
     const { error } = await supabase
       .from("kv_store")
@@ -70,6 +76,7 @@ export async function deleteKey(key, shared = false) {
     try { localStorage.removeItem(LOCAL_PREFIX + key); return true; }
     catch (e) { console.error(`No se pudo borrar "${key}" de localStorage:`, e); return false; }
   }
+  await waitForSession();
   try {
     const { error } = await supabase.from("kv_store").delete().eq("key", key);
     if (error) throw error;

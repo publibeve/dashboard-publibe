@@ -27,6 +27,41 @@ export const supabase = createClient(url, anonKey, {
 });
 
 /**
+ * Se resuelve la primera vez que hay una sesión de Supabase Auth activa (o de
+ * inmediato si ya la había al importarse este módulo).
+ *
+ * Por qué existe: los ~13 hooks de dominio (tareas, pagos, notas, facturas,
+ * gastos, etc.) llaman a su `loadX()` inicial apenas la app monta —
+ * INCLUSIVE mientras se está mostrando la pantalla de login, antes de que
+ * haya sesión. Con RLS abierta a "anon" (como era antes de migrar a Supabase
+ * Auth) eso nunca fue un problema. Ahora que las tablas están cerradas a
+ * "solo autenticados", esos primeros intentos (lectura Y el sembrado de
+ * datos de ejemplo cuando la tabla está vacía, que si o si escribe) chocan
+ * contra RLS — eso es lo que se veía como errores 401/42501 en consola justo
+ * después de iniciar sesión.
+ *
+ * En vez de tener que tocar los 13 hooks (y sus 13 llamadas en App.jsx) para
+ * que esperen a que haya sesión, los pocos puntos por los que TODOS pasan
+ * (`syncTable`, `loadObjectsTable`, `syncObjectsTable` acá abajo, y
+ * `readJSON`/`writeJSON`/`deleteKey` en storage.service.js) esperan esto
+ * antes de hablar con Supabase. El efecto: mientras se ve el login, esas
+ * llamadas quedan "pausadas" en vez de fallar, y se completan solas apenas
+ * el login sea exitoso — sin cambiar ni un hook de dominio.
+ */
+let sessionReady = false;
+let resolveSessionReady;
+const sessionReadyPromise = new Promise((resolve) => { resolveSessionReady = resolve; });
+function markSessionReady(session) {
+  if (session && !sessionReady) { sessionReady = true; resolveSessionReady(); }
+}
+supabase.auth.getSession().then(({ data }) => markSessionReady(data.session));
+supabase.auth.onAuthStateChange((_event, session) => markSessionReady(session));
+
+export function waitForSession() {
+  return sessionReadyPromise;
+}
+
+/**
  * Los hooks de dominio (useTasks, useNotes, usePayments, etc.) siguen el mismo
  * patrón que tenían con window.storage: `updateX(next)` guarda el arreglo
  * COMPLETO cada vez, no solo la fila que cambió. Esta función replica ese
@@ -37,6 +72,7 @@ export const supabase = createClient(url, anonKey, {
  * para las tablas reales (users, clients, tasks, notes, payments, invoices).
  */
 export async function syncTable(table, list, idField = "id") {
+  await waitForSession();
   try {
     const ids = (list || []).map((row) => row[idField]).filter(Boolean);
     if (list && list.length) {
@@ -69,6 +105,7 @@ export async function syncTable(table, list, idField = "id") {
  * sin tocar los hooks (loadX/persistX son la única frontera que les importa).
  */
 export async function loadObjectsTable(table) {
+  await waitForSession();
   const { data, error } = await supabase.from(table).select("id, empresa, data");
   if (error) throw error;
   return (data || []).map((row) => ({ ...row.data, id: row.id, empresa: row.empresa }));

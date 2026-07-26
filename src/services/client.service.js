@@ -1,6 +1,10 @@
-import { supabase, syncTable } from "./supabaseClient";
+import { supabase, syncTable, waitForSession } from "./supabaseClient";
 
 export async function loadCustomClients() {
+  // `clients` está cerrada a "solo autenticados" (RLS) — misma razón que en
+  // supabaseClient.js/storage.service.js: esto se llama en el primer montaje
+  // de la app, antes de que exista sesión.
+  await waitForSession();
   try {
     const { data, error } = await supabase.from("clients").select("name, color, iconKey");
     if (error) throw error;

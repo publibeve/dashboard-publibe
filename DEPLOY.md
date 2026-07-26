@@ -63,6 +63,23 @@ El login dejó de ser un PIN comparado en el navegador: ahora usa Supabase Auth
 de verdad. Sin estos 2 pasos manuales (que Claude no puede hacer por vos —
 requieren tu cuenta de Supabase), nadie va a poder entrar al dashboard.
 
+### Corrección posterior — pantalla de login congelada + errores 401/42501
+
+Después del primer deploy de esta migración, el primer login mostraba la
+pantalla congelada y la consola llenaba de errores 401/42501 en `kv_store`,
+`tasks`, `notes`, `payments`, `invoices` y `clients`. Causa: los hooks de
+datos de la app (tareas, notas, pagos, facturas, gastos, clientes, etc.)
+siempre empezaron a leer/escribir contra Supabase apenas la app monta —
+incluso mientras se ve la pantalla de login, antes de que exista sesión. Con
+RLS abierta a "anon" (como era antes) eso nunca importó; al cerrar las
+políticas a "solo autenticados", esos primeros intentos empezaron a chocar
+contra RLS. **Ya está corregido en el código** (`src/services/supabaseClient.js`
+exporta `waitForSession()`, que los puntos de entrada compartidos —
+`syncTable`, `loadObjectsTable`, `readJSON`/`writeJSON`/`deleteKey`,
+`loadCustomClients` — esperan antes de hablar con Supabase). No requiere
+correr SQL de nuevo ni ningún paso manual adicional; solo actualizar el
+código a la versión más reciente.
+
 ### Paso 1 — Correr el SQL de migración
 
 Supabase → SQL Editor → New query → pegar todo `supabase/auth-migration.sql`
