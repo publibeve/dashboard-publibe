@@ -70,7 +70,7 @@ function App() {
   const [appError, setAppError] = useState("");
 
   const {
-    directory, users, currentUser, currentUserId, authLoading, authErrorMsg, pendingEmail,
+    users, currentUser, currentUserId, authLoading, authErrorMsg,
     showLoginOverlay, loginOverlayExiting, login, logout, addUser, patchUser, deleteUser,
   } = useAuth(
     (text) => logActivity(text), (msg) => setAppError(msg)
@@ -468,7 +468,7 @@ function App() {
   if (!currentUser) {
     return (
       <div className="app" style={{ background: "var(--bg)" }}>
-        <LoginScreen users={directory} onLogin={login} authError={authErrorMsg} />
+        <LoginScreen onLogin={login} authError={authErrorMsg} />
       </div>
     );
   }
@@ -1190,7 +1190,7 @@ function App() {
       )}
     </div>
     {showLoginOverlay && (
-      <LoginExitOverlay email={pendingEmail} users={directory} exiting={loginOverlayExiting} />
+      <LoginExitOverlay exiting={loginOverlayExiting} />
     )}
     </>
   );

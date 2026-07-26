@@ -19,23 +19,6 @@ export function demoUsers() {
 }
 
 /**
- * Directorio público para la pantalla de login (antes de iniciar sesión):
- * SOLO nombre/email/foto — nunca permisos. Lee la vista `public_directory`,
- * que queda legible sin sesión a propósito (ver supabase/auth-migration.sql)
- * para poder mostrar el selector de usuario sin haber iniciado sesión todavía.
- */
-export async function loadDirectory() {
-  try {
-    const { data, error } = await supabase.from("public_directory").select("*").order("nombre");
-    if (error) throw error;
-    return data || [];
-  } catch (e) {
-    console.error("No se pudo leer el directorio de login:", e);
-    return [];
-  }
-}
-
-/**
  * Perfil completo (con permisos) de todas las personas — requiere sesión
  * iniciada: la tabla `users` quedó cerrada a "solo autenticados" en RLS.
  */

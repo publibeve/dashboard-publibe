@@ -705,63 +705,105 @@
   .modal{ box-shadow:none; padding:0; max-height:none; overflow:visible; }
 }
 
-/* ---- Login por usuario ---- */
+/* ---- Login: panel dividido (color + formulario) ----
+   El gradiente cónico del panel de color es EL MISMO que ya se usa en el
+   header ("Todas las cuentas") y en la tarjeta de usuario del sidebar
+   (mismos colores, mismo keyframe loginGradientSpin) — no es una animación
+   nueva, se reutiliza tal cual para que las tres se vean idénticas. */
 .login-screen{
-  flex:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:16px; padding:20px; position:relative; overflow:hidden;
-  background:#0E0E10;
-  transition:opacity 2.1s cubic-bezier(.4,0,.2,1), filter 2.1s cubic-bezier(.4,0,.2,1), transform 2.1s cubic-bezier(.4,0,.2,1);
+  min-height:100vh; display:flex; position:relative; overflow:hidden;
 }
-/* Al confirmar el login, la pantalla se desvanece con un blur progresivo antes de pasar al
-   dashboard, en vez de cortar de golpe de una pantalla a la otra. */
-.login-screen.login-exit{
-  opacity:0; filter:blur(22px); transform:scale(1.04); pointer-events:none;
+.login-screen-split{ flex-direction:row; }
+@media (max-width:720px){
+  .login-screen-split{ flex-direction:column; }
 }
+
+/* Al confirmar el login, la pantalla se desvanece antes de pasar al dashboard,
+   en vez de cortar de golpe de una pantalla a la otra (ver también las
+   animaciones loginFadeIn/loginFadeOut en index.css, que son las que
+   realmente se usan para este fundido). */
+.login-screen.login-exit{ pointer-events:none; }
 .login-transition-overlay{ position:fixed; inset:0; z-index:300; pointer-events:none; }
 @keyframes appFadeIn{
   from{ opacity:0; filter:blur(14px); transform:scale(1.015); }
   to{ opacity:1; filter:blur(0); transform:scale(1); }
 }
 .app-enter{ animation:appFadeIn 2.6s cubic-bezier(.4,0,.2,1) both; }
-.login-screen::before{
-  content:""; position:absolute; inset:-40%; z-index:0;
-  background:conic-gradient(from 200deg, #0B84FF, #17C3A2, #7FD13B, #F4D53E, #F2790A, #C1443C, #A23B7C, #6B3FA0, #0B84FF);
-  filter:blur(80px) saturate(1.7) brightness(1.15); opacity:.85;
-  animation:loginGradientSpin 24s linear infinite;
-}
-.login-screen::after{
-  content:""; position:absolute; inset:0; z-index:0; background:rgba(10,10,12,0.16);
-}
+
 @keyframes loginGradientSpin{
   from{ transform:rotate(0deg); }
   to{ transform:rotate(360deg); }
 }
-.login-card{ position:relative; z-index:1; }
-.login-footer{ position:relative; z-index:1; }
-.login-card{
-  width:100%; max-width:360px; background:var(--surface); border:1px solid var(--border);
-  border-radius:16px; padding:28px 26px; box-shadow:0 20px 60px rgba(0,0,0,0.4);
-  display:flex; flex-direction:column; align-items:center; text-align:center; position:relative; z-index:1;
+
+/* Panel izquierdo (arriba en móvil): el color animado */
+.login-panel-color{
+  flex:1.1; position:relative; overflow:hidden; isolation:isolate;
+  display:flex; flex-direction:column; justify-content:space-between;
+  padding:48px; background:#0E0E10; color:#fff;
 }
-.login-brand{ display:flex; flex-direction:column; align-items:center; margin-bottom:20px; }
-.login-brand-title{ color:var(--ink); font-size:29px; }
-.login-brand-sub{ color:var(--ink-soft); font-size:13px; }
-.login-card h2{ font-family:'Space Grotesk',sans-serif; font-size:17px; margin:0 0 14px; width:100%; }
-.login-card .form-error{ width:100%; }
-.login-user-list{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; width:100%; }
-.login-user-btn{
-  display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:9px 11px;
-  border:1px solid var(--border); border-radius:9px; background:var(--bg); cursor:pointer;
-  font-family:inherit; font-size:13px; font-weight:600; color:var(--ink);
+.login-panel-color::before{
+  content:""; position:absolute; inset:-40%; z-index:-2;
+  background:conic-gradient(from 200deg, #0B84FF, #17C3A2, #7FD13B, #F4D53E, #F2790A, #C1443C, #A23B7C, #6B3FA0, #0B84FF);
+  filter:blur(80px) saturate(1.7) brightness(1.15); opacity:.85;
+  animation:loginGradientSpin 24s linear infinite;
 }
-.login-user-btn:hover{ border-color:var(--primary); }
-.login-user-btn-active{ border-color:var(--primary); background:var(--tint,rgba(29,53,87,0.06)); color:var(--primary); }
-.login-card .field{ width:100%; text-align:left; }
-.login-card .full{ width:100%; }
-.login-footer{
-  position:relative; z-index:1; font-size:10.5px; color:rgba(255,255,255,0.38);
-  letter-spacing:.02em; text-align:center;
+.login-panel-color::after{ content:""; position:absolute; inset:0; z-index:-1; background:rgba(10,10,12,0.16); }
+.login-panel-color-logo{
+  font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:32px; letter-spacing:-.02em;
 }
+.login-panel-color-logo-sub{
+  display:block; font-family:'Inter',sans-serif; font-weight:400; font-size:12px;
+  letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,0.75); margin-top:6px;
+}
+.login-b-static{ color:#fff; }
+.login-panel-color-copyright{ font-size:10.5px; color:rgba(255,255,255,0.5); letter-spacing:.02em; }
+
+@media (max-width:720px){
+  .login-panel-color{
+    flex:none; height:38vh; align-items:center; justify-content:center; text-align:center; padding:28px;
+  }
+  .login-panel-color-logo{ font-size:38px; }
+  .login-panel-color-copyright{ display:none; } /* se muestra abajo del todo en el panel del formulario */
+}
+
+/* Panel derecho (abajo en móvil): formulario */
+.login-panel-form{
+  flex:0.9; background:linear-gradient(160deg, var(--surface) 0%, var(--bg) 100%);
+  display:flex; align-items:center; justify-content:center; padding:48px;
+}
+@media (max-width:720px){
+  .login-panel-form{ flex:1; padding:32px 24px; }
+}
+.login-form-wrap{ width:100%; max-width:340px; }
+.login-form-logo{
+  font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:28px; color:var(--ink); margin-bottom:6px;
+}
+.login-form-logo-sub{
+  display:block; font-family:'Inter',sans-serif; font-weight:400; font-size:11px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:28px;
+}
+.login-b-gradient, .login-beyou{
+  /* Mismo tratamiento que ya existe para la B en el resto de la app
+     (.brand-b, sidebar) — degradado ESTÁTICO con background-clip:text. El
+     spin (loginGradientSpin) es para el fondo grande y desenfocado del
+     panel; puesto directo en texto giraría literalmente las letras. */
+  background:linear-gradient(120deg, #0B84FF, #17C3A2, #F4D53E, #F2790A, #C1443C);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.login-tagline{ font-size:14px; color:var(--ink-soft); line-height:1.5; margin-bottom:22px; }
+.login-beyou{ font-weight:700; }
+@media (max-width:720px){
+  .login-form-wrap{ text-align:center; }
+  .login-form-logo-sub{ margin-bottom:20px; }
+}
+
+.login-submit-btn{ display:flex; align-items:center; justify-content:center; gap:9px; min-height:44px; }
+.login-spinner{
+  width:15px; height:15px; border-radius:50%; flex-shrink:0;
+  border:2px solid rgba(255,255,255,0.35); border-top-color:#fff;
+  animation:loginSpin .7s linear infinite;
+}
+@keyframes loginSpin{ to{ transform:rotate(360deg); } }
 
 /* ---- Usuario en la barra lateral ---- */
 .brand-title-lg{ font-size:21px; letter-spacing:-.01em; }

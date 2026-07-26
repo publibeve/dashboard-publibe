@@ -33,22 +33,19 @@ html,body{ margin:0; padding:0; }
 
 
 
-/* ---- Correcciones de login (dropdown + animación suave) ----
-   El overlay de salida tenía una transición vieja de 2.1s con blur que
-   competía con estas animaciones; se desactiva abajo para que el fundido
-   de 0.3s sea el único efecto y no se vea brusco ni doble. */
+/* ---- Transición de login (fundido hacia el dashboard) ----
+   Se reutiliza tal cual para el nuevo diseño de panel dividido: el login
+   dejó de tener selector de usuario, pero el fundido de salida es el mismo. */
 .login-screen {
   animation: loginFadeIn 0.3s ease-in-out forwards;
 }
 
 .login-transition-overlay {
   animation: loginFadeIn 0.3s ease-in-out forwards;
-  transition: none; /* neutraliza la transición vieja de 2.1s + blur */
 }
 
 .login-transition-overlay.login-exit {
   animation: loginFadeOut 0.3s ease-in-out forwards;
-  filter: none; transform: none; /* sin blur/zoom heredados de la regla vieja */
 }
 
 @keyframes loginFadeIn {
@@ -59,50 +56,6 @@ html,body{ margin:0; padding:0; }
 @keyframes loginFadeOut {
   from { opacity: 1; transform: translateY(0); }
   to   { opacity: 0; transform: translateY(-10px); }
-}
-
-/* Estilos para dropdown y usuario seleccionado */
-.login-user-select-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.login-user-select {
-  padding: 12px 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-family: 'Space Grotesk', 'Inter', sans-serif;
-  font-size: 14px;
-  background-color: white;
-  cursor: pointer;
-  transition: border-color 0.2s ease;
-}
-
-.login-user-select:hover { border-color: #999; }
-
-.login-user-select:focus {
-  outline: none;
-  border-color: var(--primary, #1D3557);
-  box-shadow: 0 0 0 3px rgba(29, 53, 87, 0.12);
-}
-
-.login-selected-user {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  font-family: 'Space Grotesk', 'Inter', sans-serif;
-  font-weight: 500;
-  animation: slideDown 0.25s ease-out;
-}
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Miniatura de adjuntos de Zoho (se descarga autenticada, con caché por pestaña) */
