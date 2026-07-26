@@ -5,7 +5,7 @@ import {
 import { fmtDate, hasUnreadComments, tareaEstadoMeta } from "../../utils/helpers";
 import { plainLinesFromHtml } from "../../utils/richTextEditor";
 
-export function TareasGeneralesView({ tareas, onNew, onOpen, filterPersona, search, commentReads, currentUser }) {
+export function TareasGeneralesView({ tareas = [], onNew, onOpen, filterPersona, search, commentReads, currentUser }) {
   const q = search.trim().toLowerCase();
 
   const filtered = (tareas || [])

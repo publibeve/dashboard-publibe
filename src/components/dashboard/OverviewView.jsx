@@ -19,7 +19,7 @@ import { CustomSelect } from "../common/CustomSelect";
 import { CLIENTES, DISENADORES, ESTADOS } from "../../utils/constants";
 import { clientMeta, fmtMonto, monthLabelEs, redMeta, tareaEstadoMeta, todayISO } from "../../utils/helpers";
 
-export function OverviewView({ tasks, payments, debts, posts, tareasGenerales, onSelectClient, onOpenTareaGeneral }) {
+export function OverviewView({ tasks = [], payments = [], debts = [], posts = [], tareasGenerales = [], onSelectClient, onOpenTareaGeneral }) {
   const monthStart = todayISO().slice(0, 7);
   const [filterDesigner, setFilterDesigner] = useState("Todos");
   const [filterCreativosCliente, setFilterCreativosCliente] = useState("Todos");

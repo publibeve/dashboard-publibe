@@ -291,7 +291,8 @@ export function demoPosts() {
 }
 
 export async function loadPosts() {
-  const list = await readJSON(POSTS_KEY, true, null);
+  let list = await readJSON(POSTS_KEY, true, null);
+  if (!Array.isArray(list)) list = null;
   if (list) {
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const purged = list.filter((p) => !p.deletedAt || new Date(p.deletedAt).getTime() >= cutoff);
@@ -310,7 +311,8 @@ export async function persistPosts(posts) {
 export const DEBTS_KEY = "publibe-debts-v1";
 
 export async function loadDebts() {
-  return await readJSON(DEBTS_KEY, true, []);
+  const list = await readJSON(DEBTS_KEY, true, []);
+  return Array.isArray(list) ? list : [];
 }
 
 export async function persistDebts(debts) {
@@ -320,7 +322,8 @@ export async function persistDebts(debts) {
 export const SALDOS_FAVOR_KEY = "publibe-saldos-favor-v1";
 
 export async function loadSaldosFavor() {
-  return await readJSON(SALDOS_FAVOR_KEY, true, []);
+  const list = await readJSON(SALDOS_FAVOR_KEY, true, []);
+  return Array.isArray(list) ? list : [];
 }
 
 export async function persistSaldosFavor(list) {
@@ -387,7 +390,8 @@ export async function persistNotes(notes) {
 export const ACTIVITY_KEY = "publibe-activity-log-v1";
 
 export async function loadActivity() {
-  return await readJSON(ACTIVITY_KEY, true, []);
+  const list = await readJSON(ACTIVITY_KEY, true, []);
+  return Array.isArray(list) ? list : [];
 }
 
 export async function persistActivity(list) {
@@ -511,7 +515,7 @@ export function demoInversiones() {
 
 export async function loadInversiones() {
   const list = await readJSON(INVERSIONES_KEY, true, null);
-  if (list) return list;
+  if (Array.isArray(list)) return list;
   const seeded = demoInversiones();
   persistInversiones(seeded);
   return seeded;
@@ -558,7 +562,7 @@ export function demoTareasGenerales() {
 
 export async function loadTareasGenerales() {
   const list = await readJSON(TAREAS_KEY, true, null);
-  if (list) return list;
+  if (Array.isArray(list)) return list;
   const seeded = demoTareasGenerales();
   persistTareasGenerales(seeded);
   return seeded;
@@ -589,7 +593,7 @@ export function demoAccesos() {
 
 export async function loadAccesos() {
   const list = await readJSON(ACCESOS_KEY, true, null);
-  if (list) return list;
+  if (Array.isArray(list)) return list;
   const seeded = demoAccesos();
   persistAccesos(seeded);
   return seeded;
@@ -617,7 +621,7 @@ export function demoExpenses() {
 
 export async function loadExpenses() {
   const list = await readJSON(EXPENSES_KEY, true, null);
-  if (list) return list;
+  if (Array.isArray(list)) return list;
   const seeded = demoExpenses();
   persistExpenses(seeded);
   return seeded;

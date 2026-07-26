@@ -14,7 +14,7 @@ import { UserAvatar } from "../layout/Sidebar";
 import { PERMISOS_LIST, PERMISOS_NINGUNO } from "../../utils/constants";
 import { uid } from "../../utils/helpers";
 
-export function UsersPanel({ users, currentUser, can, onAddUser, onPatchUser, onDeleteUser, requirePerm }) {
+export function UsersPanel({ users = [], currentUser, can, onAddUser, onPatchUser, onDeleteUser, requirePerm }) {
   const [showNewUser, setShowNewUser] = useState(false);
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
   const canManage = can("gestionarUsuarios");

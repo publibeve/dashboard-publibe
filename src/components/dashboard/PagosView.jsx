@@ -21,7 +21,7 @@ import { Overlay } from "../common/Overlay";
 import { ReportModal } from "../common/ReportModal";
 import { clientMeta, dateSearchBlob, fmtBs, fmtDate, fmtMonto, monthLabelEs, todayISO, uid, weekLabel, weekStart } from "../../utils/helpers";
 
-export function PagosView({ payments, trashedPayments, debts, saldosFavor, inversiones, showClient, defaultClient, onOpen, onAddDebt, onResolveDebt, onAddSaldoFavor, onRemoveSaldoFavor, onNewInversion, onOpenInversion, onRestorePayment, onPurgePayment, showTrash, mesFiltro, search, showReportPicker, onCloseReportPicker }) {
+export function PagosView({ payments = [], trashedPayments = [], debts = [], saldosFavor = [], inversiones = [], showClient, defaultClient, onOpen, onAddDebt, onResolveDebt, onAddSaldoFavor, onRemoveSaldoFavor, onNewInversion, onOpenInversion, onRestorePayment, onPurgePayment, showTrash, mesFiltro, search, showReportPicker, onCloseReportPicker }) {
   const [subTab, setSubTab] = useState("pagos");
   const [bsOpen, setBsOpen] = useState(false);
   const [usdOpen, setUsdOpen] = useState(false);

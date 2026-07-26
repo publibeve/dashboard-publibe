@@ -9,7 +9,7 @@ import { NoteCard } from "./NoteCard";
 import { NoteComposer } from "./NoteComposer";
 import { NoteDetailModal } from "./NoteDetailModal";
 
-export function NotesView({ notes, trashedNotes, showClient, defaultClient, onAdd, onPatch, onTrash, onRestore, onPurge, showTrash, tagFilter, driveConnected }) {
+export function NotesView({ notes = [], trashedNotes = [], showClient, defaultClient, onAdd, onPatch, onTrash, onRestore, onPurge, showTrash, tagFilter, driveConnected }) {
   const [composerOpen, setComposerOpen] = useState(false);
   const [openNoteId, setOpenNoteId] = useState(null);
   const [previewImgUrl, setPreviewImgUrl] = useState(null);

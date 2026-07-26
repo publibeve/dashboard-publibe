@@ -10,7 +10,7 @@ import { Overlay } from "../common/Overlay";
 import { ReportModal } from "../common/ReportModal";
 import { clientMeta, dateSearchBlob, fmtDate, redMeta, todayISO } from "../../utils/helpers";
 
-export function CalendarioView({ posts, showClient, empresaLabel, month, onMonthChange, selectedDay, onSelectDay, onOpen, filterRed, filterFormato, search, showReportPicker, onCloseReportPicker }) {
+export function CalendarioView({ posts = [], showClient, empresaLabel, month, onMonthChange, selectedDay, onSelectDay, onOpen, filterRed, filterFormato, search, showReportPicker, onCloseReportPicker }) {
   const [reportFrom, setReportFrom] = useState("");
   const [reportTo, setReportTo] = useState("");
   const [showReport, setShowReport] = useState(false);
