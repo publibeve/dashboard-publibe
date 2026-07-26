@@ -61,6 +61,7 @@ export function initial(name) {
 export function fileKind(name = "") {
   const ext = name.split(".").pop().toLowerCase();
   if (["ai"].includes(ext)) return { icon: FileType, color: "#C1443C" };
+  if (["pdf"].includes(ext)) return { icon: FileType, color: "#B3261E" };
   if (["psd"].includes(ext)) return { icon: FileType, color: "#1D3557" };
   if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext)) return { icon: ImageIcon, color: "#2E7D46" };
   return { icon: Paperclip, color: "#8A8578" };

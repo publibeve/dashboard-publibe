@@ -280,3 +280,69 @@ export async function trashZohoFile(driveId) {
   }
   return true;
 }
+
+/**
+ * Genera una miniatura (data URL JPEG, máx 480px) de una imagen ANTES de
+ * subirla a Zoho, mientras el archivo todavía está en el navegador. Se guarda
+ * junto con el adjunto en Supabase (dentro del registro), porque Zoho bloquea
+ * con CORS la descarga de archivos privados desde el navegador — verificado
+ * en producción (download.zoho.com sin Access-Control-Allow-Origin, API 404) —
+ * así que la única vía confiable de mostrar una vista previa es capturarla
+ * en el momento de la subida.
+ */
+export async function makeImageThumb(file, maxDim = 480) {
+  if (!file || !file.type || !file.type.startsWith("image/")) return null;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", 0.8);
+  } catch (e) {
+    console.warn("No se pudo generar la miniatura de", file.name, e);
+    return null;
+  }
+}
+
+/**
+ * Miniatura de un PDF: renderiza la PÁGINA 1 a canvas con pdf.js (cargado
+ * bajo demanda — solo entra al bundle cuando alguien sube un PDF) y devuelve
+ * un data URL JPEG máx 480px, igual que las imágenes.
+ */
+export async function makePdfThumb(file, maxDim = 480) {
+  try {
+    const pdfjs = await import("pdfjs-dist");
+    const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+    pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+    const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+    const page = await doc.getPage(1);
+    const base = page.getViewport({ scale: 1 });
+    const scale = Math.min(1.5, maxDim / Math.max(base.width, base.height));
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+    const url = canvas.toDataURL("image/jpeg", 0.8);
+    doc.destroy();
+    return url;
+  } catch (e) {
+    console.warn("No se pudo generar la miniatura del PDF", file.name, e);
+    return null;
+  }
+}
+
+/**
+ * Regla de vistas previas (decisión de producto): ESTRICTAMENTE imágenes y
+ * PDFs tienen miniatura/visor. Todo lo demás (PSD, AI, ZIP, video, etc.)
+ * muestra solo el ícono de su formato — sin vista previa.
+ */
+export async function makeAttachmentThumb(file) {
+  if (!file || !file.type) return null;
+  if (file.type.startsWith("image/")) return makeImageThumb(file);
+  if (file.type === "application/pdf") return makePdfThumb(file);
+  return null;
+}
