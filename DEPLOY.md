@@ -9,6 +9,7 @@
 3. Andá a **Project Settings → API** y copiá:
    - **Project URL** (`https://xxxx.supabase.co`)
    - **anon public key** (la clave pública, NO la `service_role` — esa nunca va en el frontend).
+4. Después de esto, corré también `supabase/auth-migration.sql` (sección 7, más abajo) — es el que activa el login real y cierra el acceso a solo usuarios autenticados. Si es un proyecto nuevo, se puede correr `schema.sql` y `auth-migration.sql` seguidos, uno después del otro.
 
 ## 2. Variables de entorno en local
 
@@ -56,16 +57,59 @@ git push
 
 Si querés, en el momento de hacer este paso puedo ayudarte a clickear Netlify/tu panel de DNS en vivo usando el navegador — para eso necesito que tengas la sesión iniciada en tu Chrome.
 
-## 6. Gemini y Google Drive
+## 7. Supabase Auth — login real (hecho, requiere 2 pasos manuales tuyos)
+
+El login dejó de ser un PIN comparado en el navegador: ahora usa Supabase Auth
+de verdad. Sin estos 2 pasos manuales (que Claude no puede hacer por vos —
+requieren tu cuenta de Supabase), nadie va a poder entrar al dashboard.
+
+### Paso 1 — Correr el SQL de migración
+
+Supabase → SQL Editor → New query → pegar todo `supabase/auth-migration.sql`
+→ Run. Esto: quita la columna `clave` (ya no se usa), agrega una vista de
+solo-lectura para el selector de login, y cierra las políticas de las 7
+tablas a **solo usuarios autenticados** (antes eran legibles por cualquiera
+con la clave pública del sitio).
+
+### Paso 2 — Crear a Diego y Ariana en Supabase Authentication
+
+Supabase → **Authentication** → Users → **Add user** → **Create new user**,
+una vez por persona:
+
+| Nombre | Email | Contraseña |
+|---|---|---|
+| Diego Toro | `ceo@publibe.net` | elegí una nueva — la `198913` quedó expuesta en la base vieja, no la reuses |
+| Ariana Martínez | `designer@publibe.net` | elegí una nueva — la anterior también quedó expuesta |
+
+Marcá **"Auto Confirm User"** al crearlos (si no, Supabase espera que confirmen
+por email, y no tenemos un flujo de correo configurado para eso).
+
+Estos emails tienen que coincidir EXACTO con los de la tabla `users` (`nombre`
++ `email` + `permisos`, que sigue viviendo ahí para el perfil dentro de la
+app) — ya vienen así configurados en el código (son los mismos que usás para
+Zoho WorkDrive).
+
+### Después de estos 2 pasos
+
+- El botón "Agregar usuario" en Administrativo sigue creando el perfil dentro
+  de la app (nombre, permisos, foto) — pero para que esa persona pueda
+  ENTRAR, hay que repetir el Paso 2 con su email.
+- Cambiar la propia contraseña: por ahora se hace desde Supabase
+  Authentication (Users → esa persona → "Send password recovery" o
+  actualizarla ahí directo). Un self-service "cambiar mi contraseña" dentro
+  de la app es un agregado chico para cuando quieras.
+- **Verificación de que quedó bien cerrado:** abrí una pestaña de incógnito
+  (sin haber iniciado sesión en el dashboard) y en la consola del navegador
+  corré el fetch de ejemplo que está al final de `auth-migration.sql` — tiene
+  que devolver vacío o un error de permisos, nunca los usuarios reales.
+
+## 8. Gemini y Google Drive
 
 - **Gemini**: no necesita nada especial para el deploy — la clave se guarda en Supabase (`kv_store`, compartida por todo el equipo) desde la propia app, en Administrativo.
-- **Google Drive**: el botón de "conectar Drive" en el original es una **maqueta visual** (guarda un `true/false`, no hace OAuth real). Si querés que sea una conexión real con subida/lectura de archivos de Drive, es un desarrollo aparte (OAuth 2.0 + Google Drive API) — avisame si querés que lo armemos como siguiente paso.
-
-## 7. Nota de seguridad (leer antes de publicar con datos reales)
-
-La app sigue usando un login por PIN comparado en el navegador (no Supabase Auth). Las políticas de RLS del `schema.sql` dejan la base **abierta a la clave anónima** para que la app funcione igual que antes — el nivel de seguridad es el mismo que ya tenía (el PIN es una barrera de interfaz, no de base de datos). Si vas a manejar datos sensibles de clientes reales y querés que el PIN sea también una barrera a nivel de base de datos, la mejora natural es migrar a Supabase Auth; puedo armarlo en una próxima vuelta sin tocar el resto de la app.
+- **Google Drive**: reemplazado por Zoho WorkDrive (ver sección más abajo) — Google Drive ya no se usa en la app.
 
 ## Zoho WorkDrive (integración real) — configurar
+
 
 La integración usa el flujo de SPA de Zoho ("Client-based Applications"):
 redirección + token en el navegador, **sin** Client Secret (no se usa ni se

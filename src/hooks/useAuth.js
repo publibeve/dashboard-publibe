@@ -1,20 +1,46 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
-  loadUsers, persistUsers, loadCurrentUserId, persistCurrentUserId, CURRENT_USER_KEY,
+  loadDirectory, loadUsers, persistUsers, signIn, signOut, getSession, onAuthChange,
 } from "../services/auth.service";
 import { subscribeTable } from "../services/supabaseClient";
 import { useRealtimeReload } from "./useRealtimeSync";
 
 export function useAuth(logActivity, setAppError) {
+  // Directorio público (nombre/email/foto) para el selector de la pantalla de
+  // login — se puede leer SIN sesión iniciada (ver public_directory en
+  // supabase/auth-migration.sql). null mientras carga por primera vez.
+  const [directory, setDirectory] = useState(null);
+
+  // Sesión de Supabase Auth. undefined = todavía resolviendo la sesión guardada
+  // del navegador; null = no hay sesión; objeto = sesión activa.
+  const [session, setSession] = useState(undefined);
+
+  // Perfil completo (con permisos) de todas las personas — requiere sesión,
+  // así que solo se carga una vez que `session` deja de ser null/undefined.
   const [users, setUsers] = useState(null);
-  const [currentUserId, setCurrentUserId] = useState(undefined); // undefined = todavía cargando la sesión
+
+  const [authErrorMsg, setAuthErrorMsg] = useState("");
+  const [pendingEmail, setPendingEmail] = useState(null); // para la animación de salida del login
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const [loginOverlayExiting, setLoginOverlayExiting] = useState(false);
 
   useEffect(() => {
-    loadUsers().then((list) => setUsers(list));
-    loadCurrentUserId().then((id) => setCurrentUserId(id));
+    loadDirectory().then(setDirectory);
   }, []);
+
+  useEffect(() => {
+    getSession().then(setSession);
+    // onAuthChange cubre login, logout Y sincronización entre pestañas: la
+    // sesión de Supabase Auth ya se comparte sola entre pestañas del mismo
+    // navegador (vía su propio localStorage + BroadcastChannel), así que ya
+    // no hace falta el listener manual de "storage" que usábamos con el PIN.
+    return onAuthChange(setSession);
+  }, []);
+
+  useEffect(() => {
+    if (session) loadUsers().then(setUsers);
+    else setUsers(null);
+  }, [session]);
 
   // Si se agrega/edita/elimina un usuario desde otra pestaña o desde otra
   // computadora del equipo, esta pestaña lo refleja sola (por ejemplo, si te
@@ -22,58 +48,34 @@ export function useAuth(logActivity, setAppError) {
   // pestaña, deja de poder hacer esa acción sin necesidad de refrescar).
   useRealtimeReload(
     (onChange) => subscribeTable("users", onChange),
-    () => loadUsers().then((list) => setUsers(list))
+    () => { if (session) loadUsers().then(setUsers); }
   );
 
-  // La sesión es local del dispositivo (localStorage), pero si el navegador
-  // tiene varias pestañas abiertas, iniciar/cerrar sesión en una debe
-  // reflejarse en las demás — si no, una pestaña podría quedar "atrás" con un
-  // usuario que ya cerró sesión en otra.
-  useEffect(() => {
-    function onStorage(e) {
-      if (e.key !== CURRENT_USER_KEY) return;
-      setCurrentUserId(e.newValue ? JSON.parse(e.newValue) : null);
-    }
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  const currentUser = useMemo(() => {
+    if (!session || !users) return null;
+    return users.find((u) => u.email === session.user.email) || null;
+  }, [session, users]);
+  const currentUserId = currentUser?.id || null;
 
-  const currentUser = useMemo(
-    () => (users || []).find((u) => u.id === currentUserId) || null,
-    [users, currentUserId]
-  );
+  // undefined = todavía resolviendo (sesión inicial o, si hay sesión, el
+  // perfil correspondiente); una vez resuelto, true/false.
+  const authLoading = session === undefined || directory === null || (!!session && users === null);
 
-  // Si hay una sesión (currentUserId) pero esa persona no aparece en la lista
-  // de usuarios YA CARGADA, puede ser que esa lista esté un poco desactualizada
-  // en ESTA pestaña (por ejemplo, si el usuario acaba de iniciar sesión en
-  // OTRA pestaña/computadora recién y a esta todavía no le llegó el cambio) —
-  // en vez de mandar directo a la pantalla de login (que se sentía como "se
-  // cerró la sesión sola"), se vuelve a pedir la lista una vez antes de darlo
-  // por perdido de verdad.
-  const retriedForRef = useRef(null);
-  useEffect(() => {
-    if (currentUserId && users && !users.some((u) => u.id === currentUserId)) {
-      if (retriedForRef.current === currentUserId) return; // ya se reintentó para este id, no insistir para siempre
-      retriedForRef.current = currentUserId;
-      loadUsers().then((list) => setUsers(list));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUserId, users]);
-
-  function loginAs(userId) {
-    setCurrentUserId(userId);
-    persistCurrentUserId(userId);
-    // El dashboard de abajo se monta de inmediato (con su propio fundido de entrada); encima se
-    // deja esta capa con el login, que se va desvaneciendo. Al superponerse en vez de ir en
-    // secuencia, nunca hay un instante de por medio donde no haya nada pintado en pantalla.
+  async function login(email, password) {
+    setAuthErrorMsg("");
+    const result = await signIn(email, password);
+    if (!result.ok) { setAuthErrorMsg(result.message); return false; }
+    // El nombre/foto para la animación de salida se toman del directorio
+    // (ya cargado, no requiere esperar el perfil completo con permisos).
+    setPendingEmail(email);
     setShowLoginOverlay(true);
     setLoginOverlayExiting(false);
     requestAnimationFrame(() => requestAnimationFrame(() => setLoginOverlayExiting(true)));
     setTimeout(() => setShowLoginOverlay(false), 2200);
+    return true;
   }
-  function logout() {
-    setCurrentUserId(null);
-    persistCurrentUserId(null);
+  async function logout() {
+    await signOut();
   }
   function updateUsers(next) { setUsers(next); persistUsers(next); }
   function addUser(u) {
@@ -93,8 +95,9 @@ export function useAuth(logActivity, setAppError) {
   }
 
   return {
-    users, setUsers, currentUserId, setCurrentUserId, currentUser,
+    directory, users, currentUserId, currentUser, authLoading,
+    authErrorMsg, pendingEmail,
     showLoginOverlay, loginOverlayExiting,
-    loginAs, logout, updateUsers, addUser, patchUser, deleteUser,
+    login, logout, updateUsers, addUser, patchUser, deleteUser,
   };
 }

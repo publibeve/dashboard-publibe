@@ -9,7 +9,9 @@
 -- código de src/services/*.js para que calce, en vez de forzarte a recrearlas.
 -- ============================================================================
 
--- Usuarios (login por PIN, no Supabase Auth — ver nota de seguridad al final)
+-- Usuarios (perfil dentro de la app: nombre/email/permisos/foto). El login en
+-- sí ya NO se valida acá — ver supabase/auth-migration.sql, que quita la
+-- columna `clave` y lo reemplaza por Supabase Authentication de verdad.
 create table if not exists users (
   id        text primary key,
   nombre    text not null,
@@ -83,20 +85,12 @@ create table if not exists kv_store (
 -- ============================================================================
 -- Row Level Security
 -- ============================================================================
--- Nota de seguridad importante: la app NO usa Supabase Auth (el login es un
--- PIN de 6 dígitos comparado en el navegador, igual que en la versión
--- original). Eso significa que no hay un "usuario autenticado" real desde el
--- punto de vista de Supabase — todo el tráfico llega con la clave anónima
--- (anon key), que es pública por diseño (va en el bundle del frontend).
---
--- Con RLS "abierto a anon" (como se deja acá) el nivel de seguridad es
--- EQUIVALENTE al que ya tenía la app (el PIN es una barrera de interfaz, no
--- de base de datos: cualquiera con la URL del sitio y algo de curiosidad
--- técnica podría leer/escribir la DB directo, sin pasar por el login). Si
--- más adelante querés que el PIN sea una barrera real, hay que migrar a
--- Supabase Auth (o al menos a Edge Functions con una service role key del
--- lado del servidor) — avisame si querés que lo dejemos armado para la
--- próxima iteración.
+-- NOTA: este bloque deja las políticas abiertas a "anon" como estaban en la
+-- versión original de la app (login por PIN sin Supabase Auth). Esto YA NO
+-- refleja el estado actual: correr `supabase/auth-migration.sql` DESPUÉS de
+-- este archivo reemplaza estas políticas por "solo autenticados" y cierra el
+-- acceso a la clave pública. Ver ese archivo para el detalle y las
+-- instrucciones de verificación.
 
 alter table users     enable row level security;
 alter table clients   enable row level security;

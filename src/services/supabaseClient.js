@@ -12,7 +12,19 @@ if (!url || !anonKey) {
   );
 }
 
-export const supabase = createClient(url, anonKey);
+export const supabase = createClient(url, anonKey, {
+  auth: {
+    // La app no usa el login-por-link-mágico ni OAuth de Supabase (el login es
+    // email+clave con signInWithPassword) — así que no necesitamos que el
+    // cliente escanee el # de la URL buscando un token de sesión propio.
+    // Importante: la integración de Zoho WorkDrive TAMBIÉN devuelve su token
+    // en el "#" de la URL (#access_token=...) al volver de accounts.zoho.com.
+    // Sin este flag en false, el cliente de Supabase podía intentar leer ESE
+    // mismo fragmento como si fuera su propia sesión, pisando o compitiendo
+    // con el manejo manual que ya hace handleZohoRedirect() en main.jsx.
+    detectSessionInUrl: false,
+  },
+});
 
 /**
  * Los hooks de dominio (useTasks, useNotes, usePayments, etc.) siguen el mismo

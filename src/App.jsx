@@ -69,7 +69,10 @@ import { clientMeta, darkenHex, daysUntil, fmtDate, hasUnreadComments, hexToRgba
 function App() {
   const [appError, setAppError] = useState("");
 
-  const { users, currentUser, currentUserId, showLoginOverlay, loginOverlayExiting, loginAs, logout, addUser, patchUser, deleteUser } = useAuth(
+  const {
+    directory, users, currentUser, currentUserId, authLoading, authErrorMsg, pendingEmail,
+    showLoginOverlay, loginOverlayExiting, login, logout, addUser, patchUser, deleteUser,
+  } = useAuth(
     (text) => logActivity(text), (msg) => setAppError(msg)
   );
   const { can, requestPermission, permDeniedLabel, setPermDeniedLabel } = usePermissions(currentUser);
@@ -456,15 +459,16 @@ function App() {
       .sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
   }, [notes, selectedClient]);
 
-  if (currentUserId === undefined || users === null) {
-    // Todavía cargando la sesión guardada — no mostramos nada para evitar un parpadeo
+  if (authLoading) {
+    // Todavía resolviendo la sesión de Supabase Auth (o, si ya hay sesión, el
+    // perfil correspondiente) — no mostramos nada para evitar un parpadeo
     // entre "pantalla de login" y "dashboard" mientras se resuelve.
     return <div className="app" style={{ background: "var(--bg)" }} />;
   }
   if (!currentUser) {
     return (
       <div className="app" style={{ background: "var(--bg)" }}>
-        <LoginScreen users={users} onLogin={loginAs} />
+        <LoginScreen users={directory} onLogin={login} authError={authErrorMsg} />
       </div>
     );
   }
@@ -1186,7 +1190,7 @@ function App() {
       )}
     </div>
     {showLoginOverlay && (
-      <LoginExitOverlay userId={currentUserId} users={users} exiting={loginOverlayExiting} />
+      <LoginExitOverlay email={pendingEmail} users={directory} exiting={loginOverlayExiting} />
     )}
     </>
   );

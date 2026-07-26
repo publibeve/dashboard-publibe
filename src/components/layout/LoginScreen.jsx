@@ -4,19 +4,25 @@ import {
 } from "lucide-react";
 import { UserAvatar } from "./Sidebar";
 
-export function LoginScreen({ users, onLogin }) {
+export function LoginScreen({ users, onLogin, authError }) {
   const [selectedId, setSelectedId] = useState(users[0]?.id || "");
   const [clave, setClave] = useState("");
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  function submit() {
+  async function submit() {
     const user = users.find((u) => u.id === selectedId);
-    if (!user) { setError("Elige tu nombre."); return; }
-    if (clave !== user.clave) { setError("Clave incorrecta."); return; }
-    onLogin(user.id);
+    if (!user) { setLocalError("Elige tu nombre."); return; }
+    if (!clave) { setLocalError("Ingresa tu clave."); return; }
+    setLocalError("");
+    setSubmitting(true);
+    const ok = await onLogin(user.email, clave);
+    setSubmitting(false);
+    if (!ok) setClave("");
   }
 
   const selectedUser = users.find((u) => u.id === selectedId);
+  const error = localError || authError;
 
   return (
     <div className="login-screen">
@@ -32,7 +38,7 @@ export function LoginScreen({ users, onLogin }) {
         <div className="login-user-select-wrapper">
           <select
             value={selectedId}
-            onChange={(e) => { setSelectedId(e.target.value); setError(""); }}
+            onChange={(e) => { setSelectedId(e.target.value); setLocalError(""); }}
             className="login-user-select"
           >
             <option value="">Selecciona usuario</option>
@@ -59,15 +65,17 @@ export function LoginScreen({ users, onLogin }) {
             onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
           />
         </label>
-        <button className="btn-primary full" type="button" onClick={submit}>Entrar</button>
+        <button className="btn-primary full" type="button" onClick={submit} disabled={submitting}>
+          {submitting ? "Entrando…" : "Entrar"}
+        </button>
       </div>
       <div className="login-footer">Copyright © 2026 PubliBe Agencia Gráfica. All Rights Reserved.</div>
     </div>
   );
 }
 
-export function LoginExitOverlay({ userId, users, exiting }) {
-  const user = (users || []).find((u) => u.id === userId);
+export function LoginExitOverlay({ email, users, exiting }) {
+  const user = (users || []).find((u) => u.email === email);
   return (
     <div className={"login-screen login-transition-overlay" + (exiting ? " login-exit" : "")}>
       <div className="login-card">

@@ -77,7 +77,6 @@ export function UserRow({ u, currentUser, canManage, onPatchUser, onDelete }) {
   const [avatarDraft, setAvatarDraft] = useState(u.avatarUrl || "");
   const [editingInfo, setEditingInfo] = useState(false);
   const [nombreDraft, setNombreDraft] = useState(u.nombre || "");
-  const [claveDraft, setClaveDraft] = useState("");
 
   function saveAvatar() {
     onPatchUser(u.id, { avatarUrl: avatarDraft.trim() });
@@ -86,9 +85,7 @@ export function UserRow({ u, currentUser, canManage, onPatchUser, onDelete }) {
   function saveInfo() {
     const patch = {};
     if (nombreDraft.trim()) patch.nombre = nombreDraft.trim();
-    if (claveDraft.trim()) patch.clave = claveDraft.trim();
     onPatchUser(u.id, patch);
-    setClaveDraft("");
     setEditingInfo(false);
   }
 
@@ -101,7 +98,7 @@ export function UserRow({ u, currentUser, canManage, onPatchUser, onDelete }) {
           {currentUser && u.id === currentUser.id && <span className="users-row-you">tú</span>}
         </span>
         {canManage && (
-          <button type="button" className="icon-btn subtle" onClick={() => setEditingInfo((e) => !e)} title="Editar nombre y clave">
+          <button type="button" className="icon-btn subtle" onClick={() => setEditingInfo((e) => !e)} title="Editar nombre">
             <PenTool size={13} />
           </button>
         )}
@@ -120,19 +117,19 @@ export function UserRow({ u, currentUser, canManage, onPatchUser, onDelete }) {
         <div className="users-edit-info-box">
           <label className="field">
             <span>Nombre</span>
-            <input type="text" value={nombreDraft} onChange={(e) => setNombreDraft(e.target.value)} />
-          </label>
-          <label className="field">
-            <span>Nueva clave</span>
             <input
-              type="password" value={claveDraft} placeholder="Dejar en blanco para no cambiarla"
-              onChange={(e) => setClaveDraft(e.target.value)}
+              type="text" value={nombreDraft} autoFocus
+              onChange={(e) => setNombreDraft(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") saveInfo(); }}
             />
           </label>
+          <div className="hint">
+            La contraseña de inicio de sesión ya no se cambia acá — se gestiona en
+            Supabase Authentication (o cada quien la cambia desde su propia sesión).
+          </div>
           <div className="users-edit-info-actions">
             <button type="button" className="btn-primary" onClick={saveInfo}>Guardar</button>
-            <button type="button" className="btn-secondary" onClick={() => { setEditingInfo(false); setNombreDraft(u.nombre || ""); setClaveDraft(""); }}>Cancelar</button>
+            <button type="button" className="btn-secondary" onClick={() => { setEditingInfo(false); setNombreDraft(u.nombre || ""); }}>Cancelar</button>
           </div>
         </div>
       )}
@@ -170,14 +167,13 @@ export function NewUserModal({ onClose, onCreate }) {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
-  const [clave, setClave] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [permisos, setPermisos] = useState({ ...PERMISOS_NINGUNO });
   const [error, setError] = useState("");
 
   function slugify(nombreCompleto) {
     return nombreCompleto
-      .trim().split(/\s+/)[0] // solo el primer nombre, como diego@publibe.net / ariana@publibe.net
+      .trim().split(/\s+/)[0] // solo el primer nombre, como ceo@publibe.net / designer@publibe.net
       .toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // sin tildes
   }
@@ -189,8 +185,7 @@ export function NewUserModal({ onClose, onCreate }) {
   function submit() {
     if (!nombre.trim()) { setError("Falta el nombre."); return; }
     if (!email.trim()) { setError("Falta el correo."); return; }
-    if (!clave.trim()) { setError("Falta la clave."); return; }
-    onCreate({ id: uid(), nombre: nombre.trim(), email: email.trim(), clave: clave.trim(), avatarUrl: avatarUrl.trim(), permisos });
+    onCreate({ id: uid(), nombre: nombre.trim(), email: email.trim(), avatarUrl: avatarUrl.trim(), permisos });
   }
 
   return (
@@ -201,6 +196,12 @@ export function NewUserModal({ onClose, onCreate }) {
           <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>
         </div>
         {error && <div className="form-error"><AlertTriangle size={13} /> {error}</div>}
+        <div className="hint hint-tip">
+          Esto crea el perfil dentro de la app (nombre, permisos, foto). Para que esta
+          persona pueda iniciar sesión, además hay que crearla en Supabase Authentication
+          con este MISMO correo y una contraseña — es un paso aparte, de 2 minutos, en el
+          panel de Supabase (ver DEPLOY.md).
+        </div>
         <label className="field">
           <span>Nombre</span>
           <input value={nombre} onChange={(e) => handleNombreChange(e.target.value)} placeholder="Ej: Reinaldo Pérez" autoFocus />
@@ -212,10 +213,6 @@ export function NewUserModal({ onClose, onCreate }) {
             onChange={(e) => { setEmailTouched(true); setEmail(e.target.value); }}
             placeholder="nombre@publibe.net"
           />
-        </label>
-        <label className="field">
-          <span>Clave</span>
-          <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} placeholder="Clave para iniciar sesión" />
         </label>
         <label className="field">
           <span>Foto de perfil (opcional, link — ideal 500×500px)</span>

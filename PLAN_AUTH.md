@@ -1,68 +1,46 @@
-# PLAN — Migración a Supabase Auth (seguridad real)
+# Migración a Supabase Auth — ESTADO: código listo, faltan 2 pasos manuales tuyos
 
-**Prioridad:** alta — el dashboard maneja datos financieros reales y contraseñas
-de clientes, y hoy la base es legible por cualquiera que extraiga la anon key
-del bundle (2 minutos para un desarrollador). Ver nota de seguridad en
-`supabase/schema.sql` y `DEPLOY.md`.
+El código de esta migración ya está implementado (login real con Supabase
+Auth, RLS cerrado a solo autenticados, columna `clave` eliminada). Lo que
+falta es enteramente manual, del lado de Supabase — ningún ajuste de código
+adicional depende de esto.
 
-## Objetivo
+## Qué falta (hacelo en este orden)
 
-Que el PIN deje de ser una barrera solo de interfaz y pase a ser una barrera a
-nivel de base de datos: sin sesión válida, la anon key no puede leer ni
-escribir nada.
+1. **Correr `supabase/auth-migration.sql`** en el SQL Editor de Supabase.
+2. **Crear a Diego y Ariana en Supabase Authentication** (Authentication →
+   Users → Add user) con sus emails (`ceo@publibe.net`, `designer@publibe.net`)
+   y contraseñas NUEVAS — las viejas (198913 / la de Ariana) quedaron
+   expuestas en la base anterior en texto plano, no reutilizarlas.
+   Marcar "Auto Confirm User" en ambas.
 
-## Qué cambia (resumen técnico)
+Instrucciones detalladas con capturas de dónde hacer clic: `DEPLOY.md`,
+sección 7.
 
-1. **Login real con Supabase Auth**
-   - Cada usuario pasa a existir en Supabase Auth (email + contraseña).
-     Emails ya definidos: `ceo@publibe.net` (Diego), `designer@publibe.net` (Ariana).
-   - La pantalla de login mantiene la MISMA experiencia visual (dropdown de
-     usuario + clave); por debajo, en vez de comparar la clave en el navegador,
-     hace `supabase.auth.signInWithPassword({ email, password })`.
-   - Las claves quedan hasheadas por Supabase (nadie puede verlas en ninguna
-     tabla, ni siquiera el administrador — eso es lo correcto).
-   - La sesión la maneja supabase-js (persistencia y refresh automáticos);
-     se elimina el `publibe:current-user-id` manual de localStorage.
+## Cómo se sabe que quedó bien
 
-2. **RLS cerrado**
-   - Todas las políticas `to anon, authenticated using (true)` se reemplazan
-     por políticas `to authenticated` (solo con sesión válida).
-   - La tabla `users` de la app se conserva para nombre/permisos/avatar, pero
-     SIN la columna `clave` (se elimina). Se enlaza por email o por el uuid de
-     Auth.
-   - Verificación clave: con las políticas nuevas, una consulta con la anon
-     key sola debe devolver 0 filas / error en TODAS las tablas.
+- Podés iniciar sesión en el dashboard con el email/contraseña nuevos de
+  cada quien (la pantalla se ve igual que antes: elegir usuario + clave).
+- Una consulta a cualquier tabla con SOLO la anon key (sin sesión iniciada)
+  devuelve vacío o error de permisos — hay un ejemplo de fetch para probarlo
+  al final de `auth-migration.sql`.
 
-3. **Migración de usuarios existentes**
-   - Script/pasos para crear a Diego y Ariana en Auth (desde el panel de
-     Supabase, 2 minutos) con contraseñas nuevas elegidas por cada uno.
-   - Las claves actuales (198913 / 000000) quedan obsoletas — están en texto
-     plano en la DB actual, así que deben considerarse comprometidas y NO
-     reutilizarse como contraseñas de Auth.
+## Qué cambió para quien usa la app día a día
 
-4. **Ajustes en la app**
-   - `useAuth` pasa a envolver `supabase.auth` (onAuthStateChange para la
-     sincronización entre pestañas — reemplaza el listener manual de storage).
-   - El gate de permisos (`can`/`requestPermission`) no cambia: sigue leyendo
-     de la tabla `users` por el usuario autenticado.
-   - El "master password" de acciones sensibles dentro de la app puede
-     mantenerse como segunda confirmación de UI, pero ya no es la barrera real.
+- Nada visualmente: se sigue eligiendo el nombre de un desplegable y
+  escribiendo la clave.
+- La clave de cada quien ya no se cambia desde Administrativo → Usuarios y
+  permisos (se sacó ese campo) — se gestiona desde Supabase Authentication
+  por ahora. Un "cambiar mi contraseña" self-service dentro de la app es un
+  agregado chico para más adelante, si hace falta.
+- Crear un usuario nuevo sigue siendo dos pasos: el botón "Agregar usuario"
+  en la app (perfil + permisos) y, aparte, crearlo en Supabase Authentication
+  con el mismo email para que pueda iniciar sesión.
 
-5. **Después (paso separado, solo tiene sentido con Auth ya activo)**
-   - Encriptar los Accesos de clientes (contraseñas de cuentas de clientes)
-     para que ni siquiera queden legibles en la tabla. Opciones: pgsodium /
-     Vault de Supabase, o cifrado con clave derivada del login. Se decide en
-     su momento.
+## Después de esto (fase separada, no urgente)
 
-## Hasta que se haga la migración
-
-- **No cargar contraseñas reales de clientes en el módulo Accesos** (o
-  sacarlas si ya hay). Es el dato más sensible y hoy es legible.
-- Asumir que las claves de login actuales son públicas; al migrar, elegir
-  contraseñas nuevas.
-
-## Estimación
-
-Una sesión de trabajo completa (similar a la migración inicial a Supabase):
-código + SQL de políticas + pasos manuales en el panel de Supabase + pruebas
-de que la anon key sola no lee nada.
+Encriptar los Accesos de clientes (las contraseñas de las cuentas de tus
+clientes que guardás en ese módulo) para que ni siquiera queden legibles en
+la tabla. Con Auth ya activo, esto pasa a ser viable de forma correcta
+(antes no lo era: cualquier clave de cifrado en el frontend sin un login
+real detrás es decorativa). Se decide cuándo encararlo.
