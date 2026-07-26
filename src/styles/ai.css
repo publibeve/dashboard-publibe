@@ -1,0 +1,5 @@
+/* Los estilos específicos del chat IA (.chat-fab, .task-modal-chat, .chat-msg-*,
+   .chat-anchor-btn) están intercalados con los estilos genéricos de Overlay/Modal
+   en el CSS original, y se mantuvieron dentro de components.css para no alterar
+   el orden de la cascada. Este archivo queda como referencia de estructura del
+   REFACTORING-MAP; components.css es la fuente real de esas reglas. */
