@@ -711,7 +711,7 @@
    (mismos colores, mismo keyframe loginGradientSpin) — no es una animación
    nueva, se reutiliza tal cual para que las tres se vean idénticas. */
 .login-screen{
-  min-height:100vh; display:flex; position:relative; overflow:hidden;
+  min-height:100vh; width:100%; flex:1; display:flex; position:relative; overflow:hidden;
 }
 .login-screen-split{ flex-direction:row; }
 @media (max-width:720px){
