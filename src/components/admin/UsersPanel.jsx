@@ -168,15 +168,29 @@ export function UserRow({ u, currentUser, canManage, onPatchUser, onDelete }) {
 
 export function NewUserModal({ onClose, onCreate }) {
   const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
   const [clave, setClave] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [permisos, setPermisos] = useState({ ...PERMISOS_NINGUNO });
   const [error, setError] = useState("");
 
+  function slugify(nombreCompleto) {
+    return nombreCompleto
+      .trim().split(/\s+/)[0] // solo el primer nombre, como diego@publibe.net / ariana@publibe.net
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // sin tildes
+  }
+  function handleNombreChange(v) {
+    setNombre(v);
+    if (!emailTouched) setEmail(v.trim() ? `${slugify(v)}@publibe.net` : "");
+  }
+
   function submit() {
     if (!nombre.trim()) { setError("Falta el nombre."); return; }
+    if (!email.trim()) { setError("Falta el correo."); return; }
     if (!clave.trim()) { setError("Falta la clave."); return; }
-    onCreate({ id: uid(), nombre: nombre.trim(), clave: clave.trim(), avatarUrl: avatarUrl.trim(), permisos });
+    onCreate({ id: uid(), nombre: nombre.trim(), email: email.trim(), clave: clave.trim(), avatarUrl: avatarUrl.trim(), permisos });
   }
 
   return (
@@ -189,7 +203,15 @@ export function NewUserModal({ onClose, onCreate }) {
         {error && <div className="form-error"><AlertTriangle size={13} /> {error}</div>}
         <label className="field">
           <span>Nombre</span>
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Reinaldo Pérez" autoFocus />
+          <input value={nombre} onChange={(e) => handleNombreChange(e.target.value)} placeholder="Ej: Reinaldo Pérez" autoFocus />
+        </label>
+        <label className="field">
+          <span>Correo</span>
+          <input
+            type="email" value={email}
+            onChange={(e) => { setEmailTouched(true); setEmail(e.target.value); }}
+            placeholder="nombre@publibe.net"
+          />
         </label>
         <label className="field">
           <span>Clave</span>

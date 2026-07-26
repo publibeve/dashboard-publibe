@@ -12,8 +12,8 @@ const USERS_SEEDED_KEY = "publibe-seeded-users";
 
 export function demoUsers() {
   return [
-    { id: uid(), nombre: "Diego Toro", clave: "198913", permisos: { ...PERMISOS_TODOS } },
-    { id: uid(), nombre: "Ariana Martínez", clave: "000000", permisos: { ...PERMISOS_NINGUNO } },
+    { id: uid(), nombre: "Diego Toro", email: "diego@publibe.net", clave: "198913", permisos: { ...PERMISOS_TODOS } },
+    { id: uid(), nombre: "Ariana Martínez", email: "ariana@publibe.net", clave: "000000", permisos: { ...PERMISOS_NINGUNO } },
   ];
 }
 
@@ -43,12 +43,22 @@ export async function loadUsers() {
   // usuarios de ejemplo duplicados, nunca se borra nada que ya existiera.
   const seeded = demoUsers();
   try {
-    await supabase.from("users").insert(seeded);
+    const { error } = await supabase.from("users").insert(seeded);
+    if (error) throw error;
+    // La bandera de "ya se sembró" SOLO se marca si el insert realmente
+    // funcionó. Si se marcara siempre (como pasaba antes), un fallo de
+    // inserción (por ejemplo, una columna NOT NULL que la fila no traía)
+    // dejaba la bandera en true para siempre, con la tabla vacía — el
+    // resultado era que nadie podía volver a iniciar sesión, ni sembrando de
+    // nuevo, porque el código ya "creía" que los usuarios existían.
+    await writeJSON(USERS_SEEDED_KEY, true, true);
+    return seeded;
   } catch (e) {
     console.error("No se pudieron sembrar los usuarios en Supabase:", e);
+    // No se marca como sembrado: la próxima vez se vuelve a intentar en vez
+    // de quedar con una tabla vacía y sin forma de entrar.
+    return seeded;
   }
-  await writeJSON(USERS_SEEDED_KEY, true, true);
-  return seeded;
 }
 
 export async function persistUsers(list) {

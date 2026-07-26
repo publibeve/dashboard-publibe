@@ -13,9 +13,13 @@
 create table if not exists users (
   id        text primary key,
   nombre    text not null,
+  email     text not null unique,
   clave     text not null,
   permisos  jsonb not null default '{}'::jsonb
 );
+-- Por si la tabla ya existía sin esta columna (create table if not exists no
+-- altera una tabla existente): la agrega solo si hace falta.
+alter table users add column if not exists email text;
 
 -- Clientes agregados/editados desde la app (se suman a los predefinidos en
 -- utils/constants.js, que siguen viviendo en el código, no en la DB)
