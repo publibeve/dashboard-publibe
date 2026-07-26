@@ -104,3 +104,11 @@ html,body{ margin:0; padding:0; }
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* Miniatura de adjuntos de Zoho (se descarga autenticada, con caché por pestaña) */
+.file-thumb {
+  width: 34px; height: 34px; object-fit: cover;
+  border-radius: 6px; border: 1px solid var(--border);
+  display: block;
+}
+.file-kind-btn { display: flex; align-items: center; gap: 6px; }

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Plus,
   Paperclip,
@@ -9,7 +9,27 @@ import {
   FolderKanban,
 } from "lucide-react";
 import { fileKind, uid } from "../../utils/helpers";
-import { ensureZohoFolderPath, uploadZohoFile, zohoConfigured, zohoConnected, fetchZohoFileBlobUrl, trashZohoFile } from "../../services/zoho.service";
+import { ensureZohoFolderPath, uploadZohoFile, zohoConfigured, zohoConnected, fetchZohoFileBlobUrl, trashZohoFile, startZohoAuth } from "../../services/zoho.service";
+import { ImagePreviewModal } from "./ImagePreviewModal";
+
+// Caché de miniaturas por sesión (driveId -> blob URL): cada imagen de Zoho se
+// descarga UNA vez por pestaña, no cada vez que se abre el modal.
+const zohoThumbCache = new Map();
+
+function ZohoThumb({ file }) {
+  const [src, setSrc] = useState(zohoThumbCache.get(file.driveId) || "");
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (src || failed || !file.driveId || !zohoConnected()) return;
+    let alive = true;
+    fetchZohoFileBlobUrl(file.driveId)
+      .then((url) => { zohoThumbCache.set(file.driveId, url); if (alive) setSrc(url); })
+      .catch(() => { if (alive) setFailed(true); });
+    return () => { alive = false; };
+  }, [src, failed, file.driveId]);
+  if (!src) return null; // mientras carga (o si falló / no hay sesión) se muestra el ícono normal
+  return <img className="file-thumb" src={src} alt={file.nombre} />;
+}
 
 export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, driveConnected, driveFolderPath, title, driveOnly }) {
   const [fileName, setFileName] = useState("");
@@ -18,6 +38,7 @@ export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, drive
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadingName, setUploadingName] = useState("");
   const [driveError, setDriveError] = useState("");
+  const [internalPreview, setInternalPreview] = useState(null);
   const fileInputRef = useRef(null);
 
   function addLink() {
@@ -30,8 +51,10 @@ export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, drive
     // se descarga con el token y se muestra el blob local en el modal.
     if (f.origen === "drive" && f.driveId) {
       try {
-        const blobUrl = await fetchZohoFileBlobUrl(f.driveId);
-        onPreviewImage({ ...f, url: blobUrl });
+        const blobUrl = f.driveId && zohoThumbCache.has(f.driveId) ? zohoThumbCache.get(f.driveId) : await fetchZohoFileBlobUrl(f.driveId);
+        if (f.driveId) zohoThumbCache.set(f.driveId, blobUrl);
+        const target = { ...f, url: blobUrl };
+        if (onPreviewImage) onPreviewImage(target); else setInternalPreview(target);
       } catch (e) {
         // Si la descarga falla (sesión vencida, permisos), se abre el enlace
         // de WorkDrive en otra pestaña, que tiene su propio visor.
@@ -39,7 +62,7 @@ export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, drive
       }
       return;
     }
-    onPreviewImage(f);
+    if (onPreviewImage) onPreviewImage(f); else setInternalPreview(f);
   }
 
   async function handleRemove(f) {
@@ -89,15 +112,17 @@ export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, drive
         {(files || []).map((f) => {
           const k = fileKind(f.nombre);
           const KIcon = k.icon;
-          const isImage = k.icon === ImageIcon && f.url;
+          const isImage = k.icon === ImageIcon && (f.url || f.driveId);
           return (
             <div className="file-row" key={f.id}>
-              {isImage && onPreviewImage ? (
+              {isImage && f.origen === "drive" ? (
+                <button type="button" className="file-kind file-kind-btn" style={{ color: k.color }} onClick={() => handlePreview(f)} title="Ver imagen"><ZohoThumb file={f} /><KIcon size={14} style={zohoThumbCache.has(f.driveId) ? { display: "none" } : undefined} /></button>
+              ) : isImage ? (
                 <button type="button" className="file-kind file-kind-btn" style={{ color: k.color }} onClick={() => handlePreview(f)} title="Ver imagen"><KIcon size={14} /></button>
               ) : (
                 <span className="file-kind" style={{ color: k.color }}><KIcon size={14} /></span>
               )}
-              {isImage && onPreviewImage ? (
+              {isImage ? (
                 <button type="button" className="file-name file-name-btn" onClick={() => handlePreview(f)}>{f.nombre}</button>
               ) : (
                 <span className="file-name">{f.nombre}</span>
@@ -114,14 +139,20 @@ export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, drive
         <div className="add-file add-file-drive">
           {driveFolderPath && <span className="hint drive-target-hint"><FolderKanban size={12} /> Se guardará en: <b>{driveFolderPath}</b></span>}
           <input ref={fileInputRef} type="file" multiple style={{ display: "none" }} onChange={handleFilesChosen} />
-          <button
-            type="button" className="btn-secondary"
-            onClick={() => fileInputRef.current && fileInputRef.current.click()}
-            disabled={uploading || !zohoConfigured() || !zohoConnected()}
-            title={!zohoConfigured() ? "Faltan las credenciales de Zoho (ver Administrativo)" : (!zohoConnected() ? "Conectá tu cuenta de Zoho en Administrativo" : "")}
-          >
-            <FolderKanban size={13} /> {uploading ? "Subiendo…" : "Subir a Zoho Drive"}
-          </button>
+          {zohoConfigured() && !zohoConnected() ? (
+            <button type="button" className="btn-secondary" onClick={() => { try { startZohoAuth(); } catch (e) { setDriveError(e.message); } }}>
+              <FolderKanban size={13} /> Conectar mi cuenta de Zoho para subir
+            </button>
+          ) : (
+            <button
+              type="button" className="btn-secondary"
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              disabled={uploading || !zohoConfigured()}
+              title={!zohoConfigured() ? "Faltan las credenciales de Zoho (ver Administrativo)" : ""}
+            >
+              <FolderKanban size={13} /> {uploading ? "Subiendo…" : "Subir a Zoho Drive"}
+            </button>
+          )}
           {uploading && (
             <div className="hint" style={{ width: "100%" }}>
               {uploadingName} — {uploadProgress}%
@@ -147,6 +178,9 @@ export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, drive
             <FolderKanban size={12} /> Conecta Google Drive en Administrativo para subir archivos directo a la carpeta{driveFolderPath ? ` de ${driveFolderPath}` : ""}.
           </div>
         </>
+      )}
+      {internalPreview && (
+        <ImagePreviewModal file={internalPreview} onClose={() => setInternalPreview(null)} />
       )}
     </div>
   );
