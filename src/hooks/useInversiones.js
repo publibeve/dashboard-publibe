@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { loadInversiones, persistInversiones } from "../services/data.service";
+import { loadInversiones, persistInversiones, INVERSIONES_KEY } from "../services/data.service";
+import { subscribeKvKey } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 import { fmtMonto } from "../utils/helpers";
 
 export function useInversiones(logActivity, setAppError) {
@@ -9,6 +11,11 @@ export function useInversiones(logActivity, setAppError) {
   useEffect(() => {
     loadInversiones().then((inv) => setInversiones(inv));
   }, []);
+
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(INVERSIONES_KEY, onChange),
+    () => loadInversiones().then((inv) => setInversiones(inv))
+  );
 
   function updateInversiones(next) { setInversiones(next); persistInversiones(next); }
   function addInversion(inv) {

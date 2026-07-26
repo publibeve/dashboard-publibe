@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { loadTareasGenerales, persistTareasGenerales } from "../services/data.service";
+import { loadTareasGenerales, persistTareasGenerales, TAREAS_KEY } from "../services/data.service";
+import { subscribeKvKey } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 export function useTareasGenerales(logActivity, setAppError) {
   const [tareasGenerales, setTareasGenerales] = useState(null);
@@ -8,6 +10,11 @@ export function useTareasGenerales(logActivity, setAppError) {
   useEffect(() => {
     loadTareasGenerales().then((t) => setTareasGenerales(t));
   }, []);
+
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(TAREAS_KEY, onChange),
+    () => loadTareasGenerales().then((t) => setTareasGenerales(t))
+  );
 
   function updateTareasGenerales(next) { setTareasGenerales(next); persistTareasGenerales(next); }
   function addTareaGeneral(t) {

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { loadTasks, persist } from "../services/data.service";
+import { subscribeTable } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 /**
  * Estado y operaciones CRUD sobre las tareas creativas (tablero "Flujo de diseño").
@@ -13,6 +15,13 @@ export function useTasks(logActivity, setAppError) {
   useEffect(() => {
     loadTasks().then((t) => setTasks(t));
   }, []);
+
+  // Sincronización entre pestañas/dispositivos: cuando otra pestaña (u otra
+  // persona del equipo) crea/edita/borra una tarea, esta se recarga sola.
+  useRealtimeReload(
+    (onChange) => subscribeTable("tasks", onChange),
+    () => loadTasks().then((t) => setTasks(t))
+  );
 
   function updateTasks(next) { setTasks(next); persist(next); }
   function addTask(task) {

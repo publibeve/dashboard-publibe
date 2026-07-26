@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { loadDebts, persistDebts, loadSaldosFavor, persistSaldosFavor } from "../services/data.service";
+import { loadDebts, persistDebts, loadSaldosFavor, persistSaldosFavor, DEBTS_KEY, SALDOS_FAVOR_KEY } from "../services/data.service";
 import { fmtMonto } from "../utils/helpers";
+import { subscribeKvKey } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 export function useDebts(logActivity, setAppError) {
   const [debts, setDebts] = useState(null);
@@ -10,6 +12,15 @@ export function useDebts(logActivity, setAppError) {
     loadDebts().then((d) => setDebts(d));
     loadSaldosFavor().then((s) => setSaldosFavor(s));
   }, []);
+
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(DEBTS_KEY, onChange),
+    () => loadDebts().then((d) => setDebts(d))
+  );
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(SALDOS_FAVOR_KEY, onChange),
+    () => loadSaldosFavor().then((s) => setSaldosFavor(s))
+  );
 
   function updateDebts(next) { setDebts(next); persistDebts(next); }
   function addDebt(d) {

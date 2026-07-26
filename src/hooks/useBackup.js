@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import {
   loadDriveConnected, persistDriveConnected, loadLastBackupDate, persistLastBackupDate,
-  downloadBackup,
+  downloadBackup, DRIVE_CONNECTED_STORAGE, LAST_BACKUP_STORAGE,
 } from "../services/data.service";
 import {
   persist, persistPayments, persistPosts, persistDebts, persistNotes,
   persistTareasGenerales, persistInversiones, persistInvoices, persistExpenses, persistAccesos,
 } from "../services/data.service";
+import { subscribeKvKey } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 /**
  * Backup manual (descarga un JSON con todo) y restauración desde un backup previo,
@@ -22,6 +24,15 @@ export function useBackup(logActivity) {
     loadDriveConnected().then((v) => setDriveConnectedState(v));
     loadLastBackupDate().then((d) => setLastBackupDate(d));
   }, []);
+
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(DRIVE_CONNECTED_STORAGE, onChange),
+    () => loadDriveConnected().then((v) => setDriveConnectedState(v))
+  );
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(LAST_BACKUP_STORAGE, onChange),
+    () => loadLastBackupDate().then((d) => setLastBackupDate(d))
+  );
 
   function toggleDriveConnected(val) {
     setDriveConnectedState(val);

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { loadExpenses, persistExpenses } from "../services/data.service";
+import { loadExpenses, persistExpenses, EXPENSES_KEY } from "../services/data.service";
+import { subscribeKvKey } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 import { fmtMonto } from "../utils/helpers";
 import { EXPENSE_CATEGORIAS } from "../utils/constants";
 
@@ -11,6 +13,11 @@ export function useExpenses(logActivity, setAppError) {
   useEffect(() => {
     loadExpenses().then((e) => setExpenses(e));
   }, []);
+
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(EXPENSES_KEY, onChange),
+    () => loadExpenses().then((e) => setExpenses(e))
+  );
 
   function updateExpenses(next) { setExpenses(next); persistExpenses(next); }
   function addExpense(ex) {

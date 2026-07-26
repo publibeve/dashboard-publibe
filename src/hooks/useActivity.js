@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { loadActivity, persistActivity, loadCommentReads, persistCommentReads } from "../services/data.service";
+import { loadActivity, persistActivity, loadCommentReads, persistCommentReads, ACTIVITY_KEY, COMMENT_READS_KEY } from "../services/data.service";
 import { uid } from "../utils/helpers";
+import { subscribeKvKey } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 /**
  * Historial de actividad ("¿quién hizo qué?") y el registro de qué comentarios
@@ -15,6 +17,15 @@ export function useActivity(currentUser) {
     loadActivity().then((a) => setActivity(a));
     loadCommentReads().then((r) => setCommentReads(r));
   }, []);
+
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(ACTIVITY_KEY, onChange),
+    () => loadActivity().then((a) => setActivity(a))
+  );
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(COMMENT_READS_KEY, onChange),
+    () => loadCommentReads().then((r) => setCommentReads(r))
+  );
 
   function logActivity(text) {
     setActivity((a) => {

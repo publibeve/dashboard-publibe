@@ -5,7 +5,7 @@ import { supabase } from "./supabaseClient";
 // La sesión (qué usuario está logueado en ESTE dispositivo) sigue siendo local,
 // tal como en el original (shared:false) — no tiene sentido guardarla en la DB
 // compartida, cada dispositivo mantiene la suya.
-const CURRENT_USER_KEY = "publibe:current-user-id";
+export const CURRENT_USER_KEY = "publibe:current-user-id";
 
 export function demoUsers() {
   return [

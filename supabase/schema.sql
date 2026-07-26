@@ -115,3 +115,26 @@ begin
     );
   end loop;
 end $$;
+
+-- ============================================================================
+-- Realtime (sincronización entre pestañas/dispositivos)
+-- ============================================================================
+-- Sin esto, las suscripciones desde el dashboard (supabase.channel(...).on
+-- ("postgres_changes", ...)) quedan abiertas pero nunca reciben ningún evento
+-- — es la causa más común de "el realtime no sincroniza nada". Agrega cada
+-- tabla a la publicación `supabase_realtime` (ya existe por defecto en todo
+-- proyecto de Supabase).
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['users','clients','tasks','notes','payments','invoices','kv_store']
+  loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
+    ) then
+      execute format('alter publication supabase_realtime add table %I', t);
+    end if;
+  end loop;
+end $$;

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { loadPosts, persistPosts } from "../services/data.service";
+import { loadPosts, persistPosts, POSTS_KEY } from "../services/data.service";
+import { subscribeKvKey } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 export function usePosts(logActivity, setAppError) {
   const [posts, setPosts] = useState(null);
@@ -8,6 +10,11 @@ export function usePosts(logActivity, setAppError) {
   useEffect(() => {
     loadPosts().then((p) => setPosts(p));
   }, []);
+
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(POSTS_KEY, onChange),
+    () => loadPosts().then((p) => setPosts(p))
+  );
 
   function updatePosts(next) { setPosts(next); persistPosts(next); }
   function addPost(p) {

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { loadPayments, persistPayments } from "../services/data.service";
 import { fmtMonto } from "../utils/helpers";
+import { subscribeTable } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 export function usePayments(logActivity, setAppError) {
   const [payments, setPayments] = useState(null);
@@ -9,6 +11,11 @@ export function usePayments(logActivity, setAppError) {
   useEffect(() => {
     loadPayments().then((p) => setPayments(p));
   }, []);
+
+  useRealtimeReload(
+    (onChange) => subscribeTable("payments", onChange),
+    () => loadPayments().then((p) => setPayments(p))
+  );
 
   function updatePayments(next) { setPayments(next); persistPayments(next); }
   function addPayment(p) {

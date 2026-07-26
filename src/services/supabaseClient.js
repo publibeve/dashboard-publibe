@@ -66,3 +66,44 @@ export async function syncObjectsTable(table, list) {
   const rows = (list || []).map((obj) => ({ id: obj.id, empresa: obj.empresa ?? null, data: obj }));
   await syncTable(table, rows, "id");
 }
+
+/**
+ * Sincronización entre pestañas / dispositivos, vía Supabase Realtime.
+ *
+ * Se suscribe a los cambios (insert/update/delete) de una tabla y llama a
+ * `onChange` cada vez que algo cambia — sin importar si el cambio lo hizo esta
+ * misma pestaña, otra pestaña, u otra persona del equipo desde otra
+ * computadora. Cada hook de dominio usa esto para volver a cargar sus datos
+ * (`loadX()` + `setState`) cuando detecta un cambio, en vez de tratar de
+ * "parchear" el estado a mano con cada evento — es más simple y más seguro
+ * ante cualquier tipo de cambio (altas, ediciones, bajas, cambios hechos
+ * directo en la tabla desde Supabase).
+ *
+ * Devuelve una función para cancelar la suscripción (usar en el cleanup del
+ * useEffect que la crea, así no se acumulan canales al desmontar/remontar).
+ *
+ * NOTA: esto requiere que la Realtime esté habilitada para la tabla en
+ * Supabase (Database -> Replication -> marcar la tabla). Ver DEPLOY.md.
+ */
+export function subscribeTable(table, onChange) {
+  const channel = supabase
+    .channel(`realtime:${table}:${Math.random().toString(36).slice(2, 8)}`)
+    .on("postgres_changes", { event: "*", schema: "public", table }, onChange)
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}
+
+/**
+ * Igual que `subscribeTable`, pero para una clave puntual dentro de la tabla
+ * genérica `kv_store` (donde vive todo lo que no tiene tabla propia: pagos ya
+ * migrados a su tabla real, pero publicaciones, deudas, gastos, inversiones,
+ * tareas generales, accesos, historial de actividad, clave de Gemini, etc.).
+ * Filtra en el servidor (Postgres) para no recibir cambios de OTRAS claves.
+ */
+export function subscribeKvKey(key, onChange) {
+  const channel = supabase
+    .channel(`realtime:kv_store:${key}:${Math.random().toString(36).slice(2, 8)}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "kv_store", filter: `key=eq.${key}` }, onChange)
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}

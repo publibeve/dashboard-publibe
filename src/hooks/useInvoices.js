@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { loadInvoices, persistInvoices } from "../services/data.service";
 import { fmtMonto } from "../utils/helpers";
+import { subscribeTable } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 export function useInvoices(logActivity, setAppError) {
   const [invoices, setInvoices] = useState(null);
@@ -9,6 +11,11 @@ export function useInvoices(logActivity, setAppError) {
   useEffect(() => {
     loadInvoices().then((i) => setInvoices(i));
   }, []);
+
+  useRealtimeReload(
+    (onChange) => subscribeTable("invoices", onChange),
+    () => loadInvoices().then((i) => setInvoices(i))
+  );
 
   function updateInvoices(next) { setInvoices(next); persistInvoices(next); }
   function addInvoice(inv) {

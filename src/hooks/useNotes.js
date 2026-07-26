@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { loadNotes, persistNotes } from "../services/data.service";
+import { subscribeTable } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 export function useNotes(logActivity, setAppError) {
   const [notes, setNotes] = useState(null);
@@ -7,6 +9,11 @@ export function useNotes(logActivity, setAppError) {
   useEffect(() => {
     loadNotes().then((n) => setNotes(n));
   }, []);
+
+  useRealtimeReload(
+    (onChange) => subscribeTable("notes", onChange),
+    () => loadNotes().then((n) => setNotes(n))
+  );
 
   function updateNotes(next) { setNotes(next); persistNotes(next); }
   function addNote(n) {

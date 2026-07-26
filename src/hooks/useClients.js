@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CLIENTES } from "../utils/constants";
 import { iconFor } from "../utils/helpers";
 import { loadCustomClients, persistCustomClients } from "../services/client.service";
+import { subscribeTable } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 /**
  * `CLIENTES` es un arreglo mutable a nivel de módulo (igual que en el archivo
@@ -21,27 +23,40 @@ export function useClients(deps) {
   } = deps;
 
   const [clientsBump, setClientsBump] = useState(0);
+  // Los clientes predefinidos (los de utils/constants.js), capturados una sola
+  // vez ANTES de que se les mezclen los agregados/editados por el usuario. Es
+  // la base contra la que se reconcilia cada vez que llega la lista fresca de
+  // Supabase (altas, ediciones Y bajas de clientes agregados), en vez de ir
+  // acumulando sobre un CLIENTES que ya viene mutado de la vez anterior.
+  const baseClientesRef = useRef(null);
+  if (baseClientesRef.current === null) baseClientesRef.current = CLIENTES.map((c) => ({ ...c }));
 
-  // Aplica los clientes agregados/editados por el usuario (guardados aparte de los
-  // predefinidos) por encima de la lista base de CLIENTES, una sola vez al montar.
+  function reconcile(customList) {
+    const base = baseClientesRef.current;
+    const existingNames = new Set(base.map((c) => c.name));
+    const overridesByName = new Map(customList.filter((c) => existingNames.has(c.name)).map((c) => [c.name, c]));
+    const extra = customList.filter((c) => !existingNames.has(c.name)).map((c) => ({ ...c, icon: iconFor(c.iconKey) }));
+    const merged = [
+      ...base.map((c) => (overridesByName.has(c.name)
+        ? { ...c, color: overridesByName.get(c.name).color, iconKey: overridesByName.get(c.name).iconKey, icon: iconFor(overridesByName.get(c.name).iconKey) }
+        : c)),
+      ...extra,
+    ];
+    CLIENTES.splice(0, CLIENTES.length, ...merged);
+    setClientsBump((x) => x + 1);
+  }
+
   useEffect(() => {
-    loadCustomClients().then((list) => {
-      if (list.length) {
-        const existingNames = new Set(CLIENTES.map((c) => c.name));
-        const toAdd = list.filter((c) => !existingNames.has(c.name)).map((c) => ({ ...c, icon: iconFor(c.iconKey) }));
-        const overridesByName = new Map(list.filter((c) => existingNames.has(c.name)).map((c) => [c.name, c]));
-        const merged = [
-          ...CLIENTES.map((c) => (overridesByName.has(c.name)
-            ? { ...c, color: overridesByName.get(c.name).color, iconKey: overridesByName.get(c.name).iconKey, icon: iconFor(overridesByName.get(c.name).iconKey) }
-            : c)),
-          ...toAdd,
-        ];
-        CLIENTES.splice(0, CLIENTES.length, ...merged);
-        setClientsBump((x) => x + 1);
-      }
-    });
+    loadCustomClients().then((list) => reconcile(list));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sincronización entre pestañas/dispositivos: si alguien agrega, edita o
+  // elimina un cliente desde otra pestaña, esta lo refleja sola.
+  useRealtimeReload(
+    (onChange) => subscribeTable("clients", onChange),
+    () => loadCustomClients().then((list) => reconcile(list))
+  );
 
   function addClient(c) {
     try {

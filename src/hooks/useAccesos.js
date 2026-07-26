@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { loadAccesos, persistAccesos } from "../services/data.service";
+import { loadAccesos, persistAccesos, ACCESOS_KEY } from "../services/data.service";
+import { subscribeKvKey } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 export function useAccesos(logActivity, setAppError) {
   const [accesos, setAccesos] = useState(null);
@@ -8,6 +10,11 @@ export function useAccesos(logActivity, setAppError) {
   useEffect(() => {
     loadAccesos().then((a) => setAccesos(a));
   }, []);
+
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(ACCESOS_KEY, onChange),
+    () => loadAccesos().then((a) => setAccesos(a))
+  );
 
   function updateAccesos(next) { setAccesos(next); persistAccesos(next); }
   function addAcceso(a) {

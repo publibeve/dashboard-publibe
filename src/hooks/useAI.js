@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import {
   loadGeminiKey, persistGeminiKey, loadAIChatHistory, persistAIChatHistory,
-  buildAIDataContext, askGemini,
+  buildAIDataContext, askGemini, GEMINI_KEY_STORAGE, AI_CHAT_HISTORY_KEY,
 } from "../services/ai.service";
+import { subscribeKvKey } from "../services/supabaseClient";
+import { onLocalStorageChange } from "../services/storage.service";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 /**
  * Estado y envío de mensajes del panel de chat con el asistente IA.
@@ -19,6 +22,19 @@ export function useAI(logActivity) {
   useEffect(() => {
     loadGeminiKey().then((k) => setGeminiKey(k));
     loadAIChatHistory().then((h) => setAiMessages(h));
+  }, []);
+
+  // La clave de Gemini es compartida por todo el equipo (kv_store): si alguien
+  // la cambia desde otra pestaña/computadora, esta se actualiza sola.
+  useRealtimeReload(
+    (onChange) => subscribeKvKey(GEMINI_KEY_STORAGE, onChange),
+    () => loadGeminiKey().then((k) => setGeminiKey(k))
+  );
+
+  // El historial del chat es local del dispositivo (localStorage) — se
+  // sincroniza entre pestañas del mismo navegador con el evento "storage".
+  useEffect(() => {
+    return onLocalStorageChange(AI_CHAT_HISTORY_KEY, (value) => setAiMessages(value || []));
   }, []);
 
   function saveGeminiKey(key) {

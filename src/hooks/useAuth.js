@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import {
-  loadUsers, persistUsers, loadCurrentUserId, persistCurrentUserId,
+  loadUsers, persistUsers, loadCurrentUserId, persistCurrentUserId, CURRENT_USER_KEY,
 } from "../services/auth.service";
+import { subscribeTable } from "../services/supabaseClient";
+import { useRealtimeReload } from "./useRealtimeSync";
 
 export function useAuth(logActivity, setAppError) {
   const [users, setUsers] = useState(null);
@@ -12,6 +14,28 @@ export function useAuth(logActivity, setAppError) {
   useEffect(() => {
     loadUsers().then((list) => setUsers(list));
     loadCurrentUserId().then((id) => setCurrentUserId(id));
+  }, []);
+
+  // Si se agrega/edita/elimina un usuario desde otra pestaña o desde otra
+  // computadora del equipo, esta pestaña lo refleja sola (por ejemplo, si te
+  // quitan un permiso en Administrativo mientras estás usando la app en otra
+  // pestaña, deja de poder hacer esa acción sin necesidad de refrescar).
+  useRealtimeReload(
+    (onChange) => subscribeTable("users", onChange),
+    () => loadUsers().then((list) => setUsers(list))
+  );
+
+  // La sesión es local del dispositivo (localStorage), pero si el navegador
+  // tiene varias pestañas abiertas, iniciar/cerrar sesión en una debe
+  // reflejarse en las demás — si no, una pestaña podría quedar "atrás" con un
+  // usuario que ya cerró sesión en otra.
+  useEffect(() => {
+    function onStorage(e) {
+      if (e.key !== CURRENT_USER_KEY) return;
+      setCurrentUserId(e.newValue ? JSON.parse(e.newValue) : null);
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   const currentUser = useMemo(

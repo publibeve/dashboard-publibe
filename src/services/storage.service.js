@@ -79,3 +79,28 @@ export async function deleteKey(key, shared = false) {
     return false;
   }
 }
+
+/**
+ * Sincronización entre pestañas para lo que es local del dispositivo
+ * (shared:false — sesión actual, historial del chat IA): el navegador dispara
+ * el evento "storage" en TODAS las demás pestañas del mismo origen cuando una
+ * de ellas escribe en localStorage (nunca en la que hizo el cambio, por eso no
+ * hay eco/loop). `callback` recibe el valor nuevo ya parseado (o null si se
+ * borró la clave).
+ *
+ * Devuelve una función para dejar de escuchar (usar en el cleanup del
+ * useEffect que la crea).
+ */
+export function onLocalStorageChange(key, callback) {
+  const fullKey = LOCAL_PREFIX + key;
+  function handler(e) {
+    if (e.key !== fullKey) return;
+    try {
+      callback(e.newValue ? JSON.parse(e.newValue) : null);
+    } catch (err) {
+      console.error(`No se pudo leer el cambio de "${key}" desde otra pestaña:`, err);
+    }
+  }
+  window.addEventListener("storage", handler);
+  return () => window.removeEventListener("storage", handler);
+}
