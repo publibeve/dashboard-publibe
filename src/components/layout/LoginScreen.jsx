@@ -16,6 +16,8 @@ export function LoginScreen({ users, onLogin }) {
     onLogin(user.id);
   }
 
+  const selectedUser = users.find((u) => u.id === selectedId);
+
   return (
     <div className="login-screen">
       <div className="login-card">
@@ -27,17 +29,27 @@ export function LoginScreen({ users, onLogin }) {
         </div>
         <h2>¿Quién eres?</h2>
         {error && <div className="form-error"><AlertTriangle size={13} /> {error}</div>}
-        <div className="login-user-list">
-          {users.map((u) => (
-            <button
-              type="button" key={u.id}
-              className={"login-user-btn" + (selectedId === u.id ? " login-user-btn-active" : "")}
-              onClick={() => { setSelectedId(u.id); setError(""); }}
-            >
-              <UserAvatar user={u} />
-              {u.nombre}
-            </button>
-          ))}
+        <div className="login-user-select-wrapper">
+          <select
+            value={selectedId}
+            onChange={(e) => { setSelectedId(e.target.value); setError(""); }}
+            className="login-user-select"
+          >
+            <option value="">Selecciona usuario</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.nombre}
+              </option>
+            ))}
+          </select>
+          {selectedUser && (
+            <div className="login-selected-user">
+              <UserAvatar user={selectedUser} />
+              <span style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif", fontWeight: 500 }}>
+                {selectedUser.nombre}
+              </span>
+            </div>
+          )}
         </div>
         <label className="field">
           <span>Clave</span>
@@ -70,7 +82,9 @@ export function LoginExitOverlay({ userId, users, exiting }) {
           {user && (
             <div className="login-user-btn login-user-btn-active">
               <UserAvatar user={user} />
-              {user.nombre}
+              <span style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif", fontWeight: 500 }}>
+                {user.nombre}
+              </span>
             </div>
           )}
         </div>
