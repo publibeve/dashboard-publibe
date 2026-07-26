@@ -64,3 +64,40 @@ Si querés, en el momento de hacer este paso puedo ayudarte a clickear Netlify/t
 ## 7. Nota de seguridad (leer antes de publicar con datos reales)
 
 La app sigue usando un login por PIN comparado en el navegador (no Supabase Auth). Las políticas de RLS del `schema.sql` dejan la base **abierta a la clave anónima** para que la app funcione igual que antes — el nivel de seguridad es el mismo que ya tenía (el PIN es una barrera de interfaz, no de base de datos). Si vas a manejar datos sensibles de clientes reales y querés que el PIN sea también una barrera a nivel de base de datos, la mejora natural es migrar a Supabase Auth; puedo armarlo en una próxima vuelta sin tocar el resto de la app.
+
+## Zoho WorkDrive (integración real) — configurar
+
+La integración usa el flujo de SPA de Zoho ("Client-based Applications"):
+redirección + token en el navegador, **sin** Client Secret (no se usa ni se
+copia a ningún lado). Pasos, con la cuenta ceo@publibe.net:
+
+1. Entrá a [api-console.zoho.com](https://api-console.zoho.com) → **Add Client**
+   → **Client-based Applications**.
+2. Client Name: `publiBe Dashboard`. Homepage URL: `https://publibe.net`.
+   **Authorized Redirect URIs** (los tres, más localhost para desarrollo):
+   - `https://publibedashboard.netlify.app`
+   - `https://publibe.net`
+   - `https://www.publibe.net`
+   - `http://localhost:5173`
+3. Copiá el **Client ID** → ponelo como `VITE_ZOHO_CLIENT_ID` en `.env.local`
+   y en Netlify → Environment variables → redeploy.
+4. En [workdrive.zoho.com](https://workdrive.zoho.com), creá una carpeta
+   llamada **publiBe — Adjuntos**, compartila con `designer@publibe.net`
+   (rol Editor) desde la propia UI de WorkDrive, copiá el enlace de la
+   carpeta, y pegalo en el dashboard: Administrativo → Zoho WorkDrive →
+   "Carpeta raíz" → Guardar. (Se guarda compartido en Supabase: se configura
+   una sola vez para todo el equipo.)
+5. Administrativo → **Conectar Zoho WorkDrive** → autorizar con tu cuenta.
+   Ariana hace lo mismo con la suya la primera vez que use adjuntos.
+
+Después de eso, en cualquier modal con adjuntos: **"Subir a Zoho Drive"** abre
+el selector de archivos de tu compu, sube con barra de progreso a la carpeta
+correcta (`{cliente}/Creativos`, `Administrativo/Facturas/{empresa}`, etc. —
+las carpetas se crean solas la primera vez), y el adjunto queda vinculado al
+registro con su enlace real de WorkDrive.
+
+Notas:
+- El token de Zoho dura 1 hora; cuando vence, el botón de Administrativo pasa a
+  "Volver a conectar" y se pide de nuevo con un clic.
+- Si la cuenta Zoho estuviera en otro data center (.eu, .in), configurá
+  `VITE_ZOHO_ACCOUNTS_DOMAIN` (ver .env.example).

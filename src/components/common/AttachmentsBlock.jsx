@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Plus,
   Paperclip,
@@ -9,23 +9,45 @@ import {
   FolderKanban,
 } from "lucide-react";
 import { fileKind, uid } from "../../utils/helpers";
+import { ensureZohoFolderPath, uploadZohoFile, zohoConfigured, zohoConnected } from "../../services/zoho.service";
 
 export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, driveConnected, driveFolderPath, title, driveOnly }) {
   const [fileName, setFileName] = useState("");
   const [fileUrl, setFileUrl] = useState("");
-  const [showDriveUpload, setShowDriveUpload] = useState(false);
-  const [driveFileName, setDriveFileName] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingName, setUploadingName] = useState("");
+  const [driveError, setDriveError] = useState("");
+  const fileInputRef = useRef(null);
 
   function addLink() {
     if (!fileName.trim() || !fileUrl.trim()) return;
     onAdd({ id: uid(), nombre: fileName.trim(), url: fileUrl.trim(), origen: "link" });
     setFileName(""); setFileUrl("");
   }
-  function addDriveMock() {
-    if (!driveFileName.trim()) return;
-    onAdd({ id: uid(), nombre: driveFileName.trim(), url: "", origen: "drive" });
-    setDriveFileName("");
-    setShowDriveUpload(false);
+  async function handleFilesChosen(ev) {
+    const files = Array.from(ev.target.files || []);
+    ev.target.value = ""; // permite volver a elegir el mismo archivo después
+    if (!files.length) return;
+    setDriveError("");
+    setUploading(true);
+    try {
+      // La ruta viene como "Empresa / Creativos" — se normaliza a segmentos.
+      const path = String(driveFolderPath || "Otros").split("/").map((s) => s.trim()).filter(Boolean).join("/");
+      const folderId = await ensureZohoFolderPath(path);
+      for (const file of files) {
+        setUploadingName(file.name);
+        setUploadProgress(0);
+        const up = await uploadZohoFile(folderId, file, (p) => setUploadProgress(p));
+        onAdd({ id: uid(), nombre: up.nombre, url: up.url, origen: "drive", driveId: up.driveId });
+      }
+    } catch (e) {
+      setDriveError(e && e.message ? e.message : String(e));
+    } finally {
+      setUploading(false);
+      setUploadingName("");
+      setUploadProgress(0);
+    }
   }
 
   return (
@@ -58,18 +80,27 @@ export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, drive
       </div>
 
       {driveConnected ? (
-        showDriveUpload ? (
-          <div className="add-file add-file-drive">
-            <span className="hint drive-target-hint"><FolderKanban size={12} /> Se guardará en: <b>{driveFolderPath}</b></span>
-            <input placeholder="Nombre del archivo…" value={driveFileName} onChange={(e) => setDriveFileName(e.target.value)} autoFocus />
-            <button className="btn-primary" onClick={addDriveMock} disabled={!driveFileName.trim()}><Plus size={13} /> Subir</button>
-            <button type="button" className="btn-secondary" onClick={() => setShowDriveUpload(false)}>Cancelar</button>
-          </div>
-        ) : (
-          <button type="button" className="btn-secondary" onClick={() => setShowDriveUpload(true)}>
-            <FolderKanban size={13} /> Subir a Drive
+        <div className="add-file add-file-drive">
+          {driveFolderPath && <span className="hint drive-target-hint"><FolderKanban size={12} /> Se guardará en: <b>{driveFolderPath}</b></span>}
+          <input ref={fileInputRef} type="file" multiple style={{ display: "none" }} onChange={handleFilesChosen} />
+          <button
+            type="button" className="btn-secondary"
+            onClick={() => fileInputRef.current && fileInputRef.current.click()}
+            disabled={uploading || !zohoConfigured() || !zohoConnected()}
+            title={!zohoConfigured() ? "Faltan las credenciales de Zoho (ver Administrativo)" : (!zohoConnected() ? "Conectá tu cuenta de Zoho en Administrativo" : "")}
+          >
+            <FolderKanban size={13} /> {uploading ? "Subiendo…" : "Subir a Zoho Drive"}
           </button>
-        )
+          {uploading && (
+            <div className="hint" style={{ width: "100%" }}>
+              {uploadingName} — {uploadProgress}%
+              <div style={{ height: 4, background: "var(--border)", borderRadius: 2, marginTop: 4 }}>
+                <div style={{ height: 4, width: `${uploadProgress}%`, background: "var(--primary)", borderRadius: 2, transition: "width .2s" }} />
+              </div>
+            </div>
+          )}
+          {driveError && <span className="hint" style={{ color: "var(--accent)" }}>{driveError}</span>}
+        </div>
       ) : driveOnly ? (
         <div className="hint drive-hint drive-hint-waiting">
           <FolderKanban size={12} /> Este espacio queda listo para cuando se conecte Google Drive en Administrativo{driveFolderPath ? ` (se guardará en ${driveFolderPath})` : ""}.
