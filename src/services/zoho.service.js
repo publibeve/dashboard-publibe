@@ -70,6 +70,9 @@ export function handleZohoRedirect() {
   if (token) {
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(TOKEN_EXPIRY_KEY, String(Date.now() + expiresIn * 1000));
+    console.log("✅ Token de Zoho capturado del redirect y guardado");
+  } else {
+    console.error("❌ Volvimos de Zoho pero sin access_token en el fragmento de la URL");
   }
   // Limpia el token de la URL (que no quede en el historial del navegador).
   window.history.replaceState(null, "", window.location.pathname + window.location.search);

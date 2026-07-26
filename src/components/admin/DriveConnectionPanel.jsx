@@ -20,6 +20,20 @@ export function DriveConnectionPanel({ connected, onToggle, can, requirePerm }) 
     loadZohoRootFolder().then((id) => setRootFolder(id || ""));
   }, []);
 
+  // Cierre del ciclo OAuth: al volver del login de Zoho, el token ya quedó
+  // guardado (main.jsx -> handleZohoRedirect), pero el estado compartido
+  // "conectado" (kv_store) todavía no se marcó — sin esto, la UI seguía
+  // mostrando "Conectar" y los adjuntos quedaban deshabilitados aunque la
+  // autorización hubiera funcionado.
+  useEffect(() => {
+    if (zohoConnected() && !connected) {
+      sessionStorage.removeItem("publibe:zoho-auth-return");
+      console.log("✅ Token Zoho guardado correctamente — marcando integración como conectada");
+      onToggle(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected]);
+
   function connect() {
     requirePerm("configurarIntegraciones", () => {
       setError("");
