@@ -40,7 +40,7 @@ export async function syncTable(table, list, idField = "id") {
       if (deleteAllError) throw deleteAllError;
     }
   } catch (e) {
-    console.error(`No se pudo sincronizar la tabla "${table}" en Supabase:`, e);
+    console.error(`No se pudo sincronizar la tabla "${table}" en Supabase:`, e?.code, e?.message, e?.details, e?.hint, e);
   }
 }
 

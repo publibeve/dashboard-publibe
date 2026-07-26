@@ -43,6 +43,7 @@ export async function loadUsers() {
   // usuarios de ejemplo duplicados, nunca se borra nada que ya existiera.
   const seeded = demoUsers();
   try {
+    console.log("Intentando sembrar usuarios:", JSON.stringify(seeded));
     const { error } = await supabase.from("users").insert(seeded);
     if (error) throw error;
     // La bandera de "ya se sembró" SOLO se marca si el insert realmente
@@ -54,7 +55,7 @@ export async function loadUsers() {
     await writeJSON(USERS_SEEDED_KEY, true, true);
     return seeded;
   } catch (e) {
-    console.error("No se pudieron sembrar los usuarios en Supabase:", e);
+    console.error("Insert de usuarios FALLÓ:", e?.code, e?.message, e?.details, e?.hint, e);
     // No se marca como sembrado: la próxima vez se vuelve a intentar en vez
     // de quedar con una tabla vacía y sin forma de entrar.
     return seeded;

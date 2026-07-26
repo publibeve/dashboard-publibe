@@ -38,7 +38,7 @@ export async function readJSON(key, shared = false, fallback = null) {
     if (error) throw error;
     return data ? data.value : fallback;
   } catch (e) {
-    console.error(`No se pudo leer "${key}" de Supabase (kv_store):`, e);
+    console.error(`No se pudo leer "${key}" de Supabase (kv_store):`, e?.code, e?.message, e?.details, e?.hint, e);
     return fallback;
   }
 }
@@ -60,7 +60,7 @@ export async function writeJSON(key, value, shared = false) {
     if (error) throw error;
     return true;
   } catch (e) {
-    console.error(`No se pudo guardar "${key}" en Supabase (kv_store):`, e);
+    console.error(`No se pudo guardar "${key}" en Supabase (kv_store):`, e?.code, e?.message, e?.details, e?.hint, e);
     return false;
   }
 }
