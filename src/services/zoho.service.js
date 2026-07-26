@@ -314,10 +314,20 @@ export async function makeImageThumb(file, maxDim = 480) {
  */
 export async function makePdfThumb(file, maxDim = 480) {
   try {
+    // pdf.js v5 usa Promise.withResolvers (ES2024): polyfill mínimo para
+    // navegadores apenas más viejos, donde fallaría en silencio.
+    if (typeof Promise.withResolvers !== "function") {
+      Promise.withResolvers = function () {
+        let resolve, reject;
+        const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+        return { promise, resolve, reject };
+      };
+    }
     const pdfjs = await import("pdfjs-dist");
     const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
     pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
-    const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+    const data = new Uint8Array(await file.arrayBuffer());
+    const doc = await pdfjs.getDocument({ data }).promise;
     const page = await doc.getPage(1);
     const base = page.getViewport({ scale: 1 });
     const scale = Math.min(1.5, maxDim / Math.max(base.width, base.height));
@@ -328,6 +338,7 @@ export async function makePdfThumb(file, maxDim = 480) {
     await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
     const url = canvas.toDataURL("image/jpeg", 0.8);
     doc.destroy();
+    console.log(`📎 Miniatura de PDF generada para "${file.name}" (${Math.round(url.length / 1024)} KB)`);
     return url;
   } catch (e) {
     console.warn("No se pudo generar la miniatura del PDF", file.name, e);
