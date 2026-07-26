@@ -9,7 +9,7 @@ import {
   FolderKanban,
 } from "lucide-react";
 import { fileKind, uid } from "../../utils/helpers";
-import { ensureZohoFolderPath, uploadZohoFile, zohoConfigured, zohoConnected } from "../../services/zoho.service";
+import { ensureZohoFolderPath, uploadZohoFile, zohoConfigured, zohoConnected, fetchZohoFileBlobUrl, trashZohoFile } from "../../services/zoho.service";
 
 export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, driveConnected, driveFolderPath, title, driveOnly }) {
   const [fileName, setFileName] = useState("");
@@ -25,6 +25,37 @@ export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, drive
     onAdd({ id: uid(), nombre: fileName.trim(), url: fileUrl.trim(), origen: "link" });
     setFileName(""); setFileUrl("");
   }
+  async function handlePreview(f) {
+    // Archivos de Zoho: el permalink es una página protegida, no la imagen —
+    // se descarga con el token y se muestra el blob local en el modal.
+    if (f.origen === "drive" && f.driveId) {
+      try {
+        const blobUrl = await fetchZohoFileBlobUrl(f.driveId);
+        onPreviewImage({ ...f, url: blobUrl });
+      } catch (e) {
+        // Si la descarga falla (sesión vencida, permisos), se abre el enlace
+        // de WorkDrive en otra pestaña, que tiene su propio visor.
+        window.open(f.url, "_blank", "noopener");
+      }
+      return;
+    }
+    onPreviewImage(f);
+  }
+
+  async function handleRemove(f) {
+    if (f.origen === "drive" && f.driveId) {
+      const ok = window.confirm(`¿Eliminar "${f.nombre}" del registro y también de Zoho WorkDrive?\n(En Zoho va a la papelera, se puede recuperar desde ahí.)`);
+      if (!ok) return;
+      try {
+        await trashZohoFile(f.driveId);
+      } catch (e) {
+        setDriveError((e && e.message ? e.message : String(e)) + " — el adjunto no se quitó del registro para que no queden desincronizados.");
+        return; // si Zoho falló, NO se borra localmente: mejor consistente que a medias
+      }
+    }
+    onRemove(f.id);
+  }
+
   async function handleFilesChosen(ev) {
     const files = Array.from(ev.target.files || []);
     ev.target.value = ""; // permite volver a elegir el mismo archivo después
@@ -62,18 +93,18 @@ export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, drive
           return (
             <div className="file-row" key={f.id}>
               {isImage && onPreviewImage ? (
-                <button type="button" className="file-kind file-kind-btn" style={{ color: k.color }} onClick={() => onPreviewImage(f)} title="Ver imagen"><KIcon size={14} /></button>
+                <button type="button" className="file-kind file-kind-btn" style={{ color: k.color }} onClick={() => handlePreview(f)} title="Ver imagen"><KIcon size={14} /></button>
               ) : (
                 <span className="file-kind" style={{ color: k.color }}><KIcon size={14} /></span>
               )}
               {isImage && onPreviewImage ? (
-                <button type="button" className="file-name file-name-btn" onClick={() => onPreviewImage(f)}>{f.nombre}</button>
+                <button type="button" className="file-name file-name-btn" onClick={() => handlePreview(f)}>{f.nombre}</button>
               ) : (
                 <span className="file-name">{f.nombre}</span>
               )}
               {f.origen === "drive" && <span className="file-drive-tag" title="Vista previa: se guardaría en Google Drive"><FolderKanban size={11} /> Drive</span>}
               {f.url && <a className="file-open" href={f.url} target="_blank" rel="noreferrer"><ExternalLink size={13} /></a>}
-              <button className="icon-btn subtle" onClick={() => onRemove(f.id)}><Trash2 size={13} /></button>
+              <button className="icon-btn subtle" onClick={() => handleRemove(f)}><Trash2 size={13} /></button>
             </div>
           );
         })}

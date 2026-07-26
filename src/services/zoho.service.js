@@ -228,3 +228,55 @@ export function uploadZohoFile(folderId, file, onProgress) {
     xhr.send(form);
   });
 }
+
+/* ---------------- Vista previa y eliminación ------------------------------ */
+
+/**
+ * Descarga el contenido de un archivo de WorkDrive CON el token (los enlaces
+ * de WorkDrive no se pueden incrustar directo en <img>/<iframe>: son páginas
+ * protegidas por la sesión de Zoho, no la imagen en sí — por eso el modal
+ * decía "no se pudo cargar la vista previa"). Devuelve un blob URL local,
+ * que sí se puede mostrar en el modal de imagen o abrir como PDF.
+ */
+export async function fetchZohoFileBlobUrl(driveId) {
+  const token = getZohoToken();
+  if (!token) {
+    const e = new Error("La sesión de Zoho venció. Volvé a conectar en Administrativo.");
+    e.code = "NO_TOKEN";
+    throw e;
+  }
+  const candidates = [
+    `${API_BASE}/download/${driveId}`,
+    `https://download.zoho.com/v1/workdrive/download/${driveId}`,
+  ];
+  let lastError = null;
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url, { headers: { Authorization: `Zoho-oauthtoken ${token}` } });
+      if (!res.ok) { lastError = new Error(`Descarga falló (${res.status})`); continue; }
+      const blob = await res.blob();
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError || new Error("No se pudo descargar el archivo de Zoho.");
+}
+
+/**
+ * Manda un archivo de WorkDrive a la papelera de Zoho (status 51). Se usa la
+ * papelera y no el borrado definitivo a propósito: si alguien elimina un
+ * adjunto por error, se puede recuperar desde la papelera de WorkDrive.
+ */
+export async function trashZohoFile(driveId) {
+  const res = await fetch(`${API_BASE}/files/${driveId}`, {
+    method: "PATCH",
+    headers: { ...authHeaders(), "Content-Type": "application/vnd.api+json" },
+    body: JSON.stringify({ data: { attributes: { status: 51 }, type: "files" } }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`No se pudo eliminar el archivo en Zoho (${res.status}): ${text.slice(0, 200)}`);
+  }
+  return true;
+}
