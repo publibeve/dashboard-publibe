@@ -1,11 +1,14 @@
 import { PERMISOS_NINGUNO, PERMISOS_TODOS } from "../utils/constants";
 import { uid } from "../utils/helpers";
 import { supabase } from "./supabaseClient";
+import { readJSON, writeJSON } from "./storage.service";
 
 // La sesión (qué usuario está logueado en ESTE dispositivo) sigue siendo local,
 // tal como en el original (shared:false) — no tiene sentido guardarla en la DB
 // compartida, cada dispositivo mantiene la suya.
 export const CURRENT_USER_KEY = "publibe:current-user-id";
+
+const USERS_SEEDED_KEY = "publibe-seeded-users";
 
 export function demoUsers() {
   return [
@@ -18,13 +21,33 @@ export async function loadUsers() {
   try {
     const { data, error } = await supabase.from("users").select("*").order("nombre");
     if (error) throw error;
+    // IMPORTANTE: la decisión de "sembrar usuarios de ejemplo" NO se toma según
+    // si la consulta trajo 0 filas en este instante. Con varias pestañas
+    // abiertas (y ahora, con la sincronización en tiempo real, `loadUsers` se
+    // puede llamar mucho más seguido que antes) eso es una condición de
+    // carrera real: si dos pestañas leen "0 filas" casi a la vez, cada una
+    // sembraba SU PROPIA tanda de usuarios con ids nuevos, y como el guardado
+    // borra cualquier fila que no esté en la lista que se está guardando, la
+    // segunda siembra eliminaba a los usuarios reales (incluido el que ya
+    // había iniciado sesión en otra pestaña) — eso es lo que se veía como
+    // "la otra pestaña se cierra". Por eso se usa una bandera aparte,
+    // guardada una sola vez, en vez de confiar en el conteo de filas.
     if (data && data.length) return data;
+    if (await readJSON(USERS_SEEDED_KEY, true, false)) return data || [];
   } catch (e) {
     console.error("No se pudieron leer los usuarios de Supabase:", e);
   }
-  // Tabla vacía (primer arranque) -> sembramos los usuarios de ejemplo.
+  // Primera vez de verdad (nunca se sembró): se inserta directo, SIN pasar por
+  // persistUsers (que borra lo que no esté en la lista) — así, aunque dos
+  // pestañas caigan acá al mismo tiempo, en el peor de los casos quedan
+  // usuarios de ejemplo duplicados, nunca se borra nada que ya existiera.
   const seeded = demoUsers();
-  await persistUsers(seeded);
+  try {
+    await supabase.from("users").insert(seeded);
+  } catch (e) {
+    console.error("No se pudieron sembrar los usuarios en Supabase:", e);
+  }
+  await writeJSON(USERS_SEEDED_KEY, true, true);
   return seeded;
 }
 

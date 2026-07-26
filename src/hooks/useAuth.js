@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   loadUsers, persistUsers, loadCurrentUserId, persistCurrentUserId, CURRENT_USER_KEY,
 } from "../services/auth.service";
@@ -42,6 +42,23 @@ export function useAuth(logActivity, setAppError) {
     () => (users || []).find((u) => u.id === currentUserId) || null,
     [users, currentUserId]
   );
+
+  // Si hay una sesión (currentUserId) pero esa persona no aparece en la lista
+  // de usuarios YA CARGADA, puede ser que esa lista esté un poco desactualizada
+  // en ESTA pestaña (por ejemplo, si el usuario acaba de iniciar sesión en
+  // OTRA pestaña/computadora recién y a esta todavía no le llegó el cambio) —
+  // en vez de mandar directo a la pantalla de login (que se sentía como "se
+  // cerró la sesión sola"), se vuelve a pedir la lista una vez antes de darlo
+  // por perdido de verdad.
+  const retriedForRef = useRef(null);
+  useEffect(() => {
+    if (currentUserId && users && !users.some((u) => u.id === currentUserId)) {
+      if (retriedForRef.current === currentUserId) return; // ya se reintentó para este id, no insistir para siempre
+      retriedForRef.current = currentUserId;
+      loadUsers().then((list) => setUsers(list));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserId, users]);
 
   function loginAs(userId) {
     setCurrentUserId(userId);
