@@ -16,17 +16,33 @@ import { ImagePreviewModal } from "./ImagePreviewModal";
 // descarga UNA vez por pestaña, no cada vez que se abre el modal.
 const zohoThumbCache = new Map();
 
+// Marcador de versión: si este log NO aparece en la consola del navegador,
+// producción está sirviendo un AttachmentsBlock viejo (deploy/caché).
+console.log("📎 AttachmentsBlock v2.1 (miniaturas + visor propio) cargado");
+
+// Los adjuntos subidos en las primeras pruebas pueden haber quedado sin
+// driveId (si la respuesta de subida de Zoho no traía el campo donde lo
+// buscábamos) — pero el enlace de WorkDrive sí lo contiene. Se recupera de ahí.
+function zohoIdFrom(f) {
+  if (f.driveId) return f.driveId;
+  const m = String(f.url || "").match(/workdrive\.zoho\.com\/(?:file|open)\/([A-Za-z0-9]+)/);
+  return m ? m[1] : "";
+}
+
 function ZohoThumb({ file }) {
-  const [src, setSrc] = useState(zohoThumbCache.get(file.driveId) || "");
+  const driveId = zohoIdFrom(file);
+  const [src, setSrc] = useState(zohoThumbCache.get(driveId) || "");
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    if (src || failed || !file.driveId || !zohoConnected()) return;
+    if (src || failed) return;
+    if (!driveId) { console.warn(`📎 Miniatura de "${file.nombre}": el adjunto no tiene driveId ni un enlace de WorkDrive reconocible`, file.url); setFailed(true); return; }
+    if (!zohoConnected()) { console.warn(`📎 Miniatura de "${file.nombre}": no hay sesión de Zoho en este navegador (vencida o nunca conectada) — usá "Conectar mi cuenta de Zoho"`); setFailed(true); return; }
     let alive = true;
-    fetchZohoFileBlobUrl(file.driveId)
-      .then((url) => { zohoThumbCache.set(file.driveId, url); if (alive) setSrc(url); })
-      .catch(() => { if (alive) setFailed(true); });
+    fetchZohoFileBlobUrl(driveId)
+      .then((url) => { zohoThumbCache.set(driveId, url); if (alive) setSrc(url); })
+      .catch((e) => { console.warn(`📎 Miniatura de "${file.nombre}" falló:`, e?.message || e); if (alive) setFailed(true); });
     return () => { alive = false; };
-  }, [src, failed, file.driveId]);
+  }, [src, failed, driveId]);
   if (!src) return null; // mientras carga (o si falló / no hay sesión) se muestra el ícono normal
   return <img className="file-thumb" src={src} alt={file.nombre} />;
 }
@@ -49,16 +65,22 @@ export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, drive
   async function handlePreview(f) {
     // Archivos de Zoho: el permalink es una página protegida, no la imagen —
     // se descarga con el token y se muestra el blob local en el modal.
-    if (f.origen === "drive" && f.driveId) {
+    const driveId = f.origen === "drive" ? zohoIdFrom(f) : "";
+    if (driveId) {
       try {
-        const blobUrl = f.driveId && zohoThumbCache.has(f.driveId) ? zohoThumbCache.get(f.driveId) : await fetchZohoFileBlobUrl(f.driveId);
-        if (f.driveId) zohoThumbCache.set(f.driveId, blobUrl);
+        const blobUrl = zohoThumbCache.has(driveId) ? zohoThumbCache.get(driveId) : await fetchZohoFileBlobUrl(driveId);
+        zohoThumbCache.set(driveId, blobUrl);
         const target = { ...f, url: blobUrl };
         if (onPreviewImage) onPreviewImage(target); else setInternalPreview(target);
       } catch (e) {
-        // Si la descarga falla (sesión vencida, permisos), se abre el enlace
-        // de WorkDrive en otra pestaña, que tiene su propio visor.
-        window.open(f.url, "_blank", "noopener");
+        console.warn(`📎 Vista previa de "${f.nombre}" falló:`, e?.message || e);
+        if (e && e.code === "NO_TOKEN") {
+          // Antes esto abría WorkDrive en otra pestaña sin explicar nada — se
+          // veía idéntico al comportamiento viejo. Ahora avisa qué hacer.
+          setDriveError('Tu sesión de Zoho venció: tocá "Conectar mi cuenta de Zoho" (abajo) y volvé a intentar la vista previa.');
+        } else {
+          window.open(f.url, "_blank", "noopener");
+        }
       }
       return;
     }
@@ -112,11 +134,11 @@ export function AttachmentsBlock({ files, onAdd, onRemove, onPreviewImage, drive
         {(files || []).map((f) => {
           const k = fileKind(f.nombre);
           const KIcon = k.icon;
-          const isImage = k.icon === ImageIcon && (f.url || f.driveId);
+          const isImage = k.icon === ImageIcon && (f.url || zohoIdFrom(f));
           return (
             <div className="file-row" key={f.id}>
               {isImage && f.origen === "drive" ? (
-                <button type="button" className="file-kind file-kind-btn" style={{ color: k.color }} onClick={() => handlePreview(f)} title="Ver imagen"><ZohoThumb file={f} /><KIcon size={14} style={zohoThumbCache.has(f.driveId) ? { display: "none" } : undefined} /></button>
+                <button type="button" className="file-kind file-kind-btn" style={{ color: k.color }} onClick={() => handlePreview(f)} title="Ver imagen"><ZohoThumb file={f} /><KIcon size={14} style={zohoThumbCache.has(zohoIdFrom(f)) ? { display: "none" } : undefined} /></button>
               ) : isImage ? (
                 <button type="button" className="file-kind file-kind-btn" style={{ color: k.color }} onClick={() => handlePreview(f)} title="Ver imagen"><KIcon size={14} /></button>
               ) : (
