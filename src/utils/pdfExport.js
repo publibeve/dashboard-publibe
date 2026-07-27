@@ -35,6 +35,22 @@ export async function exportReciboPdf(el, filename) {
         useCORS: true,
         backgroundColor: "#ffffff",
         windowWidth: width,
+        // html2canvas no sabe renderizar texto con degradado vía
+        // background-clip:text (lo convierte en una mancha de color). El
+        // respaldo de @media print no aplica acá: html2canvas captura el DOM
+        // como se ve en pantalla (screen), nunca dispara reglas de print.
+        // Por eso el cambio se hace en el CLON del DOM que html2canvas usa
+        // internamente para renderizar — la B pasa a azul marino sólido
+        // SOLO en el PDF; en pantalla nunca deja de verse el degradado.
+        onclone: (clonedDoc) => {
+          clonedDoc.querySelectorAll(".brand-b").forEach((b) => {
+            b.style.background = "none";
+            b.style.webkitBackgroundClip = "initial";
+            b.style.backgroundClip = "initial";
+            b.style.color = "#1D3557"; // --primary, azul marino de la marca
+            b.style.webkitTextFillColor = "#1D3557";
+          });
+        },
       },
       // Página única, ancho/alto exactos del contenido — sin esto, html2pdf
       // usa A4 por default y pagina el recibo en varias hojas.
