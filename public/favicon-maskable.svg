@@ -8,17 +8,12 @@
       <stop offset="100%" stop-color="#C1443C"/>
     </linearGradient>
   </defs>
-  <!-- Maskable: el sistema operativo recorta este ícono a su propia forma
-       (círculo, squircle, etc.), así que el fondo va a sangre completa (sin
-       esquinas redondeadas propias) y la B se achica para vivir dentro de la
-       "zona segura" central (~80% del lienzo) y no quedar cortada. -->
+  <!-- Maskable: fondo a sangre completa, B en la zona segura central. -->
   <rect width="64" height="64" fill="#0E0E10"/>
-  <text
-    x="32" y="41"
-    font-family="Arial, Helvetica, sans-serif"
-    font-weight="700"
-    font-size="28"
-    text-anchor="middle"
-    fill="url(#bGrad)"
-  >B</text>
+  <!-- Letra B trazada como path vectorial real, extraído directamente de la
+       fuente Space Grotesk (peso Bold/700, la misma que usa la marca en el
+       resto de la app) con fontTools — no es texto vivo con font-family, así
+       que se ve idéntica sin importar qué entorno la renderice (navegador,
+       generador de PNG, sistema operativo). -->
+  <path d="M46 0V116H138V584H46V700H406Q470 700 517.5 678.5Q565 657 591.5 617.5Q618 578 618 523V513Q618 465 600.0 434.5Q582 404 557.5 387.5Q533 371 511 364V346Q533 340 559.0 323.5Q585 307 603.5 276.0Q622 245 622 195V185Q622 127 595.0 85.5Q568 44 520.5 22.0Q473 0 410 0ZM270 120H394Q437 120 463.5 141.0Q490 162 490 201V211Q490 250 464.0 271.0Q438 292 394 292H270ZM270 412H392Q433 412 459.5 433.0Q486 454 486 491V501Q486 539 460.0 559.5Q434 580 392 580H270Z" fill="url(#bGrad)" transform="translate(17.686, 47.0) scale(0.0428571, -0.0428571)"/>
 </svg>
