@@ -142,7 +142,7 @@ function App() {
   function handleSendAIMessage(text) {
     return sendAIMessage(text, {
       selectedClient, tasks, payments, inversiones, debts, posts, notes, tareasGenerales,
-      invoices, expenses, canSeeAdmin: can("administrativo"),
+      invoices, expenses, canSeeAdmin: can("administrativo"), canSeeMontos: can("verMontos"),
     });
   }
 
@@ -752,6 +752,7 @@ function App() {
           <OverviewView
             tasks={activeTasks} payments={activePayments} debts={debts || []} posts={activePosts}
             tareasGenerales={tareasGenerales || []}
+            canSeeMontos={can("verMontos")}
             onSelectClient={setSelectedClient}
             onOpenTareaGeneral={(id) => setOpenTareaGeneralId(id)}
           />
@@ -873,6 +874,7 @@ function App() {
             debts={filteredDebts}
             saldosFavor={filteredSaldosFavor}
             inversiones={filteredInversiones}
+            canSeeMontos={can("verMontos")}
             showClient={selectedClient === "__ALL__"}
             defaultClient={defaultClientForNew}
             onOpen={(id) => setOpenPaymentId(id)}

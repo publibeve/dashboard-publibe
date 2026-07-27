@@ -19,7 +19,13 @@ import { CustomSelect } from "../common/CustomSelect";
 import { CLIENTES, DISENADORES, ESTADOS } from "../../utils/constants";
 import { clientMeta, fmtMonto, monthLabelEs, redMeta, tareaEstadoMeta, todayISO } from "../../utils/helpers";
 
-export function OverviewView({ tasks = [], payments = [], debts = [], posts = [], tareasGenerales = [], onSelectClient, onOpenTareaGeneral }) {
+export function OverviewView({ tasks = [], payments = [], debts = [], posts = [], tareasGenerales = [], onSelectClient, onOpenTareaGeneral, canSeeMontos = false }) {
+  // Mismo criterio que en Pagos publicitarios / Inversión por semana: sin el
+  // permiso "verMontos", las cifras de esta sección se muestran enmascaradas
+  // — el enmascarado es solo de despliegue, los cálculos de más abajo
+  // (rows, totalGastadoMes, etc.) se hacen igual sea cual sea el permiso,
+  // así que para quien sí puede verlas no cambia nada.
+  const mMonto = (v) => (canSeeMontos ? fmtMonto(v) : "•••");
   const monthStart = todayISO().slice(0, 7);
   const [filterDesigner, setFilterDesigner] = useState("Todos");
   const [filterCreativosCliente, setFilterCreativosCliente] = useState("Todos");
@@ -245,21 +251,21 @@ export function OverviewView({ tasks = [], payments = [], debts = [], posts = []
             <span className="summary-v2-icon">{totalPendiente > 0 ? <AlertTriangle size={17} /> : <CheckCircle2 size={17} />}</span>
             <div className="summary-v2-body">
               <span className="summary-v2-label">Saldo pendiente (todas)</span>
-              <span className="summary-v2-value">{fmtMonto(totalPendiente)}</span>
+              <span className="summary-v2-value">{mMonto(totalPendiente)}</span>
             </div>
           </div>
           <div className="summary-card-v2 tone-navy">
             <span className="summary-v2-icon"><TrendingUp size={17} /></span>
             <div className="summary-v2-body">
               <span className="summary-v2-label">Invertido este mes</span>
-              <span className="summary-v2-value">{fmtMonto(totalGastadoMes)}</span>
+              <span className="summary-v2-value">{mMonto(totalGastadoMes)}</span>
             </div>
           </div>
         </div>
         <div className="summary-line-v2">
           <TrendingUp size={13} />
           <span>Invertido acumulado (todas)</span>
-          <b>{fmtMonto(totalGastado)}</b>
+          <b>{mMonto(totalGastado)}</b>
         </div>
         <div className="overview-table">
           <div className="overview-head overview-head-2">
@@ -271,8 +277,8 @@ export function OverviewView({ tasks = [], payments = [], debts = [], posts = []
             return (
               <button className="overview-row overview-row-2" key={r.client.name} onClick={() => onSelectClient(r.client.name)}>
                 <span className="overview-client" style={{ color: r.client.color }}><Icon size={13} />{r.client.name}</span>
-                <span data-label="Invertido">{fmtMonto(r.gastado)}</span>
-                <span data-label="Pendiente" className={r.pendiente > 0 ? "overview-alert" : ""}>{fmtMonto(r.pendiente)}</span>
+                <span data-label="Invertido">{mMonto(r.gastado)}</span>
+                <span data-label="Pendiente" className={r.pendiente > 0 ? "overview-alert" : ""}>{mMonto(r.pendiente)}</span>
               </button>
             );
           })}

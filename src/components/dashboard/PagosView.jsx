@@ -21,7 +21,15 @@ import { Overlay } from "../common/Overlay";
 import { ReportModal } from "../common/ReportModal";
 import { clientMeta, dateSearchBlob, fmtBs, fmtDate, fmtMonto, monthLabelEs, todayISO, uid, weekLabel, weekStart } from "../../utils/helpers";
 
-export function PagosView({ payments = [], trashedPayments = [], debts = [], saldosFavor = [], inversiones = [], showClient, defaultClient, onOpen, onAddDebt, onResolveDebt, onAddSaldoFavor, onRemoveSaldoFavor, onNewInversion, onOpenInversion, onRestorePayment, onPurgePayment, showTrash, mesFiltro, search, showReportPicker, onCloseReportPicker }) {
+export function PagosView({ payments = [], trashedPayments = [], debts = [], saldosFavor = [], inversiones = [], showClient, defaultClient, onOpen, onAddDebt, onResolveDebt, onAddSaldoFavor, onRemoveSaldoFavor, onNewInversion, onOpenInversion, onRestorePayment, onPurgePayment, showTrash, mesFiltro, search, showReportPicker, onCloseReportPicker, canSeeMontos = false }) {
+  // Sin el permiso "Ver montos de inversión y facturación", todas las cifras
+  // de esta pantalla (Pagos publicitarios e Inversión por semana) se muestran
+  // enmascaradas — el resto de la información (cliente, fecha, concepto,
+  // estado) sigue visible normal. Se centraliza acá en vez de tocar cada uno
+  // de los ~17 lugares donde se formatea un monto, para no arriesgar que
+  // alguno quede afuera y muestre la cifra real por error.
+  const mMonto = (v) => (canSeeMontos ? fmtMonto(v) : "•••");
+  const mBs = (v) => (canSeeMontos ? fmtBs(v) : "•••");
   const [subTab, setSubTab] = useState("pagos");
   const [bsOpen, setBsOpen] = useState(false);
   const [usdOpen, setUsdOpen] = useState(false);
@@ -123,7 +131,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
         <div className="week-block" key={ws}>
           <div className="week-head">
             <span>{weekLabel(ws)}</span>
-            <span className="week-total">{fmtMonto(subtotal)}</span>
+            <span className="week-total">{mMonto(subtotal)}</span>
           </div>
           <div className="pay-table">
             {items.map((p) => {
@@ -136,7 +144,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
                       <span className="pay-fecha-label">Pago del</span>
                       <span className="pay-fecha">{fmtDate(p.fecha)}</span>
                       <span className="pay-metodo"><CreditCard size={12} />{p.metodoPago}</span>
-                      <span className="pay-monto">{fmtMonto(p.monto)}</span>
+                      <span className="pay-monto">{mMonto(p.monto)}</span>
                       {p.moneda === "Bs" && <span className="pay-bs-tag"><Banknote size={11} />Bs</span>}
                     </span>
                     <span className="pay-secondary">
@@ -147,7 +155,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
                   </div>
                   {p.moneda === "Bs" && (
                     <div className="pay-bs-detail">
-                      <span><b>{fmtBs(p.montoBs)}</b></span>
+                      <span><b>{mBs(p.montoBs)}</b></span>
                       <span>Tasa {p.tasaCambio}</span>
                       {p.refBancaria && <span>Ref. {p.refBancaria}</span>}
                     </div>
@@ -156,7 +164,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
                     {(p.cobertura || []).length === 0 && <span className="cov-chip cov-empty"><Megaphone size={11} />Sin semana asignada</span>}
                     {(p.cobertura || []).map((c) => (
                       <span className={"cov-chip" + (c.tipo === "abono" ? " cov-chip-abono" : "")} key={c.id}>
-                        {c.tipo === "abono" && <Wallet size={10} />} {c.semana} <b>{fmtMonto(c.monto)}</b>
+                        {c.tipo === "abono" && <Wallet size={10} />} {c.semana} <b>{mMonto(c.monto)}</b>
                       </span>
                     ))}
                   </div>
@@ -193,7 +201,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
                         <span className="pay-primary">
                           <span className="pay-fecha">{fmtDate(p.fecha)}</span>
                           <span className="pay-metodo"><CreditCard size={12} />{p.metodoPago}</span>
-                          <span className="pay-monto">{fmtMonto(p.monto)}</span>
+                          <span className="pay-monto">{mMonto(p.monto)}</span>
                         </span>
                         {showClient && <span className="pay-empresa" style={{ color: cm.color }}><CmIcon size={12} />{p.empresa}</span>}
                       </div>
@@ -216,28 +224,28 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
           <span className="summary-v2-icon"><TrendingUp size={17} /></span>
           <div className="summary-v2-body">
             <span className="summary-v2-label">{mesFiltro === "todos" ? "Total invertido" : `Invertido en ${monthLabelEs(mesFiltro)}`}</span>
-            <span className="summary-v2-value">{fmtMonto(totalInvertido)}</span>
+            <span className="summary-v2-value">{mMonto(totalInvertido)}</span>
           </div>
         </div>
         <div className="summary-card-v2 tone-green">
           <span className="summary-v2-icon"><Wallet size={17} /></span>
           <div className="summary-v2-body">
             <span className="summary-v2-label">{mesFiltro === "todos" ? "Total pagado" : `Pagado en ${monthLabelEs(mesFiltro)}`}</span>
-            <span className="summary-v2-value">{fmtMonto(totalPagado)}</span>
+            <span className="summary-v2-value">{mMonto(totalPagado)}</span>
           </div>
         </div>
         <div className={"summary-card-v2" + (saldoPendiente > 0 ? " tone-red" : " tone-teal")}>
           <span className="summary-v2-icon">{saldoPendiente > 0 ? <AlertTriangle size={17} /> : <CheckCircle2 size={17} />}</span>
           <div className="summary-v2-body">
             <span className="summary-v2-label">Saldo pendiente</span>
-            <span className="summary-v2-value">{fmtMonto(saldoPendiente)}</span>
+            <span className="summary-v2-value">{mMonto(saldoPendiente)}</span>
           </div>
         </div>
         <div className="summary-card-v2 tone-gold">
           <span className="summary-v2-icon"><Banknote size={17} /></span>
           <div className="summary-v2-body">
             <span className="summary-v2-label">Saldo a favor</span>
-            <span className="summary-v2-value">{fmtMonto(Math.max(0, saldoFavor))}</span>
+            <span className="summary-v2-value">{mMonto(Math.max(0, saldoFavor))}</span>
           </div>
         </div>
       </div>
@@ -256,7 +264,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
               <div className="debt-row" key={d.id}>
                 <span className="debt-concepto">{d.concepto}</span>
                 {showClient && <span className="debt-empresa" style={{ color: cm.color }}><CmIcon size={11} />{d.empresa}</span>}
-                <span className="debt-monto">{fmtMonto(d.monto)}</span>
+                <span className="debt-monto">{mMonto(d.monto)}</span>
                 <button className="btn-secondary debt-resolve" onClick={() => onResolveDebt(d.id)}><CheckCircle2 size={12} /> Marcar pagado</button>
               </div>
             );
@@ -297,7 +305,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
               <div className="week-block" key={mk}>
                 <div className="week-head">
                   <span style={{ textTransform: "capitalize" }}>{monthLabelEs(mk)}</span>
-                  <span className="week-total">{fmtMonto(subtotal)}</span>
+                  <span className="week-total">{mMonto(subtotal)}</span>
                 </div>
                 <div className="invest-rows">
                   {items.map((i) => {
@@ -308,12 +316,12 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
                         <div className="invest-row-top">
                           {showClient && <span className="pay-empresa" style={{ color: cm.color }}><CmIcon size={12} />{i.empresa}</span>}
                           <span className="invest-row-semana">{i.semana}</span>
-                          <span className="pay-monto">{fmtMonto(i.monto)}</span>
+                          <span className="pay-monto">{mMonto(i.monto)}</span>
                         </div>
                         {(i.desglose || []).length > 0 && (
                           <div className="pay-cobertura">
                             {i.desglose.map((d) => (
-                              <span className="cov-chip" key={d.id}>{d.concepto} <b>{fmtMonto(d.monto)}</b></span>
+                              <span className="cov-chip" key={d.id}>{d.concepto} <b>{mMonto(d.monto)}</b></span>
                             ))}
                           </div>
                         )}
@@ -341,7 +349,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
                 <button type="button" className={"pagos-currency-head pagos-currency-toggle" + ((usdOpen || q) ? " pagos-currency-head-open" : "")} onClick={() => setUsdOpen((s) => !s)}>
                   <span className="pagos-currency-title"><Wallet size={14} /> Pagos en Dólares {paymentWeeksUsd.length > 0 && <span className="pagos-currency-count">({searchedPayments.filter((p) => p.moneda !== "Bs").length})</span>}</span>
                   <span className="pagos-currency-right">
-                    {paymentWeeksUsd.length > 0 && <span className="bs-totals">{fmtMonto(totalUsdOnly)}</span>}
+                    {paymentWeeksUsd.length > 0 && <span className="bs-totals">{mMonto(totalUsdOnly)}</span>}
                     <ChevronDown size={15} className={"pagos-currency-chev" + ((usdOpen || q) ? " pagos-currency-chev-open" : "")} />
                   </span>
                 </button>
@@ -369,7 +377,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
                   <span className="pagos-currency-title"><Banknote size={14} /> Pagos en Bolívares {pagosBs.length > 0 && <span className="pagos-currency-count">({pagosBs.length})</span>}</span>
                   <span className="pagos-currency-right">
                     {pagosBs.length > 0 && (
-                      <span className="bs-totals">{fmtBs(totalBsVES)} <span className="bs-totals-usd">· equivalente {fmtMonto(totalBsUSD)}</span></span>
+                      <span className="bs-totals">{mBs(totalBsVES)} <span className="bs-totals-usd">· equivalente {mMonto(totalBsUSD)}</span></span>
                     )}
                     <ChevronDown size={15} className={"pagos-currency-chev" + ((bsOpen || q) ? " pagos-currency-chev-open" : "")} />
                   </span>
@@ -433,11 +441,11 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
           emptyText="No hay inversión registrada en ese rango de fechas."
           groups={reportInversiones.map((i) => ({
             label: i.semana,
-            value: fmtMonto(i.monto),
-            items: (i.desglose || []).map((d) => ({ label: d.concepto, value: fmtMonto(d.monto) })),
+            value: mMonto(i.monto),
+            items: (i.desglose || []).map((d) => ({ label: d.concepto, value: mMonto(d.monto) })),
           }))}
           totalLabel="Total invertido en el rango"
-          total={fmtMonto(reportTotalInvertido)}
+          total={mMonto(reportTotalInvertido)}
           onClose={() => setShowReport(false)}
         />
       )}
@@ -470,7 +478,7 @@ export function DesgloseEditor({ desglose, onChange, montoTotal }) {
         {list.map((d) => (
           <div className="cov-row" key={d.id}>
             <span className="cov-row-semana">{d.concepto}</span>
-            <span className="cov-row-monto">{fmtMonto(d.monto)}</span>
+            <span className="cov-row-monto">{mMonto(d.monto)}</span>
             <button type="button" className="icon-btn subtle" onClick={() => remove(d.id)}><Trash2 size={13} /></button>
           </div>
         ))}
@@ -482,8 +490,8 @@ export function DesgloseEditor({ desglose, onChange, montoTotal }) {
       </div>
       {list.length > 0 && (
         <div className="cov-sum">
-          Desglosado: <b>{fmtMonto(sum)}</b>
-          {Math.abs(restante) > 0.01 && <> · {restante > 0 ? "Falta por desglosar" : "Excede el total en"} <b>{fmtMonto(Math.abs(restante))}</b></>}
+          Desglosado: <b>{mMonto(sum)}</b>
+          {Math.abs(restante) > 0.01 && <> · {restante > 0 ? "Falta por desglosar" : "Excede el total en"} <b>{mMonto(Math.abs(restante))}</b></>}
         </div>
       )}
     </div>
@@ -510,7 +518,7 @@ export function SaldoFavorSection({ saldosFavor, showClient, onAdd, onRemove }) 
             <div className="debt-row" key={s.id}>
               <span className="debt-concepto">{s.nota || "Saldo a favor"}</span>
               {showClient && <span className="debt-empresa" style={{ color: cm.color }}><CmIcon size={11} />{s.empresa}</span>}
-              <span className="debt-monto">{fmtMonto(s.monto)}</span>
+              <span className="debt-monto">{mMonto(s.monto)}</span>
               <button className="btn-secondary debt-resolve" onClick={() => onRemove(s.id)}><Trash2 size={12} /> Ya lo usé / quitar</button>
             </div>
           );

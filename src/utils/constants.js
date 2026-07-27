@@ -126,6 +126,7 @@ export const PERMISOS_LIST = [
   { key: "gestionarUsuarios", label: "Gestionar usuarios", desc: "Agregar usuarios y asignarles permisos" },
   { key: "configurarIA", label: "Configurar asistente IA", desc: "Guardar o cambiar la clave de Gemini para el asistente" },
   { key: "configurarIntegraciones", label: "Configurar integraciones", desc: "Conectar o desconectar Google Drive para los adjuntos" },
+  { key: "verMontos", label: "Ver montos de inversión y facturación", desc: "Ver las cifras en Pagos publicitarios e Inversión por semana (sin este permiso, se ven ocultas)" },
 ];
 
 export const PERMISOS_TODOS = Object.fromEntries(PERMISOS_LIST.map((p) => [p.key, true]));

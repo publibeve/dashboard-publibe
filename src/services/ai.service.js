@@ -25,7 +25,14 @@ export async function persistAIChatHistory(msgs) {
   await writeJSON(AI_CHAT_HISTORY_KEY, msgs, false);
 }
 
-export function buildAIDataContext({ selectedClient, tasks, payments, inversiones, debts, posts, notes, tareasGenerales, invoices, expenses, canSeeAdmin }) {
+export function buildAIDataContext({ selectedClient, tasks, payments, inversiones, debts, posts, notes, tareasGenerales, invoices, expenses, canSeeAdmin, canSeeMontos = false }) {
+  // Sin el permiso "Ver montos de inversión y facturación", el asistente NO
+  // debe poder decir cifras de Pagos publicitarios / Inversión por semana
+  // aunque se las pidan directo — no alcanza con ocultarlas en la UI si el
+  // contexto que le mandamos a Gemini igual las tiene. Se enmascaran ACÁ,
+  // antes de armar el texto, para que sea imposible que el modelo las repita.
+  const mMonto = (v) => (canSeeMontos ? fmtMonto(v) : "(oculto — el usuario no tiene permiso para ver montos)");
+  const mBs = (v) => (canSeeMontos ? fmtBs(v) : "(oculto)");
   const scope = selectedClient === "__ALL__" ? null : selectedClient;
   const inScope = (arr) => (arr || []).filter((x) => !scope || x.empresa === scope);
   const t = inScope(tasks);
@@ -51,8 +58,8 @@ export function buildAIDataContext({ selectedClient, tasks, payments, inversione
   );
 
   lines.push(`Tareas (Creativos) — TOTALES acumulados: ${t.length} en total. Por estado: ${JSON.stringify(porEstado)}.`);
-  lines.push(`Pagos publicitarios — TOTALES acumulados: ${fmtMonto(totalPagado)} pagado, ${fmtMonto(totalInvertido)} invertido, ${fmtMonto(totalPendiente)} pendiente.`);
-  if (deb.length) lines.push(`Pendientes por pagar: ${deb.map((d) => `${d.concepto} (${fmtMonto(d.monto)})`).join("; ")}.`);
+  lines.push(`Pagos publicitarios — TOTALES acumulados: ${mMonto(totalPagado)} pagado, ${mMonto(totalInvertido)} invertido, ${mMonto(totalPendiente)} pendiente.`);
+  if (deb.length) lines.push(`Pendientes por pagar: ${deb.map((d) => `${d.concepto} (${mMonto(d.monto)})`).join("; ")}.`);
 
   // Tareas (Creativos): detalle completo con fechas y responsable, no solo las últimas.
   if (t.length) {
@@ -65,7 +72,7 @@ export function buildAIDataContext({ selectedClient, tasks, payments, inversione
   // Pagos: cada pago con su fecha real, para poder sumar por mes/semana cuando lo pidan.
   if (pay.length) {
     const pagosLines = pay.slice(-80).map((p) =>
-      `- ${fmtDate(p.fecha)}: ${fmtMonto(p.monto)} (${p.metodoPago}${p.moneda === "Bs" ? `, ${fmtBs(p.montoBs)} a tasa ${p.tasaCambio}` : ""})${p.empresa && !scope ? ` — ${p.empresa}` : ""}`
+      `- ${fmtDate(p.fecha)}: ${mMonto(p.monto)} (${p.metodoPago}${p.moneda === "Bs" ? `, ${mBs(p.montoBs)} a tasa ${p.tasaCambio}` : ""})${p.empresa && !scope ? ` — ${p.empresa}` : ""}`
     );
     lines.push(`Detalle de pagos publicitarios (${pay.length} en total${pay.length > 80 ? ", mostrando los 80 más recientes" : ""}):\n${pagosLines.join("\n")}`);
   }
@@ -73,8 +80,8 @@ export function buildAIDataContext({ selectedClient, tasks, payments, inversione
   // Inversión por semana: incluye la fecha real de cada semana y su desglose si lo tiene.
   if (inv.length) {
     const invLines = inv.slice(-80).map((i) => {
-      const desglose = (i.desglose || []).map((d) => `${d.concepto}: ${fmtMonto(d.monto)}`).join(", ");
-      return `- ${fmtDate(i.fecha)} (${i.semana}): ${fmtMonto(i.monto)}${i.empresa && !scope ? ` — ${i.empresa}` : ""}${desglose ? ` [${desglose}]` : ""}`;
+      const desglose = (i.desglose || []).map((d) => `${d.concepto}: ${mMonto(d.monto)}`).join(", ");
+      return `- ${fmtDate(i.fecha)} (${i.semana}): ${mMonto(i.monto)}${i.empresa && !scope ? ` — ${i.empresa}` : ""}${desglose ? ` [${desglose}]` : ""}`;
     });
     lines.push(`Detalle de inversión publicitaria por semana (${inv.length} en total${inv.length > 80 ? ", mostrando las 80 más recientes" : ""}):\n${invLines.join("\n")}`);
   }
