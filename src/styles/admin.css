@@ -795,7 +795,23 @@
   display:flex; align-items:center; justify-content:center; padding:48px;
 }
 @media (max-width:720px){
-  .login-panel-form{ flex:1; padding:32px 24px; }
+  /* En vez de centrar verticalmente (lo que empujaba el formulario hacia
+     abajo con espacio de sobra arriba Y abajo del botón), acá arranca
+     pegado arriba y en columna, con el copyright de móvil anclado abajo
+     del todo (margin-top:auto) — el espacio sobrante queda absorbido en el
+     medio, entre el formulario y el copyright, en vez de rodeando todo. */
+  .login-panel-form{
+    flex:1; flex-direction:column; align-items:center; justify-content:flex-start;
+    padding:24px 24px 18px;
+  }
+}
+.login-mobile-copyright{
+  display:none;
+  margin-top:auto; padding-top:20px; font-size:10.5px; color:var(--ink-soft);
+  letter-spacing:.02em; text-align:center;
+}
+@media (max-width:720px){
+  .login-mobile-copyright{ display:block; }
 }
 .login-form-wrap{ width:100%; max-width:340px; }
 .login-form-logo{
