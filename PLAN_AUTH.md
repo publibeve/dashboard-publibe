@@ -44,3 +44,16 @@ clientes que guardás en ese módulo) para que ni siquiera queden legibles en
 la tabla. Con Auth ya activo, esto pasa a ser viable de forma correcta
 (antes no lo era: cualquier clave de cifrado en el frontend sin un login
 real detrás es decorativa). Se decide cuándo encararlo.
+
+## Actualización — reseteo de clave por correo (ya implementado)
+
+Se agregó autoservicio de reseteo de clave: en Administrativo → Usuarios y
+permisos, botón de llave junto a cada persona → manda un correo con un link
+de Supabase para que ella misma elija su clave nueva → al guardarla, entra
+directo al dashboard (sin pedir un login aparte). No requiere la
+service-role key en ningún momento.
+
+**Paso manual pendiente para que funcione** (ver `DEPLOY.md`, sección 7,
+Paso 3): agregar los dominios de la app a Supabase → Authentication → URL
+Configuration → Redirect URLs. Sin esto, el correo se manda pero el link no
+deja completar el cambio de clave.

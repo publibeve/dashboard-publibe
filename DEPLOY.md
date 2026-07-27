@@ -120,6 +120,37 @@ Zoho WorkDrive).
   corré el fetch de ejemplo que está al final de `auth-migration.sql` — tiene
   que devolver vacío o un error de permisos, nunca los usuarios reales.
 
+### Paso 3 — Reseteo de clave por correo (nuevo — 1 paso manual más)
+
+En "Administrativo → Usuarios y permisos" ahora hay un botón (ícono de
+llave) para mandarle a alguien un correo de "recuperar clave" —
+sin que vos tengas que entrar a Supabase. Para que funcione:
+
+Supabase → **Authentication → URL Configuration → Redirect URLs** → agregar
+(si no están ya, de la integración de Zoho):
+- `https://publibedashboard.netlify.app`
+- `https://publibe.net`
+- `https://www.publibe.net`
+- `http://localhost:5173` (desarrollo local)
+
+**Por qué hace falta:** el link que Supabase manda por correo vuelve a la
+app con `redirectTo` apuntando a uno de estos dominios — si la URL no está
+en esta lista blanca, Supabase rechaza el link y la persona no puede llegar
+a elegir su clave nueva. Sin este paso, el botón "manda" el correo pero el
+link no funciona.
+
+No hace falta configurar nada más (la plantilla de correo por defecto de
+Supabase ya sirve) — el plan gratuito de Supabase limita el envío a pocos
+correos por hora; para un equipo de 2 personas no es un problema.
+
+### Paso 4 — Rol/descripción editable en el sidebar (nuevo)
+
+Correr `supabase/add-rol-label.sql` (agrega una columna a `users`, vacía por
+defecto — no rompe nada existente). Después, en "Usuarios y permisos" cada
+persona tiene un campo para el texto que aparece debajo de su nombre en la
+tarjeta del sidebar (por defecto sigue siendo "Administrador"/"Miembro del
+equipo" si se deja vacío).
+
 ## 8. Gemini y Google Drive
 
 - **Gemini**: no necesita nada especial para el deploy — la clave se guarda en Supabase (`kv_store`, compartida por todo el equipo) desde la propia app, en Administrativo.

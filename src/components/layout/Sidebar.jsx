@@ -21,7 +21,8 @@ export function HeaderUserButton({ currentUser, onLogout }) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
   if (!currentUser) return null;
-  const roleLabel = currentUser?.permisos?.administrativo ? "Administrador" : "Miembro del equipo";
+  const roleLabel = (currentUser?.rolLabel && currentUser.rolLabel.trim())
+    || (currentUser?.permisos?.administrativo ? "Administrador" : "Miembro del equipo");
   return (
     <div className="header-user-btn-wrap" ref={ref}>
       <button type="button" className="header-user-btn" onClick={() => setOpen((s) => !s)} title={currentUser.nombre}>
@@ -57,7 +58,8 @@ export function UserAvatar({ user, className, style }) {
 }
 
 export function Sidebar({ selected, onSelect, counts, collapsed, onToggle, onOpenHistory, onOpenAdmin, adminActive, currentUser, onLogout, onSelectSearchResult, searchData, mobileOpen, onMobileClose }) {
-  const roleLabel = currentUser?.permisos?.administrativo ? "Administrador" : "Miembro del equipo";
+  const roleLabel = (currentUser?.rolLabel && currentUser.rolLabel.trim())
+    || (currentUser?.permisos?.administrativo ? "Administrador" : "Miembro del equipo");
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 900 : false));
 
   useEffect(() => {

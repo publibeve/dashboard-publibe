@@ -8,11 +8,13 @@ import {
   AlertTriangle,
   Image as ImageIcon,
   Check,
+  KeyRound,
 } from "lucide-react";
 import { Overlay } from "../common/Overlay";
 import { UserAvatar } from "../layout/Sidebar";
 import { PERMISOS_LIST, PERMISOS_NINGUNO } from "../../utils/constants";
 import { uid } from "../../utils/helpers";
+import { sendPasswordReset } from "../../services/auth.service";
 
 export function UsersPanel({ users = [], currentUser, can, onAddUser, onPatchUser, onDeleteUser, requirePerm }) {
   const [showNewUser, setShowNewUser] = useState(false);
@@ -77,6 +79,10 @@ export function UserRow({ u, currentUser, canManage, onPatchUser, onDelete }) {
   const [avatarDraft, setAvatarDraft] = useState(u.avatarUrl || "");
   const [editingInfo, setEditingInfo] = useState(false);
   const [nombreDraft, setNombreDraft] = useState(u.nombre || "");
+  const [rolDraft, setRolDraft] = useState(u.rolLabel || "");
+  const [resetSending, setResetSending] = useState(false);
+  const [resetMsg, setResetMsg] = useState(null); // { ok, text }
+  const defaultRol = u.permisos?.administrativo ? "Administrador" : "Miembro del equipo";
 
   function saveAvatar() {
     onPatchUser(u.id, { avatarUrl: avatarDraft.trim() });
@@ -85,8 +91,17 @@ export function UserRow({ u, currentUser, canManage, onPatchUser, onDelete }) {
   function saveInfo() {
     const patch = {};
     if (nombreDraft.trim()) patch.nombre = nombreDraft.trim();
+    patch.rolLabel = rolDraft.trim(); // vacío = usar el default (Administrador / Miembro del equipo)
     onPatchUser(u.id, patch);
     setEditingInfo(false);
+  }
+  async function sendReset() {
+    setResetSending(true);
+    setResetMsg(null);
+    const result = await sendPasswordReset(u.email);
+    setResetMsg(result.ok ? { ok: true, text: `Correo enviado a ${u.email}` } : { ok: false, text: result.message });
+    setResetSending(false);
+    setTimeout(() => setResetMsg(null), 5000);
   }
 
   return (
@@ -108,11 +123,21 @@ export function UserRow({ u, currentUser, canManage, onPatchUser, onDelete }) {
           </button>
         )}
         {canManage && (
+          <button type="button" className="icon-btn subtle" onClick={sendReset} disabled={resetSending} title="Enviar correo para resetear la clave">
+            <KeyRound size={13} />
+          </button>
+        )}
+        {canManage && (
           <button type="button" className="icon-btn subtle" onClick={onDelete} title="Eliminar usuario">
             <Trash2 size={13} />
           </button>
         )}
       </div>
+      {resetMsg && (
+        <div className={"hint"} style={{ color: resetMsg.ok ? "var(--ok)" : "var(--accent)", marginBottom: 8 }}>
+          {resetMsg.ok ? <Check size={12} /> : <AlertTriangle size={12} />} {resetMsg.text}
+        </div>
+      )}
       {editingInfo && (
         <div className="users-edit-info-box">
           <label className="field">
@@ -123,13 +148,21 @@ export function UserRow({ u, currentUser, canManage, onPatchUser, onDelete }) {
               onKeyDown={(e) => { if (e.key === "Enter") saveInfo(); }}
             />
           </label>
+          <label className="field">
+            <span>Rol / descripción (debajo del nombre, en la barra lateral)</span>
+            <input
+              type="text" value={rolDraft} placeholder={defaultRol}
+              onChange={(e) => setRolDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") saveInfo(); }}
+            />
+          </label>
           <div className="hint">
             La contraseña de inicio de sesión ya no se cambia acá — se gestiona en
             Supabase Authentication (o cada quien la cambia desde su propia sesión).
           </div>
           <div className="users-edit-info-actions">
             <button type="button" className="btn-primary" onClick={saveInfo}>Guardar</button>
-            <button type="button" className="btn-secondary" onClick={() => { setEditingInfo(false); setNombreDraft(u.nombre || ""); }}>Cancelar</button>
+            <button type="button" className="btn-secondary" onClick={() => { setEditingInfo(false); setNombreDraft(u.nombre || ""); setRolDraft(u.rolLabel || ""); }}>Cancelar</button>
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { loadUsers, persistUsers, signIn, signOut, getSession, onAuthChange } from "../services/auth.service";
+import { loadUsers, persistUsers, signIn, signOut, getSession, onAuthChange, isRecoveryMode, updatePassword } from "../services/auth.service";
 import { waitForSession, subscribeTable } from "../services/supabaseClient";
 import { useRealtimeReload } from "./useRealtimeSync";
 
@@ -28,6 +28,11 @@ export function useAuth(logActivity, setAppError) {
   const [pendingEmail, setPendingEmail] = useState("");
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const [loginOverlayExiting, setLoginOverlayExiting] = useState(false);
+  // true si la app arrancó desde el link de "recuperar clave" del correo
+  // (ver handlePasswordRecoveryRedirect en main.jsx). Mientras esté en true,
+  // App.jsx muestra la pantalla de "elegí tu nueva clave" en vez del login
+  // normal o del dashboard, aunque ya haya una sesión válida establecida.
+  const [recoveryMode, setRecoveryMode] = useState(() => isRecoveryMode());
 
   useEffect(() => {
     getSession().then(setSession);
@@ -111,6 +116,11 @@ export function useAuth(logActivity, setAppError) {
   async function logout() {
     await signOut();
   }
+  async function completePasswordRecovery(newPassword) {
+    const result = await updatePassword(newPassword);
+    if (result.ok) setRecoveryMode(false); // sigue directo al dashboard: la sesión ya es válida
+    return result;
+  }
   function updateUsers(next) { setUsers(next); persistUsers(next); }
   function addUser(u) {
     try { updateUsers([...(users || []), u]); logActivity(`Se agregó el usuario ${u.nombre}`); }
@@ -130,7 +140,7 @@ export function useAuth(logActivity, setAppError) {
 
   return {
     users, currentUserId, currentUser, authLoading, authErrorMsg, pendingEmail,
-    showLoginOverlay, loginOverlayExiting,
+    showLoginOverlay, loginOverlayExiting, recoveryMode, completePasswordRecovery,
     login, logout, updateUsers, addUser, patchUser, deleteUser,
   };
 }

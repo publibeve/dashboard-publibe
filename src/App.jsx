@@ -37,6 +37,7 @@ import { NewSaldoFavorModal, PagosView } from "./components/dashboard/PagosView"
 import { PaymentModal } from "./components/dashboard/PaymentModal";
 import { PostModal } from "./components/dashboard/PostModal";
 import { LoginExitOverlay, LoginScreen } from "./components/layout/LoginScreen";
+import { ResetPasswordScreen } from "./components/layout/ResetPasswordScreen";
 import { HeaderUserButton, Sidebar } from "./components/layout/Sidebar";
 import { NotesView } from "./components/notes/NotesView";
 import { NewDebtModal } from "./components/task/NewDebtModal";
@@ -71,7 +72,8 @@ function App() {
 
   const {
     users, currentUser, currentUserId, authLoading, authErrorMsg, pendingEmail,
-    showLoginOverlay, loginOverlayExiting, login, logout, addUser, patchUser, deleteUser,
+    showLoginOverlay, loginOverlayExiting, recoveryMode, completePasswordRecovery,
+    login, logout, addUser, patchUser, deleteUser,
   } = useAuth(
     (text) => logActivity(text), (msg) => setAppError(msg)
   );
@@ -341,32 +343,43 @@ function App() {
   }
 
 
+  // Versiones "activas" (sin lo que está en la papelera) de los 3 dominios
+  // que tienen soft-delete: tareas, pagos y publicaciones. Una tarea/pago/
+  // publicación en papelera ya no forma parte del flujo de trabajo, así que
+  // NADA que cuente/resuma "lo activo" (badges del sidebar, notificaciones,
+  // Dashboard general) debe incluirla — solo la vista de la papelera en sí
+  // debe verla. Se calcula UNA vez acá y se reutiliza en todos los lugares
+  // que antes leían el arreglo crudo (tasks/payments/posts) directamente,
+  // para no tener que repetir el mismo filtro en cada consumidor y arriesgar
+  // que alguno quede afuera.
+  const activeTasks = useMemo(() => (tasks || []).filter((t) => !t.deletedAt), [tasks]);
+  const activePayments = useMemo(() => (payments || []).filter((p) => !p.deletedAt), [payments]);
+  const activePosts = useMemo(() => (posts || []).filter((p) => !p.deletedAt), [posts]);
+
   const clientCounts = useMemo(() => {
     const map = Object.fromEntries(CLIENTES.map((c) => [c.name, 0]));
-    (tasks || []).forEach((t) => { if (map[t.empresa] !== undefined && t.estado !== "listo") map[t.empresa]++; });
+    activeTasks.forEach((t) => { if (map[t.empresa] !== undefined && t.estado !== "listo") map[t.empresa]++; });
     return map;
-  }, [tasks]);
+  }, [activeTasks]);
 
   const notifications = useMemo(() => {
-    return (tasks || [])
+    return activeTasks
       .filter((t) => t.estado !== "listo")
       .map((t) => ({ task: t, days: daysUntil(t.fechaEntrega) }))
       .filter((x) => x.days !== null && x.days <= 3)
       .sort((a, b) => a.days - b.days)
       .slice(0, 30);
-  }, [tasks]);
+  }, [activeTasks]);
 
   const filtered = useMemo(() => {
-    if (!tasks) return [];
     const q = query.trim().toLowerCase();
-    return tasks.filter((t) => {
-      if (t.deletedAt) return false;
+    return activeTasks.filter((t) => {
       const matchesClient = selectedClient === "__ALL__" || t.empresa === selectedClient;
       const matchesQ = !q || t.titulo.toLowerCase().includes(q) || t.empresa.toLowerCase().includes(q);
       const matchesD = filterDesigner === "Todos" || t.asignado === filterDesigner;
       return matchesClient && matchesQ && matchesD;
     });
-  }, [tasks, query, filterDesigner, selectedClient]);
+  }, [activeTasks, query, filterDesigner, selectedClient]);
 
   const trashedTasks = useMemo(() => {
     if (!tasks) return [];
@@ -459,6 +472,16 @@ function App() {
       .sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
   }, [notes, selectedClient]);
 
+  if (recoveryMode) {
+    // Se llegó desde el link de "recuperar clave" del correo — se pide la
+    // clave nueva antes que cualquier otra cosa, sin importar el resto del
+    // estado de sesión (aunque el perfil ya esté cargando de fondo).
+    return (
+      <div className="app" style={{ background: "var(--bg)" }}>
+        <ResetPasswordScreen onSubmit={completePasswordRecovery} />
+      </div>
+    );
+  }
   if (authLoading) {
     // Todavía resolviendo la sesión de Supabase Auth (o, si ya hay sesión, el
     // perfil correspondiente) — no mostramos nada para evitar un parpadeo
@@ -727,7 +750,7 @@ function App() {
 
         {selectedClient === "__ALL__" ? (
           <OverviewView
-            tasks={tasks || []} payments={payments || []} debts={debts || []} posts={posts || []}
+            tasks={activeTasks} payments={activePayments} debts={debts || []} posts={activePosts}
             tareasGenerales={tareasGenerales || []}
             onSelectClient={setSelectedClient}
             onOpenTareaGeneral={(id) => setOpenTareaGeneralId(id)}
