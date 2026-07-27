@@ -82,7 +82,7 @@ export function LoginScreen({ onLogin, authError }) {
             <span>{submitting ? "Cargando tu espacio…" : "Entrar"}</span>
           </button>
         </div>
-        <div className="login-mobile-copyright">Copyright © 2026 publiBe Agencia Gráfica. All Rights Reserved.</div>
+        <div className="login-mobile-copyright">Copyright © 2026 publiBe Agencia Gráfica.<br />All Rights Reserved.</div>
       </div>
     </div>
   );
@@ -129,7 +129,7 @@ export function LoginExitOverlay({ email, exiting }) {
             <span>Cargando tu espacio…</span>
           </button>
         </div>
-        <div className="login-mobile-copyright">Copyright © 2026 publiBe Agencia Gráfica. All Rights Reserved.</div>
+        <div className="login-mobile-copyright">Copyright © 2026 publiBe Agencia Gráfica.<br />All Rights Reserved.</div>
       </div>
     </div>
   );

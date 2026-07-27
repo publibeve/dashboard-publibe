@@ -77,7 +77,7 @@ export function ResetPasswordScreen({ onSubmit }) {
             <CheckCircle2 size={12} /> Al guardar, vas a entrar directo al dashboard con tu clave nueva.
           </div>
         </div>
-        <div className="login-mobile-copyright">Copyright © 2026 publiBe Agencia Gráfica. All Rights Reserved.</div>
+        <div className="login-mobile-copyright">Copyright © 2026 publiBe Agencia Gráfica.<br />All Rights Reserved.</div>
       </div>
     </div>
   );

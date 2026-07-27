@@ -802,7 +802,7 @@
      medio, entre el formulario y el copyright, en vez de rodeando todo. */
   .login-panel-form{
     flex:1; flex-direction:column; align-items:center; justify-content:flex-start;
-    padding:24px 24px 18px;
+    padding:40px 24px 18px;
   }
 }
 .login-mobile-copyright{
@@ -832,8 +832,8 @@
   -webkit-background-clip:text; background-clip:text; color:transparent;
 }
 .login-tagline{ font-size:14px; color:var(--ink-soft); line-height:1.5; margin-bottom:22px; }
-.login-beyou{ font-weight:700; }
-.login-tagline-mobile{ font-size:21px; line-height:1.45; margin-bottom:26px; }
+.login-beyou{ font-weight:700; font-size:1.15em; }
+.login-tagline-mobile{ font-size:21px; line-height:1.15; margin-bottom:26px; }
 @media (max-width:720px){
   .login-form-wrap{ text-align:center; }
 }
