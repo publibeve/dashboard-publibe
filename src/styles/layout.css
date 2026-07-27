@@ -72,6 +72,19 @@
 .brand-b{
   background:linear-gradient(120deg, #0B84FF, #17C3A2, #F4D53E, #F2790A, #C1443C);
   -webkit-background-clip:text; background-clip:text; color:transparent;
+  /* La mayoría de los navegadores no imprimen fondos (y este degradado es
+     técnicamente un fondo recortado al texto) salvo que la persona tilde
+     "Gráficos de fondo" a mano en el diálogo de impresión — sin esto, la B
+     queda como un hueco en blanco al imprimir/generar PDF. */
+  print-color-adjust:exact; -webkit-print-color-adjust:exact; color-adjust:exact;
+}
+@media print{
+  /* Respaldo: si de todas formas el navegador no imprime el fondo (no todos
+     respetan print-color-adjust), la B pasa a un color sólido — nunca
+     invisible, aunque pierda el degradado en el papel/PDF. */
+  .brand-b{
+    background:none; color:var(--primary); -webkit-text-fill-color:var(--primary);
+  }
 }
 .brand-sub{ font-size:10.5px; color:#9C9890; letter-spacing:.03em; }
 

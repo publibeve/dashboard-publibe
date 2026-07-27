@@ -1,14 +1,36 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   Printer,
+  Smartphone,
 } from "lucide-react";
 import { Overlay } from "../common/Overlay";
-import { PrintFormatToggle } from "../common/ReportModal";
 import { fmtNoteDayTime, tagColor } from "../../utils/helpers";
 
 export function NotePrintModal({ note, onClose }) {
+  // "recibo" (digital) es el default: pensado para leerse en pantalla o
+  // mandarse por WhatsApp, sin pasar por el diálogo de impresión.
   const [printFormat, setPrintFormat] = useState("recibo");
+  const [pendingPrint, setPendingPrint] = useState(false);
+
+  // Igual que en ReportModal: "Imprimir" cambia el formato Y recién en el
+  // próximo frame dispara window.print(), para asegurarse de que el
+  // navegador ya pintó el layout de carta antes de abrir el diálogo.
+  useEffect(() => {
+    if (pendingPrint && printFormat === "carta") {
+      const raf = requestAnimationFrame(() => { window.print(); setPendingPrint(false); });
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [pendingPrint, printFormat]);
+
+  function goDigital() {
+    setPrintFormat("recibo");
+  }
+  function goImprimir() {
+    setPrintFormat("carta");
+    setPendingPrint(true);
+  }
+
   return (
     <Overlay onClose={onClose}>
       <div className={"modal small report-modal" + (printFormat === "carta" ? " format-carta-outer" : "")}>
@@ -16,8 +38,6 @@ export function NotePrintModal({ note, onClose }) {
           <h3>Imprimir nota</h3>
           <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>
         </div>
-
-        <PrintFormatToggle value={printFormat} onChange={setPrintFormat} />
 
         <div className={"report-printable note-printable" + (printFormat === "carta" ? " format-carta" : " format-recibo")}>
           <div className="report-header">
@@ -40,8 +60,11 @@ export function NotePrintModal({ note, onClose }) {
         </div>
 
         <div className="modal-footer modal-footer-row no-print">
-          <button type="button" className="btn-primary" onClick={() => window.print()}>
-            <Printer size={14} /> Imprimir / Guardar PDF
+          <button type="button" className="btn-secondary" onClick={goDigital}>
+            <Smartphone size={14} /> Digital
+          </button>
+          <button type="button" className="btn-primary" onClick={goImprimir}>
+            <Printer size={14} /> Imprimir
           </button>
         </div>
       </div>

@@ -1,24 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   Check,
   Copy,
   Printer,
+  Smartphone,
 } from "lucide-react";
 import { Overlay } from "./Overlay";
 
-export function PrintFormatToggle({ value, onChange }) {
-  return (
-    <div className="print-format-toggle no-print">
-      <button type="button" className={value === "recibo" ? "active" : ""} onClick={() => onChange("recibo")}>Recibo (digital)</button>
-      <button type="button" className={value === "carta" ? "active" : ""} onClick={() => onChange("carta")}>Hoja carta (imprimir)</button>
-    </div>
-  );
-}
-
 export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, totalLabel, total, emptyText, onClose }) {
   const [copied, setCopied] = useState(false);
+  // "recibo" (digital) es el default: es el formato pensado para leerse en
+  // pantalla / mandarse por WhatsApp, y no requiere ninguna acción extra
+  // para verse — a diferencia de "carta", que solo tiene sentido en el
+  // instante de imprimir.
   const [printFormat, setPrintFormat] = useState("recibo");
+  const [pendingPrint, setPendingPrint] = useState(false);
+
+  // "Imprimir" fuerza el formato carta y ADEMÁS dispara window.print() — pero
+  // recién en el próximo frame, para asegurarse de que el navegador ya pintó
+  // el layout de carta antes de abrir el diálogo de impresión (si se llama
+  // print() en el mismo instante que el cambio de estado, se arriesga a
+  // imprimir todavía con el formato anterior).
+  useEffect(() => {
+    if (pendingPrint && printFormat === "carta") {
+      const raf = requestAnimationFrame(() => { window.print(); setPendingPrint(false); });
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [pendingPrint, printFormat]);
 
   function buildText() {
     let text = `publiBe — ${title}\n`;
@@ -54,6 +63,20 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
     }
   }
 
+  // Dos acciones totalmente independientes, sin lógica compartida entre
+  // ambas: "Digital" solo cambia qué se está mostrando (nunca imprime);
+  // "Imprimir" cambia el formato Y dispara el diálogo de impresión. Antes
+  // había un único botón que siempre llamaba a window.print() sin importar
+  // qué formato estuviera elegido — eso era lo que hacía que "compartir
+  // digital" terminara abriendo igual el diálogo de impresión del navegador.
+  function goDigital() {
+    setPrintFormat("recibo");
+  }
+  function goImprimir() {
+    setPrintFormat("carta");
+    setPendingPrint(true);
+  }
+
   return (
     <Overlay onClose={onClose}>
       <div className={"modal small report-modal" + (printFormat === "carta" ? " format-carta-outer" : "")}>
@@ -61,8 +84,6 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
           <h3>{title}</h3>
           <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>
         </div>
-
-        <PrintFormatToggle value={printFormat} onChange={setPrintFormat} />
 
         <div className={"report-printable" + (printFormat === "carta" ? " format-carta" : " format-recibo")}>
           <div className="report-header">
@@ -108,8 +129,11 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
           <button type="button" className="btn-secondary" onClick={handleCopy}>
             {copied ? <><Check size={14} /> ¡Copiado!</> : <><Copy size={14} /> Copiar resumen</>}
           </button>
-          <button type="button" className="btn-primary" onClick={() => window.print()}>
-            <Printer size={14} /> Imprimir / Guardar PDF
+          <button type="button" className="btn-secondary" onClick={goDigital}>
+            <Smartphone size={14} /> Digital
+          </button>
+          <button type="button" className="btn-primary" onClick={goImprimir}>
+            <Printer size={14} /> Imprimir
           </button>
         </div>
       </div>
