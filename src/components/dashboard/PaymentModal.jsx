@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   CreditCard,
   Banknote,
+  LockKeyhole,
 } from "lucide-react";
 import { AttachmentsBlock } from "../common/AttachmentsBlock";
 import { CustomDatePicker } from "../common/CustomDatePicker";
@@ -15,7 +16,7 @@ import { Overlay } from "../common/Overlay";
 import { CLIENTES, METODOS_PAGO } from "../../utils/constants";
 import { clientMeta, fmtMonto } from "../../utils/helpers";
 
-export function PaymentModal({ payment, onClose, onPatch, onDelete, unlocked, onRequestUnlock, driveConnected }) {
+export function PaymentModal({ payment, onClose, onPatch, onDelete, unlocked, onRequestUnlock, driveConnected, canSeeMontos = false }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [draft, setDraft] = useState({
     empresa: payment.empresa, fecha: payment.fecha, moneda: payment.moneda || "USD", monto: payment.monto,
@@ -69,15 +70,26 @@ export function PaymentModal({ payment, onClose, onPatch, onDelete, unlocked, on
 
         {draft.moneda === "USD" ? (
           <label className="field">
-            <span>Monto pagado (USD)</span>
-            <input type="number" step="0.01" min="0" value={draft.monto} onChange={(e) => setDraft({ ...draft, monto: Number(e.target.value) })} disabled={!unlocked} />
+            <span>Monto pagado (USD){!canSeeMontos && <LockKeyhole size={11} />}</span>
+            {canSeeMontos ? (
+              <input type="number" step="0.01" min="0" value={draft.monto} onChange={(e) => setDraft({ ...draft, monto: Number(e.target.value) })} disabled={!unlocked} />
+            ) : (
+              // Bloqueado sin revelar, sin excepción: no hay forma de tocar/
+              // desbloquear este campo puntual aunque la persona sí tenga el
+              // permiso general de editar — son dos permisos independientes.
+              <input type="text" value="•••" disabled readOnly title="No tenés permiso para ver ni editar montos" />
+            )}
           </label>
         ) : (
           <>
             <div className="field-row">
               <label className="field">
-                <span>Monto en Bs.</span>
-                <input type="number" step="0.01" min="0" value={draft.montoBs || ""} onChange={(e) => updateBs({ montoBs: e.target.value })} disabled={!unlocked} />
+                <span>Monto en Bs.{!canSeeMontos && <LockKeyhole size={11} />}</span>
+                {canSeeMontos ? (
+                  <input type="number" step="0.01" min="0" value={draft.montoBs || ""} onChange={(e) => updateBs({ montoBs: e.target.value })} disabled={!unlocked} />
+                ) : (
+                  <input type="text" value="•••" disabled readOnly title="No tenés permiso para ver ni editar montos" />
+                )}
               </label>
               <label className="field">
                 <span>Tasa de cambio</span>
@@ -88,7 +100,7 @@ export function PaymentModal({ payment, onClose, onPatch, onDelete, unlocked, on
               <span>Referencia bancaria</span>
               <input value={draft.refBancaria || ""} onChange={(e) => setDraft({ ...draft, refBancaria: e.target.value })} placeholder="Ej: 4671" disabled={!unlocked} />
             </label>
-            <div className="bs-equiv">Equivalente: <b>{fmtMonto(draft.monto)}</b></div>
+            <div className="bs-equiv">Equivalente: <b>{canSeeMontos ? fmtMonto(draft.monto) : "•••"}</b></div>
           </>
         )}
 

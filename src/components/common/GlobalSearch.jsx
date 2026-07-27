@@ -8,7 +8,7 @@ import { Overlay } from "./Overlay";
 import { SEARCH_TYPE_META } from "../../utils/constants";
 import { computeGlobalSearchResults, groupSearchResults } from "../../utils/helpers";
 
-export function SidebarSearchBox({ tasks, notes, payments, invoices, posts, tareasGenerales, accesos, onSelect, variant }) {
+export function SidebarSearchBox({ tasks, notes, payments, invoices, posts, tareasGenerales, accesos, canSeeMontos, onSelect, variant }) {
   const [query, setQuery] = useState("");
   const [panelPos, setPanelPos] = useState(null);
   const wrapRef = useRef(null);
@@ -16,8 +16,8 @@ export function SidebarSearchBox({ tasks, notes, payments, invoices, posts, tare
   const isHeader = variant === "header";
 
   const results = useMemo(
-    () => computeGlobalSearchResults(query, { tasks, notes, payments, invoices, posts, tareasGenerales, accesos }),
-    [query, tasks, notes, payments, invoices, posts, tareasGenerales, accesos]
+    () => computeGlobalSearchResults(query, { tasks, notes, payments, invoices, posts, tareasGenerales, accesos, canSeeMontos }),
+    [query, tasks, notes, payments, invoices, posts, tareasGenerales, accesos, canSeeMontos]
   );
   const grouped = useMemo(() => groupSearchResults(results), [results]);
 
@@ -71,14 +71,14 @@ export function SidebarSearchBox({ tasks, notes, payments, invoices, posts, tare
   );
 }
 
-export function GlobalSearchModal({ tasks, notes, payments, invoices, posts, tareasGenerales, accesos, onSelect, onClose }) {
+export function GlobalSearchModal({ tasks, notes, payments, invoices, posts, tareasGenerales, accesos, canSeeMontos, onSelect, onClose }) {
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const results = useMemo(
-    () => computeGlobalSearchResults(query, { tasks, notes, payments, invoices, posts, tareasGenerales, accesos }),
-    [query, tasks, notes, payments, invoices, posts, tareasGenerales, accesos]
+    () => computeGlobalSearchResults(query, { tasks, notes, payments, invoices, posts, tareasGenerales, accesos, canSeeMontos }),
+    [query, tasks, notes, payments, invoices, posts, tareasGenerales, accesos, canSeeMontos]
   );
 
   const grouped = useMemo(() => groupSearchResults(results), [results]);

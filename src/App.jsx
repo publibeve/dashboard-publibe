@@ -725,6 +725,7 @@ function App() {
                   posts={posts || []}
                   tareasGenerales={tareasGenerales || []}
                   accesos={accesos || []}
+                  canSeeMontos={can("verMontos")}
                 />
               </div>
             )}
@@ -1006,6 +1007,7 @@ function App() {
         <PaymentModal
           payment={openPayment}
           unlocked={can("editar")}
+          canSeeMontos={can("verMontos")}
           onRequestUnlock={() => requestPermission("editar", () => {})}
           onClose={() => setOpenPaymentId(null)}
           onPatch={(patch) => patchPayment(openPayment.id, patch)}
@@ -1196,6 +1198,7 @@ function App() {
         <GlobalSearchModal
           tasks={tasks || []} notes={notes || []} payments={payments || []} invoices={invoices || []}
           posts={posts || []} tareasGenerales={tareasGenerales || []} accesos={accesos || []}
+          canSeeMontos={can("verMontos")}
           onSelect={goToSearchResult}
           onClose={() => setShowGlobalSearch(false)}
         />

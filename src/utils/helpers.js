@@ -220,10 +220,11 @@ export function fmtNoteDayTime(iso) {
   return new Date(iso).toLocaleDateString("es-VE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
-export function computeGlobalSearchResults(query, { tasks, notes, payments, invoices, posts, tareasGenerales, accesos }) {
+export function computeGlobalSearchResults(query, { tasks, notes, payments, invoices, posts, tareasGenerales, accesos, canSeeMontos = false }) {
   const q = query.trim().toLowerCase();
   if (!q) return [];
   const out = [];
+  const montoLabel = (v) => (canSeeMontos ? fmtMonto(v) : "•••");
   tasks.forEach((t) => {
     if ((t.titulo || "").toLowerCase().includes(q) || (t.empresa || "").toLowerCase().includes(q) || (t.asignado || "").toLowerCase().includes(q)) {
       out.push({ type: "tarea", id: t.id, label: t.titulo, sub: t.empresa, empresa: t.empresa });
@@ -237,7 +238,7 @@ export function computeGlobalSearchResults(query, { tasks, notes, payments, invo
   });
   payments.forEach((p) => {
     if ((p.nota || "").toLowerCase().includes(q) || (p.metodoPago || "").toLowerCase().includes(q) || (p.empresa || "").toLowerCase().includes(q)) {
-      out.push({ type: "pago", id: p.id, label: `Pago ${fmtMonto(p.monto)} — ${p.metodoPago}`, sub: p.empresa, empresa: p.empresa });
+      out.push({ type: "pago", id: p.id, label: `Pago ${montoLabel(p.monto)} — ${p.metodoPago}`, sub: p.empresa, empresa: p.empresa });
     }
   });
   invoices.forEach((i) => {
