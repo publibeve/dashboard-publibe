@@ -79,9 +79,16 @@ export function Sidebar({ selected, onSelect, counts, collapsed, onToggle, onOpe
             <div className="brand-sub brand-sub-lg">agencia gráfica</div>
           </div>
         )}
-        {collapsed && <div className="brand-title-collapsed">B</div>}
+        {/* En desktop colapsado, esto sigue mostrando la "B" (sin tocar, tal
+            como pediste). En móvil colapsado, se quita: ahí ya queda la
+            flecha de arriba sola, centrada. */}
+        {collapsed && !isMobile && <div className="brand-title-collapsed">B</div>}
         {isMobile && (
-          <button type="button" className="sidebar-subtle-close" onClick={onMobileClose} title="Cerrar menú">
+          <button
+            type="button" className="sidebar-subtle-close"
+            onClick={() => (collapsed ? onToggle() : onMobileClose())}
+            title={collapsed ? "Expandir" : "Cerrar menú"}
+          >
             <ChevronLeft size={16} />
           </button>
         )}
@@ -128,13 +135,18 @@ export function Sidebar({ selected, onSelect, counts, collapsed, onToggle, onOpe
 
       <div className="sidebar-spacer" />
 
-      <button
-        className="collapse-btn"
-        onClick={isMobile ? onMobileClose : onToggle}
-        title={isMobile ? "Cerrar menú" : (collapsed ? "Expandir" : "Contraer")}
-      >
-        {isMobile ? <><X size={14} /> Cerrar menú</> : (collapsed ? <ChevronRight size={14} /> : <><ChevronLeft size={14} /> Contraer</>)}
-      </button>
+      {/* En móvil colapsado, este botón se quita: la flecha de arriba (que ya
+          pasó a expandir el menú en ese estado) queda como único control.
+          En desktop y en el mobile expandido, sigue exactamente igual. */}
+      {!(isMobile && collapsed) && (
+        <button
+          className="collapse-btn"
+          onClick={isMobile ? onMobileClose : onToggle}
+          title={isMobile ? "Cerrar menú" : (collapsed ? "Expandir" : "Contraer")}
+        >
+          {isMobile ? <><X size={14} /> Cerrar menú</> : (collapsed ? <ChevronRight size={14} /> : <><ChevronLeft size={14} /> Contraer</>)}
+        </button>
+      )}
 
       {currentUser && (
         <div className={"sidebar-user-card" + (collapsed ? " sidebar-user-card-collapsed" : "")} title={currentUser.nombre}>
