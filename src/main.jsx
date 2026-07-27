@@ -17,5 +17,14 @@ async function boot() {
       <Root />
     </React.StrictMode>
   );
+
+  // Service worker mínimo (ver public/sw.js) — sin caché offline real, solo
+  // para que Chrome/Edge de escritorio muestren el prompt de "Instalar app"
+  // de forma consistente. No interfiere con nada si falla o no es soportado.
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch((e) => {
+      console.warn("No se pudo registrar el service worker (no afecta el uso normal de la app):", e);
+    });
+  }
 }
 boot();
