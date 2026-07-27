@@ -33,19 +33,18 @@ html,body{ margin:0; padding:0; }
 
 
 
-/* ---- Transición de login (fundido hacia el dashboard) ----
-   Se reutiliza tal cual para el nuevo diseño de panel dividido: el login
-   dejó de tener selector de usuario, pero el fundido de salida es el mismo. */
+/* ---- Transición de login → dashboard ----
+   La pantalla real de login tiene una entrada suave (loginFadeIn). La SALIDA
+   la hace la réplica congelada (login-transition-overlay), que se desvanece
+   con el desenfoque progresivo de la marca — la misma esencia de blur que
+   tenía la transición original, recalibrada: 0.9s de salida sobre el
+   dashboard que entra debajo con su propio blur (appFadeIn), así ambos
+   desenfoques se cruzan y nunca hay un corte seco.
+   Importante: la réplica NO ejecuta loginFadeIn — si lo hiciera, "rebotaría"
+   10px hacia arriba al montarse, y ese brinco se percibía como que el login
+   reaparecía un instante antes de fundirse. */
 .login-screen {
   animation: loginFadeIn 0.3s ease-in-out forwards;
-}
-
-.login-transition-overlay {
-  animation: loginFadeIn 0.3s ease-in-out forwards;
-}
-
-.login-transition-overlay.login-exit {
-  animation: loginFadeOut 0.3s ease-in-out forwards;
 }
 
 @keyframes loginFadeIn {
@@ -53,9 +52,20 @@ html,body{ margin:0; padding:0; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes loginFadeOut {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-10px); }
+.login-transition-overlay {
+  animation: none; /* la réplica aparece YA nítida y quieta, idéntica al último cuadro real */
+  opacity: 1;
+  will-change: opacity, filter, transform;
+  transition:
+    opacity 0.9s cubic-bezier(.4,0,.2,1),
+    filter 0.9s cubic-bezier(.4,0,.2,1),
+    transform 0.9s cubic-bezier(.4,0,.2,1);
+}
+
+.login-transition-overlay.login-exit {
+  opacity: 0;
+  filter: blur(18px);
+  transform: scale(1.035);
 }
 
 /* Miniatura de adjuntos de Zoho (se descarga autenticada, con caché por pestaña) */

@@ -12,6 +12,20 @@ export function useAuth(logActivity, setAppError) {
   const [users, setUsers] = useState(null);
 
   const [authErrorMsg, setAuthErrorMsg] = useState("");
+  // true SOLO durante un login interactivo en esta pestaña (entre el clic en
+  // "Entrar" y el fundido hacia el dashboard). Existe para tapar un hueco
+  // real: apenas signInWithPassword tiene éxito, Supabase dispara el evento
+  // de sesión y `session` se setea ANTES de que `loadUsers()` termine — en
+  // ese instante (sesión sí, perfil todavía no) `authLoading` daba true y
+  // App mostraba el div vacío de carga: ESE era el flash blanco que se veía
+  // al iniciar sesión. Mientras loggingIn=true, la pantalla de login (con su
+  // spinner) se queda montada hasta que todo esté listo de verdad.
+  const [loggingIn, setLoggingIn] = useState(false);
+  // El correo tal cual se escribió, para que la réplica congelada del login
+  // (LoginExitOverlay) muestre EXACTAMENTE lo mismo que la pantalla real en
+  // el momento del traspaso — si el campo apareciera vacío de golpe, el ojo
+  // lo registra como un salto. Se limpia recién cuando el fundido terminó.
+  const [pendingEmail, setPendingEmail] = useState("");
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const [loginOverlayExiting, setLoginOverlayExiting] = useState(false);
 
@@ -46,7 +60,7 @@ export function useAuth(logActivity, setAppError) {
   }, [session, users]);
   const currentUserId = currentUser?.id || null;
 
-  const authLoading = session === undefined || (!!session && users === null);
+  const authLoading = session === undefined || (!!session && users === null && !loggingIn);
 
   /**
    * Login real: correo + clave, sin selector previo. La promesa que devuelve
@@ -58,19 +72,28 @@ export function useAuth(logActivity, setAppError) {
    */
   async function login(email, password) {
     setAuthErrorMsg("");
-    const result = await signIn(email, password);
-    if (!result.ok) { setAuthErrorMsg(result.message); return false; }
-    await waitForSession();
-    const list = await loadUsers();
-    setUsers(list);
-    // Recién acá el login está listo de verdad: se dispara el fundido hacia
-    // el dashboard (reusa las mismas clases/keyframes que ya existían para
-    // esta transición — ver login-transition-overlay en los estilos).
-    setShowLoginOverlay(true);
-    setLoginOverlayExiting(false);
-    requestAnimationFrame(() => requestAnimationFrame(() => setLoginOverlayExiting(true)));
-    setTimeout(() => setShowLoginOverlay(false), 320); // duración de la transición CSS, no de la carga
-    return true;
+    setLoggingIn(true);
+    setPendingEmail(email);
+    try {
+      const result = await signIn(email, password);
+      if (!result.ok) { setAuthErrorMsg(result.message); return false; }
+      await waitForSession();
+      const list = await loadUsers();
+      // Estos dos sets van en el mismo bloque síncrono a propósito: React los
+      // agrupa en UN solo render, así el dashboard aparece debajo del overlay
+      // en el mismo cuadro — nunca hay un render intermedio "sin nada".
+      setUsers(list);
+      setShowLoginOverlay(true);
+      setLoginOverlayExiting(false);
+      requestAnimationFrame(() => requestAnimationFrame(() => setLoginOverlayExiting(true)));
+      // 950ms = apenas más que la transición de desenfoque de salida en CSS
+      // (0.9s, ver .login-transition-overlay en index.css) — es el tiempo del
+      // fundido, no una simulación de carga: la carga real ya terminó acá.
+      setTimeout(() => { setShowLoginOverlay(false); setPendingEmail(""); }, 950);
+      return true;
+    } finally {
+      setLoggingIn(false);
+    }
   }
   async function logout() {
     await signOut();
@@ -93,7 +116,7 @@ export function useAuth(logActivity, setAppError) {
   }
 
   return {
-    users, currentUserId, currentUser, authLoading, authErrorMsg,
+    users, currentUserId, currentUser, authLoading, authErrorMsg, pendingEmail,
     showLoginOverlay, loginOverlayExiting,
     login, logout, updateUsers, addUser, patchUser, deleteUser,
   };

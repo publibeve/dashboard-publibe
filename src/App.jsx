@@ -70,7 +70,7 @@ function App() {
   const [appError, setAppError] = useState("");
 
   const {
-    users, currentUser, currentUserId, authLoading, authErrorMsg,
+    users, currentUser, currentUserId, authLoading, authErrorMsg, pendingEmail,
     showLoginOverlay, loginOverlayExiting, login, logout, addUser, patchUser, deleteUser,
   } = useAuth(
     (text) => logActivity(text), (msg) => setAppError(msg)
@@ -1190,7 +1190,7 @@ function App() {
       )}
     </div>
     {showLoginOverlay && (
-      <LoginExitOverlay exiting={loginOverlayExiting} />
+      <LoginExitOverlay email={pendingEmail} exiting={loginOverlayExiting} />
     )}
     </>
   );
