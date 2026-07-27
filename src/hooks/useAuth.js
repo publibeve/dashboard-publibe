@@ -79,12 +79,25 @@ export function useAuth(logActivity, setAppError) {
       if (!result.ok) { setAuthErrorMsg(result.message); return false; }
       await waitForSession();
       const list = await loadUsers();
-      // Estos dos sets van en el mismo bloque síncrono a propósito: React los
-      // agrupa en UN solo render, así el dashboard aparece debajo del overlay
-      // en el mismo cuadro — nunca hay un render intermedio "sin nada".
-      setUsers(list);
+      // Orden importante (esto es lo que arregla el parpadeo blanco que solo
+      // se notaba en desktop): antes, `setUsers` (que dispara el montaje de
+      // TODO el dashboard) y `setShowLoginOverlay` iban en el mismo cuadro.
+      // En una ventana angosta (o el emulador de celular) el dashboard tiene
+      // mucha menos superficie visible que dibujar y ese montaje es casi
+      // instantáneo; en una ventana ancha de escritorio, el navegador tiene
+      // que calcular estilos y layout de MUCHA más pantalla de una sola vez,
+      // y ese trabajo podía tardar lo suficiente como para retrasar la
+      // primera pintura del cuadro — durante ese instante se veía blanco,
+      // como si el login "reapareciera" después.
+      // El fix: mostrar primero el overlay (unos pocos <div>, siempre barato
+      // de pintar sea cual sea el tamaño de pantalla) y ESPERAR a que el
+      // navegador realmente lo pinte (doble RAF) antes de recién ahí montar
+      // el dashboard pesado por debajo — que gracias a esto queda tapado
+      // desde su primer instante, sin importar cuánto tarde en construirse.
       setShowLoginOverlay(true);
       setLoginOverlayExiting(false);
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      setUsers(list);
       requestAnimationFrame(() => requestAnimationFrame(() => setLoginOverlayExiting(true)));
       // 950ms = apenas más que la transición de desenfoque de salida en CSS
       // (0.9s, ver .login-transition-overlay en index.css) — es el tiempo del

@@ -27,17 +27,31 @@ export function LoginScreen({ onLogin, authError }) {
   return (
     <div className="login-screen login-screen-split">
       <div className="login-panel-color">
-        <div className="login-panel-color-logo">
+        {/* Logo: solo en móvil (arriba, panel de color). En desktop este
+            panel muestra la frase en su lugar — ver login-desktop-only. */}
+        <div className="login-panel-color-logo login-mobile-only">
           publi<span className="login-b-static">B</span>e
           <span className="login-panel-color-logo-sub">agencia gráfica</span>
+        </div>
+        {/* Frase: solo en desktop, acá. En móvil vive en el panel del
+            formulario (ver login-mobile-only más abajo). */}
+        <div className="login-panel-color-tagline login-desktop-only">
+          Organiza el trabajo siendo tú, <span className="login-color-beyou">Be you.</span>
         </div>
         <div className="login-panel-color-copyright">Copyright © 2026 publiBe Agencia Gráfica. All Rights Reserved.</div>
       </div>
 
       <div className="login-panel-form">
         <div className="login-form-wrap">
-          <div className="login-tagline">
-            Organiza el trabajo siendo tú. <span className="login-beyou">Be you.</span>
+          {/* Logo: solo en desktop, acá arriba del formulario. */}
+          <div className="login-form-logo login-desktop-only">
+            publi<span className="login-b-gradient">B</span>e
+            <span className="login-form-logo-sub">agencia gráfica</span>
+          </div>
+          {/* Frase: solo en móvil, en dos líneas y más grande. */}
+          <div className="login-tagline login-tagline-mobile login-mobile-only">
+            Organiza el trabajo siendo tú,<br />
+            <span className="login-beyou">Be you.</span>
           </div>
 
           {error && <div className="form-error"><AlertTriangle size={13} /> {error}</div>}
@@ -48,7 +62,7 @@ export function LoginScreen({ onLogin, authError }) {
               type="email" value={email} autoFocus
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-              placeholder="tucorreo@dominio.com"
+              placeholder="tucorreo@publibe.net"
               disabled={submitting}
             />
           </label>
@@ -74,32 +88,36 @@ export function LoginScreen({ onLogin, authError }) {
 }
 
 /**
- * Se muestra superpuesta (fixed, encima de todo) durante el fundido hacia el
- * dashboard, mientras este último ya se está montando debajo. Es una réplica
- * ESTÁTICA del último cuadro visible del login (incluido el botón en estado
- * "Cargando tu espacio…"): si el overlay mostrara otra cosa (por ejemplo, el
- * panel sin formulario), el cambio de contenido se percibía como que "el
- * login reaparecía" un instante antes del fundido. Con la réplica idéntica,
- * el ojo ve UNA sola imagen continua que se desenfoca hacia el dashboard.
+ * Réplica CONGELADA del login, superpuesta (fixed) durante el fundido hacia
+ * el dashboard. Reproduce el mismo layout condicional (logo/frase según
+ * desktop o móvil) para que el traspaso sea invisible al ojo.
  */
 export function LoginExitOverlay({ email, exiting }) {
   return (
     <div className={"login-screen login-screen-split login-transition-overlay" + (exiting ? " login-exit" : "")}>
       <div className="login-panel-color">
-        <div className="login-panel-color-logo">
+        <div className="login-panel-color-logo login-mobile-only">
           publi<span className="login-b-static">B</span>e
           <span className="login-panel-color-logo-sub">agencia gráfica</span>
+        </div>
+        <div className="login-panel-color-tagline login-desktop-only">
+          Organiza el trabajo siendo tú, <span className="login-color-beyou">Be you.</span>
         </div>
         <div className="login-panel-color-copyright">Copyright © 2026 publiBe Agencia Gráfica. All Rights Reserved.</div>
       </div>
       <div className="login-panel-form">
         <div className="login-form-wrap">
-          <div className="login-tagline">
-            Organiza el trabajo siendo tú. <span className="login-beyou">Be you.</span>
+          <div className="login-form-logo login-desktop-only">
+            publi<span className="login-b-gradient">B</span>e
+            <span className="login-form-logo-sub">agencia gráfica</span>
+          </div>
+          <div className="login-tagline login-tagline-mobile login-mobile-only">
+            Organiza el trabajo siendo tú,<br />
+            <span className="login-beyou">Be you.</span>
           </div>
           <label className="field">
             <span>Correo</span>
-            <input type="email" disabled readOnly value={email || ""} placeholder="tucorreo@dominio.com" />
+            <input type="email" disabled readOnly value={email || ""} placeholder="tucorreo@publibe.net" />
           </label>
           <label className="field">
             <span>Clave</span>

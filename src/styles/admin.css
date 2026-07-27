@@ -738,6 +738,16 @@
   to{ transform:rotate(360deg); }
 }
 
+/* Alternancia desktop/móvil: logo y frase intercambian de panel según el
+   ancho — en vez de duplicar JSX condicional, cada versión vive siempre en
+   el DOM y esta clase decide cuál se ve. */
+.login-desktop-only{ display:block; }
+.login-mobile-only{ display:none; }
+@media (max-width:720px){
+  .login-desktop-only{ display:none; }
+  .login-mobile-only{ display:block; }
+}
+
 /* Panel izquierdo (arriba en móvil): el color animado */
 .login-panel-color{
   flex:1.1; position:relative; overflow:hidden; isolation:isolate;
@@ -759,6 +769,16 @@
   letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,0.75); margin-top:6px;
 }
 .login-b-static{ color:#fff; }
+/* Frase en el panel de color (solo desktop): "Be you." se deja en blanco en
+   vez del degradado multicolor que usa en el panel blanco — puesto sobre
+   este fondo (que YA cicla por esos mismos tonos) el texto degradado
+   perdía contraste y en ciertos momentos del ciclo se volvía casi
+   ilegible. El blanco sólido siempre contrasta contra el fondo oscurecido
+   (ver el ::after de arriba). */
+.login-panel-color-tagline{
+  font-family:'Inter',sans-serif; font-size:22px; font-weight:500; line-height:1.4; max-width:420px;
+}
+.login-color-beyou{ font-weight:700; color:#fff; }
 .login-panel-color-copyright{ font-size:10.5px; color:rgba(255,255,255,0.5); letter-spacing:.02em; }
 
 @media (max-width:720px){
@@ -778,16 +798,26 @@
   .login-panel-form{ flex:1; padding:32px 24px; }
 }
 .login-form-wrap{ width:100%; max-width:340px; }
+.login-form-logo{
+  font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:28px; color:var(--ink); margin-bottom:28px;
+}
+.login-form-logo-sub{
+  display:block; font-family:'Inter',sans-serif; font-weight:400; font-size:11px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); margin-top:6px;
+}
 .login-b-gradient, .login-beyou{
   /* Mismo tratamiento que ya existe para la B en el resto de la app
      (.brand-b, sidebar) — degradado ESTÁTICO con background-clip:text. El
      spin (loginGradientSpin) es para el fondo grande y desenfocado del
-     panel; puesto directo en texto giraría literalmente las letras. */
+     panel; puesto directo en texto giraría literalmente las letras. Acá
+     el fondo es blanco/gris, así que el degradado sí se lee bien
+     (a diferencia de .login-color-beyou, ver más arriba). */
   background:linear-gradient(120deg, #0B84FF, #17C3A2, #F4D53E, #F2790A, #C1443C);
   -webkit-background-clip:text; background-clip:text; color:transparent;
 }
 .login-tagline{ font-size:14px; color:var(--ink-soft); line-height:1.5; margin-bottom:22px; }
 .login-beyou{ font-weight:700; }
+.login-tagline-mobile{ font-size:21px; line-height:1.45; margin-bottom:26px; }
 @media (max-width:720px){
   .login-form-wrap{ text-align:center; }
 }
