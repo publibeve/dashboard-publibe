@@ -52,7 +52,14 @@
   width:38px; height:38px; border-radius:50%; padding:0; border:2px solid rgba(255,255,255,0.7); cursor:pointer;
   background:transparent; box-shadow:0 3px 10px rgba(28,28,30,0.15); overflow:hidden;
 }
-.header-user-btn .avatar, .header-user-btn .avatar-img{ width:100%; height:100%; font-size:14px; }
+.header-user-btn .avatar, .header-user-btn img.avatar-img{
+  /* Selector reforzado (ancestro + elemento + clase) y valores en píxeles
+     fijos en vez de 100%: hay 3 reglas ".avatar-img" repartidas en 3
+     archivos CSS distintos con la misma especificidad — frágil, y la causa
+     más probable de que la foto quedara invisible acá. Esta regla queda sin
+     ambigüedad posible sobre cuál gana. */
+  width:38px; height:38px; font-size:14px; object-fit:cover;
+}
 .header-user-popover{
   position:absolute; top:46px; right:0; z-index:30; width:220px; background:var(--surface); border:1px solid var(--border);
   border-radius:16px; box-shadow:0 20px 50px rgba(0,0,0,0.25); padding:14px;

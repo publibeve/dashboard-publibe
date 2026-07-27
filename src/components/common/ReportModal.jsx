@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   X,
   Check,
   Copy,
   Printer,
   Smartphone,
+  AlertTriangle,
 } from "lucide-react";
 import { Overlay } from "./Overlay";
+import { exportReciboPdf } from "../../utils/pdfExport";
 
 export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, totalLabel, total, emptyText, onClose }) {
   const [copied, setCopied] = useState(false);
@@ -16,6 +18,9 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
   // instante de imprimir.
   const [printFormat, setPrintFormat] = useState("recibo");
   const [pendingPrint, setPendingPrint] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
+  const printableRef = useRef(null);
 
   // "Imprimir" fuerza el formato carta y ADEMÁS dispara window.print() — pero
   // recién en el próximo frame, para asegurarse de que el navegador ya pintó
@@ -64,13 +69,26 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
   }
 
   // Dos acciones totalmente independientes, sin lógica compartida entre
-  // ambas: "Digital" solo cambia qué se está mostrando (nunca imprime);
-  // "Imprimir" cambia el formato Y dispara el diálogo de impresión. Antes
-  // había un único botón que siempre llamaba a window.print() sin importar
-  // qué formato estuviera elegido — eso era lo que hacía que "compartir
-  // digital" terminara abriendo igual el diálogo de impresión del navegador.
-  function goDigital() {
+  // ambas: "Digital" genera y descarga un PDF con el layout angosto de
+  // recibo (nunca pasa por window.print(), así que no hereda ningún tamaño
+  // de página fijo); "Imprimir" cambia el formato Y dispara el diálogo de
+  // impresión del navegador, en carta.
+  async function goDigital() {
+    setDownloadError("");
     setPrintFormat("recibo");
+    setDownloading(true);
+    try {
+      // Doble frame: si el formato todavía estaba en "carta", hay que
+      // esperar a que el navegador pinte el layout angosto antes de
+      // capturarlo — si no, el PDF podría salir con el layout viejo.
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const safeName = ["publiBe", title, empresaLabel].filter(Boolean).join(" - ").replace(/[\\/:*?"<>|]/g, "");
+      await exportReciboPdf(printableRef.current, safeName);
+    } catch (e) {
+      setDownloadError("No se pudo generar el PDF: " + (e && e.message ? e.message : e));
+    } finally {
+      setDownloading(false);
+    }
   }
   function goImprimir() {
     setPrintFormat("carta");
@@ -85,7 +103,7 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
           <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>
         </div>
 
-        <div className={"report-printable" + (printFormat === "carta" ? " format-carta" : " format-recibo")}>
+        <div ref={printableRef} className={"report-printable" + (printFormat === "carta" ? " format-carta" : " format-recibo")}>
           <div className="report-header">
             <div className="report-brand">publi<span className="brand-b">B</span>e</div>
             <div className="report-brand-sub">agencia gráfica</div>
@@ -125,12 +143,14 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
           </div>
         </div>
 
+        {downloadError && <div className="form-error no-print"><AlertTriangle size={13} /> {downloadError}</div>}
+
         <div className="modal-footer modal-footer-row no-print">
           <button type="button" className="btn-secondary" onClick={handleCopy}>
             {copied ? <><Check size={14} /> ¡Copiado!</> : <><Copy size={14} /> Copiar resumen</>}
           </button>
-          <button type="button" className="btn-secondary" onClick={goDigital}>
-            <Smartphone size={14} /> Digital
+          <button type="button" className="btn-secondary" onClick={goDigital} disabled={downloading}>
+            <Smartphone size={14} /> {downloading ? "Generando…" : "Digital"}
           </button>
           <button type="button" className="btn-primary" onClick={goImprimir}>
             <Printer size={14} /> Imprimir

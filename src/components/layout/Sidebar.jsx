@@ -47,8 +47,21 @@ export function HeaderUserButton({ currentUser, onLogout }) {
 }
 
 export function UserAvatar({ user, className, style }) {
-  if (user?.avatarUrl) {
-    return <img src={user.avatarUrl} alt={user.nombre} className={"avatar-img " + (className || "")} style={style} />;
+  // Si la imagen falla al cargar (URL rota, CORS, lo que sea) — cae sola al
+  // círculo con la inicial en vez de quedar vacía. Se resetea el intento de
+  // nuevo si cambia la URL (por ejemplo, alguien actualiza su foto), para no
+  // quedar pegado en el fallback después de un error viejo.
+  const [imgFailed, setImgFailed] = useState(false);
+  const avatarUrl = user?.avatarUrl;
+  useEffect(() => { setImgFailed(false); }, [avatarUrl]);
+
+  if (avatarUrl && !imgFailed) {
+    return (
+      <img
+        src={avatarUrl} alt={user.nombre} className={"avatar-img " + (className || "")} style={style}
+        onError={() => setImgFailed(true)}
+      />
+    );
   }
   return (
     <span className={"avatar " + (className || "")} style={{ background: PRIMARY_DEFAULT, ...style }}>
