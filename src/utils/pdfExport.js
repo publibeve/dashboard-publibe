@@ -1,3 +1,5 @@
+import { waitForFontsReady } from "./printReady";
+
 /**
  * Genera y descarga un PDF a partir del recibo digital tal como está
  * renderizado en pantalla en ESE momento (el layout angosto tipo teléfono
@@ -13,6 +15,11 @@
  */
 export async function exportReciboPdf(el, filename) {
   if (!el) throw new Error("No se encontró el contenido del recibo para exportar.");
+  // Mismo motivo que en window.print(): si html2canvas captura el DOM antes
+  // de que la fuente web haya cargado de verdad, el PDF sale con una serif
+  // del sistema en vez de Space Grotesk/Inter — pasa sobre todo en móvil.
+  await waitForFontsReady();
+
   // Import bajo demanda: html2pdf.js empaqueta html2canvas + jsPDF, que
   // pesan bastante — cargarlo solo al tocar "Digital" evita que toda la app
   // arrastre ese peso desde el arranque para una función que se usa

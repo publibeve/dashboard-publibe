@@ -8,6 +8,7 @@ import {
 import { Overlay } from "../common/Overlay";
 import { fmtNoteDayTime, tagColor } from "../../utils/helpers";
 import { exportReciboPdf } from "../../utils/pdfExport";
+import { waitForFontsReady } from "../../utils/printReady";
 
 export function NotePrintModal({ note, onClose }) {
   // "recibo" (digital) es el default: pensado para leerse en pantalla o
@@ -19,12 +20,17 @@ export function NotePrintModal({ note, onClose }) {
   const printableRef = useRef(null);
 
   // Igual que en ReportModal: "Imprimir" cambia el formato Y recién en el
-  // próximo frame dispara window.print(), para asegurarse de que el
-  // navegador ya pintó el layout de carta antes de abrir el diálogo.
+  // próximo frame dispara window.print(), después de esperar a que las
+  // fuentes web hayan cargado de verdad (si no, en móvil puede salir con
+  // una serif del sistema en vez de Space Grotesk/Inter).
   useEffect(() => {
     if (pendingPrint && printFormat === "carta") {
-      const raf = requestAnimationFrame(() => { window.print(); setPendingPrint(false); });
-      return () => cancelAnimationFrame(raf);
+      let cancelled = false;
+      const raf = requestAnimationFrame(async () => {
+        await waitForFontsReady();
+        if (!cancelled) { window.print(); setPendingPrint(false); }
+      });
+      return () => { cancelled = true; cancelAnimationFrame(raf); };
     }
   }, [pendingPrint, printFormat]);
 

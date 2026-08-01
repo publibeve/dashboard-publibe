@@ -704,6 +704,18 @@
   .no-print{ display:none !important; }
   .overlay{ position:static; background:none; padding:0; }
   .modal{ box-shadow:none; padding:0; max-height:none; overflow:visible; }
+
+  /* No asumir que la fuente se hereda bien del CSS de pantalla normal — en
+     móvil, algunos motores de impresión aplican su propio reset al imprimir
+     que pisa la tipografía heredada, y caía a una serif del sistema en vez
+     de la marca. Se declara acá explícito, igual que ya se hizo para la B
+     del logo (print-color-adjust) — mismo patrón de bug, mismo criterio de
+     fix: no confiar en la herencia dentro de @media print. */
+  .report-printable{ font-family:'Inter',sans-serif; }
+  .report-printable .report-brand,
+  .report-printable .report-header h2{ font-family:'Space Grotesk',sans-serif; }
+  .report-printable .report-item b,
+  .report-printable .report-total b{ font-family:'JetBrains Mono',monospace; }
 }
 
 /* ---- Login: panel dividido (color + formulario) ----

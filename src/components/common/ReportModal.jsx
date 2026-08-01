@@ -8,6 +8,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Overlay } from "./Overlay";
+import { waitForFontsReady } from "../../utils/printReady";
 import { exportReciboPdf } from "../../utils/pdfExport";
 
 export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, totalLabel, total, emptyText, onClose }) {
@@ -26,11 +27,18 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
   // recién en el próximo frame, para asegurarse de que el navegador ya pintó
   // el layout de carta antes de abrir el diálogo de impresión (si se llama
   // print() en el mismo instante que el cambio de estado, se arriesga a
-  // imprimir todavía con el formato anterior).
+  // imprimir todavía con el formato anterior). Además espera a que las
+  // fuentes web hayan terminado de cargar de verdad — si no, en móvil el
+  // motor de impresión puede caer a una serif del sistema en vez de
+  // Space Grotesk/Inter.
   useEffect(() => {
     if (pendingPrint && printFormat === "carta") {
-      const raf = requestAnimationFrame(() => { window.print(); setPendingPrint(false); });
-      return () => cancelAnimationFrame(raf);
+      let cancelled = false;
+      const raf = requestAnimationFrame(async () => {
+        await waitForFontsReady();
+        if (!cancelled) { window.print(); setPendingPrint(false); }
+      });
+      return () => { cancelled = true; cancelAnimationFrame(raf); };
     }
   }, [pendingPrint, printFormat]);
 
