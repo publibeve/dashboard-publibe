@@ -641,59 +641,51 @@
   padding-right:4px;
 }
 
-/* ---- Resumen para imprimir / compartir ---- */
+/* ---- Resumen para imprimir / compartir ----
+   UNA sola plantilla visual (estilo tabla formal) para "Imprimir" y
+   "Digital" — antes había dos look-and-feel distintos (un recibo angosto
+   centrado en px, y una tabla formal en pt) que se fueron desalineando
+   entre sí cada vez que se ajustaba uno de los dos. Ahora la tipografía,
+   alineación y espaciado son SIEMPRE los mismos; .format-carta/.format-recibo
+   ya NO tocan nada de eso — solo controlan el ancho/padding del contenedor
+   (la "hoja"), que es la única diferencia real entre imprimir en carta y
+   generar un PDF angosto para el celular. */
 .report-picker-row{ display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
 .report-picker-row .field{ margin-bottom:0; }
 .report-modal{ max-width:420px; }
-/* "Hoja carta": ensancha el modal (en pantalla y al imprimir) para que el contenido se acomode
-   como una página tipo Word, en vez del recibo angosto de siempre. */
+/* "Hoja carta": ensancha el MODAL (en pantalla y al imprimir) para que el contenido se acomode
+   como una página tipo Word, en vez del ancho angosto de siempre. */
 .format-carta-outer{ max-width:min(820px, 96vw) !important; }
 .note-print-tags{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:14px; }
-.note-print-body.note-preview-html{ max-height:none; overflow:visible; pointer-events:auto; font-size:13.5px; }
+.note-print-body.note-preview-html{ max-height:none; overflow:visible; pointer-events:auto; font-size:11pt; line-height:1.45; }
+.note-print-body p{ margin:0 0 8px; }
+.note-print-body h1{ font-size:16pt; margin:10px 0 6px; }
+.note-print-body h2{ font-size:13pt; margin:8px 0 5px; }
 .note-print-body img{ max-width:100%; border-radius:8px; margin:8px 0; }
 .report-picker-modal{ overflow:visible; }
-.report-printable{ padding:4px 2px 10px; }
-.print-format-toggle{ display:flex; gap:6px; margin-bottom:14px; }
-.print-format-toggle button{
-  flex:1; padding:8px 10px; border-radius:10px; border:1px solid var(--border); background:var(--bg);
-  color:var(--ink-soft); font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s, color .15s, border-color .15s;
-}
-.print-format-toggle button.active{ background:var(--primary); border-color:var(--primary); color:#fff; }
-.report-printable.format-recibo{ max-width:100%; }
-/* Puntaje tipo documento (Word/Google Docs): 11pt de cuerpo — no el tamaño más grande y cómodo
-   de leer en digital, sino el estándar de una hoja impresa, para que el contenido no se extienda
-   a más páginas de las necesarias. Títulos/subtítulos se mantienen proporcionalmente más grandes. */
-.report-printable.format-carta{
-  max-width:100%; padding:0.6in 0.75in; font-size:11pt; line-height:1.45;
-}
-.report-printable.format-carta .report-header{ text-align:left; margin-bottom:14px; padding-bottom:10px; }
-.report-printable.format-carta .report-brand{ font-size:14pt; margin-bottom:1px; }
-.report-printable.format-carta .report-brand-sub{ font-size:8.5pt; margin-bottom:8px; }
-.report-printable.format-carta h2{ font-size:15pt; margin:0 0 4px; }
-.report-printable.format-carta .report-meta{ font-size:9pt; }
-.report-printable.format-carta .note-print-body.note-preview-html{ font-size:11pt; line-height:1.45; }
-.report-printable.format-carta .note-print-body p{ margin:0 0 8px; }
-.report-printable.format-carta .note-print-body h1{ font-size:16pt; margin:10px 0 6px; }
-.report-printable.format-carta .note-print-body h2{ font-size:13pt; margin:8px 0 5px; }
-.report-printable.format-carta .report-group-head{ font-size:11pt; }
-.report-printable.format-carta .report-item{ font-size:10pt; }
-.report-printable.format-carta .report-total{ font-size:11.5pt; }
-.report-header{ text-align:center; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border); }
-.report-brand{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:24px; color:var(--ink); margin-bottom:2px; }
-.report-brand-sub{ font-size:11.5px; color:var(--ink-soft); letter-spacing:.03em; margin-bottom:14px; }
-.report-header h2{ font-family:'Space Grotesk',sans-serif; font-size:17px; margin:0 0 6px; }
-.report-meta{ font-size:12px; color:var(--ink-soft); }
+
+/* Tamaño de página — el ÚNICO parámetro que cambia entre Imprimir y Digital. */
+.report-printable{ padding:0.6in 0.75in; font-size:11pt; line-height:1.45; }
+.report-printable.format-recibo{ max-width:100%; padding:16px 14px; }
+.report-printable.format-carta{ max-width:100%; }
+
+/* Plantilla — igual siempre, tabla formal alineada a la izquierda. */
+.report-header{ text-align:left; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+.report-brand{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14pt; color:var(--ink); margin-bottom:1px; }
+.report-brand-sub{ font-size:8.5pt; color:var(--ink-soft); letter-spacing:.03em; margin-bottom:8px; }
+.report-header h2{ font-family:'Space Grotesk',sans-serif; font-size:15pt; margin:0 0 4px; }
+.report-meta{ font-size:9pt; color:var(--ink-soft); }
 .report-empty{ text-align:center; color:var(--ink-soft); font-size:13px; padding:16px 0; font-style:italic; }
 .report-groups{ display:flex; flex-direction:column; gap:12px; margin-bottom:16px; }
-.report-group-head{ display:flex; justify-content:space-between; gap:10px; font-size:13px; font-weight:700; color:var(--ink); }
+.report-group-head{ display:flex; justify-content:space-between; gap:10px; font-size:11pt; font-weight:700; color:var(--ink); }
 .report-group-items{ margin-top:5px; padding-left:12px; display:flex; flex-direction:column; gap:3px; }
-.report-item{ display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--ink-soft); }
+.report-item{ display:flex; justify-content:space-between; gap:10px; font-size:10pt; color:var(--ink-soft); }
 .report-item b{ color:var(--ink); font-family:'JetBrains Mono',monospace; font-weight:600; }
 .report-total{
   display:flex; justify-content:space-between; align-items:center; padding-top:12px; margin-top:4px;
-  border-top:2px solid var(--ink); font-size:14px; font-weight:700; color:var(--ink);
+  border-top:2px solid var(--ink); font-size:11.5pt; font-weight:700; color:var(--ink);
 }
-.report-total b{ font-family:'JetBrains Mono',monospace; color:var(--primary); font-size:16px; }
+.report-total b{ font-family:'JetBrains Mono',monospace; color:var(--primary); font-size:13pt; }
 
 @media print{
   @page{ size: letter; margin: 0.6in; }
