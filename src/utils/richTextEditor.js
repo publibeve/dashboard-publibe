@@ -1,23 +1,82 @@
 
+/**
+ * Deja pasar solo un puñado de etiquetas de formato estructural básico
+ * (negrita, itálica, subrayado, listas, títulos, links) — cualquier otra
+ * etiqueta se "desenvuelve" (se conserva su texto/contenido, se descarta la
+ * etiqueta en sí). SIEMPRE se le quita cualquier atributo style/class/id,
+ * incluso a las etiquetas permitidas — así ninguna fuente, tamaño o color
+ * ajeno sobrevive al pegado, sin importar de dónde venga.
+ */
+const PASTE_ALLOWED_TAGS = new Set(["B", "STRONG", "I", "EM", "U", "S", "STRIKE", "UL", "OL", "LI", "BR", "P", "DIV", "SPAN", "A", "H1", "H2"]);
+
+export function sanitizePastedHtml(html) {
+  const container = document.createElement("div");
+  container.innerHTML = html;
+
+  function clean(node) {
+    [...node.childNodes].forEach((child) => {
+      if (child.nodeType !== Node.ELEMENT_NODE) return;
+      const href = child.tagName === "A" ? child.getAttribute("href") : null;
+      [...child.attributes].forEach((attr) => child.removeAttribute(attr.name));
+      if (href) child.setAttribute("href", href);
+
+      if (!PASTE_ALLOWED_TAGS.has(child.tagName)) {
+        // Etiqueta no permitida (por ejemplo un <font>, o un <div> de Word
+        // con estilos propios ya vaciados arriba, o un <table>): se
+        // reemplaza por sus propios hijos, sin perder el texto.
+        while (child.firstChild) node.insertBefore(child.firstChild, child);
+        node.removeChild(child);
+        return;
+      }
+      clean(child);
+    });
+  }
+  clean(container);
+  return container.innerHTML;
+}
+
 export function handleNoteImagePaste(e, bodyRef, markDirty) {
   const items = e.clipboardData && e.clipboardData.items;
-  if (!items) return;
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    if (item.type && item.type.indexOf("image/") === 0) {
-      e.preventDefault();
-      const blob = item.getAsFile();
-      if (!blob) continue;
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (bodyRef.current) bodyRef.current.focus();
-        document.execCommand("insertHTML", false, `<img src="${reader.result}" class="note-img" alt="Imagen pegada" />`);
-        markDirty();
-      };
-      reader.readAsDataURL(blob);
-      return;
+  if (items) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type && item.type.indexOf("image/") === 0) {
+        e.preventDefault();
+        const blob = item.getAsFile();
+        if (!blob) continue;
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (bodyRef.current) bodyRef.current.focus();
+          document.execCommand("insertHTML", false, `<img src="${reader.result}" class="note-img" alt="Imagen pegada" />`);
+          markDirty();
+        };
+        reader.readAsDataURL(blob);
+        return;
+      }
     }
   }
+
+  // No es una imagen: texto o HTML pegado desde otra página/app. Antes esto
+  // no se interceptaba en absoluto — el navegador insertaba el HTML tal cual
+  // venía en el portapapeles, con su fuente/tamaño/color originales, que es
+  // justo lo que hacía que un párrafo pegado se viera distinto al resto del
+  // dashboard. Ahora se limpia primero, conservando solo el formato
+  // estructural básico (negrita, itálica, listas, links) — nunca la
+  // tipografía ni el color de origen.
+  const html = e.clipboardData && e.clipboardData.getData("text/html");
+  const text = e.clipboardData && e.clipboardData.getData("text/plain");
+  if (html && html.trim()) {
+    e.preventDefault();
+    document.execCommand("insertHTML", false, sanitizePastedHtml(html));
+    markDirty();
+  } else if (text) {
+    e.preventDefault();
+    const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+    document.execCommand("insertHTML", false, escaped);
+    markDirty();
+  }
+  // Si el portapapeles no tiene ni HTML ni texto plano accesible, no se hace
+  // nada — queda el comportamiento por defecto del navegador como último recurso.
 }
 
 export function handleNoteImageClick(e, onImageMenu) {

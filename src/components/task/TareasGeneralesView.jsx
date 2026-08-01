@@ -18,6 +18,19 @@ export function TareasGeneralesView({ tareas = [], onNew, onOpen, filterPersona,
       if (!map.has(t.categoria)) map.set(t.categoria, []);
       map.get(t.categoria).push(t);
     });
+    // La organización visual (por categoría) se mantiene tal cual estaba —
+    // lo único nuevo es el orden DENTRO de cada categoría: por fecha de
+    // solicitud (fecha de inicio), la más antigua primero, para que lo que
+    // lleva más tiempo esperando quede arriba en vez de perderse en el medio
+    // de la lista. Sin fecha, al final de su categoría.
+    map.forEach((items) => {
+      items.sort((a, b) => {
+        if (!a.fecha && !b.fecha) return 0;
+        if (!a.fecha) return 1;
+        if (!b.fecha) return -1;
+        return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0;
+      });
+    });
     return [...map.entries()];
   }, [filtered]);
 

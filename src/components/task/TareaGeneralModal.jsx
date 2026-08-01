@@ -22,7 +22,7 @@ import { UnsavedChangesModal } from "../common/UnsavedChangesModal";
 import { FloatingSelectionToolbar, ImageActionMenu, RichToolbar } from "../notes/RichEditorToolbar";
 import { TaskChatPanel } from "./TaskChatPanel";
 import { DISENADORES, TAREA_ESTADOS } from "../../utils/constants";
-import { uid } from "../../utils/helpers";
+import { uid, monthFolderName } from "../../utils/helpers";
 import { cleanChecklistHtml, handleCheckLineClick, handleChecklistEnterKey, handleEditorHistoryBeforeInput, handleEditorHistoryKeydown, handleNoteImageClick, handleNoteImagePaste, handleRichLinkClick, insertChecklistLine, markLinksOpenInNewTab, resetEditorHistory, snapshotEditorHistoryDebounced } from "../../utils/richTextEditor";
 
 export function TareaGeneralModal({ tarea, unlocked, onRequestUnlock, onClose, onPatch, onDelete, currentUser, driveConnected, onMarkSeen }) {
@@ -183,7 +183,7 @@ export function TareaGeneralModal({ tarea, unlocked, onRequestUnlock, onClose, o
               onRemove={(id) => onPatch({ archivos: (tarea.archivos || []).filter((f) => f.id !== id) })}
               onPreviewImage={(f) => setPreviewImgUrl(f.url)}
               driveConnected={driveConnected}
-              driveFolderPath={`Administrativo / Tareas generales / ${draft.categoria || "General"}`}
+              driveFolderPath={`Administrativo / Tareas generales / ${draft.categoria || "General"} / ${monthFolderName(draft.fecha)}`}
               driveOnly
             />
           </div>

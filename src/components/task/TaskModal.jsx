@@ -19,7 +19,7 @@ import { Overlay } from "../common/Overlay";
 import { FloatingSelectionToolbar, ImageActionMenu, RichToolbar } from "../notes/RichEditorToolbar";
 import { TaskChatPanel } from "./TaskChatPanel";
 import { DISENADORES, ESTADOS } from "../../utils/constants";
-import { clientMeta, uid } from "../../utils/helpers";
+import { clientMeta, uid, monthFolderName } from "../../utils/helpers";
 import { cleanChecklistHtml, handleCheckLineClick, handleChecklistEnterKey, handleEditorHistoryBeforeInput, handleEditorHistoryKeydown, handleNoteImageClick, handleNoteImagePaste, handleRichLinkClick, insertChecklistLine, markLinksOpenInNewTab, resetEditorHistory, snapshotEditorHistoryDebounced } from "../../utils/richTextEditor";
 
 export function TaskModal({ task, onClose, onPatch, onDelete, unlocked, onRequestUnlock, onPreviewImage, currentUser, driveConnected, onMarkSeen }) {
@@ -171,7 +171,7 @@ export function TaskModal({ task, onClose, onPatch, onDelete, unlocked, onReques
                 onRemove={(id) => onPatch({ archivos: (task.archivos || []).filter((f) => f.id !== id) })}
                 onPreviewImage={onPreviewImage}
                 driveConnected={driveConnected}
-                driveFolderPath={`${task.empresa} / Creativos`}
+                driveFolderPath={`${task.empresa} / Creativos / ${monthFolderName(task.fechaSolicitud)}`}
                 driveOnly
               />
             </div>

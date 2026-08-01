@@ -239,6 +239,11 @@ export function OverviewView({ tasks = [], payments = [], debts = [], posts = []
       </section>
 
       {/* ---- Pagos ---- */}
+      {/* Sección completa oculta sin el permiso — antes solo se enmascaraban
+          las cifras (mMonto sigue estando, no hace daño dejarlo como
+          respaldo), pero ahora directamente no se llega a mostrar el
+          apartado para quien no tiene verMontos. */}
+      {canSeeMontos && (
       <section className="overview-section">
         <div className="overview-section-head admin-section-head">
           <span className="overview-section-title"><Wallet size={15} /> Pagos publicitarios</span>
@@ -284,6 +289,7 @@ export function OverviewView({ tasks = [], payments = [], debts = [], posts = []
           })}
         </div>
       </section>
+      )}
 
       {/* ---- Calendario ---- */}
       <section className="overview-section">

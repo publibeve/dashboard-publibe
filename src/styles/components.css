@@ -243,6 +243,7 @@
 .comment-editable{
   min-height:34px; max-height:140px; overflow-y:auto; outline:none; font-size:12.5px; line-height:1.5; color:var(--ink);
   border:1px solid var(--border); border-radius:10px; padding:7px 9px; background:var(--surface);
+  font-family:'Inter',sans-serif;
 }
 .comment-editable:empty:before{ content:attr(data-placeholder); color:var(--ink-soft); }
 .comment-editable:focus{ border-color:var(--primary); }

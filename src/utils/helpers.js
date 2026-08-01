@@ -161,6 +161,21 @@ export function monthLabelEs(yyyymm) {
   return new Date(y, m - 1, 1).toLocaleDateString("es-VE", { month: "long", year: "numeric" });
 }
 
+const MESES_ES_CAP = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+/**
+ * Nombre de subcarpeta de mes para WorkDrive: "Junio 2026", "Julio 2026" —
+ * capitalizado, sin "de", distinto al formato de monthLabelEs (que es para
+ * texto de UI, no para nombres de carpeta reales). Si no hay fecha, usa hoy
+ * — un adjunto que se sube ahora, sin fecha de solicitud cargada, es
+ * razonable que caiga en el mes en curso en vez de quedar en una carpeta
+ * "sin fecha".
+ */
+export function monthFolderName(dateISO) {
+  const d = dateISO ? new Date(dateISO.length > 10 ? dateISO : dateISO + "T00:00:00") : new Date();
+  return `${MESES_ES_CAP[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 export function dateSearchBlob(iso) {
   if (!iso) return "";
   const d = new Date(iso.length > 10 ? iso : iso + "T00:00:00");
@@ -236,11 +251,20 @@ export function computeGlobalSearchResults(query, { tasks, notes, payments, invo
       out.push({ type: "nota", id: n.id, label: n.titulo || "(sin título)", sub: n.empresa, empresa: n.empresa });
     }
   });
-  payments.forEach((p) => {
-    if ((p.nota || "").toLowerCase().includes(q) || (p.metodoPago || "").toLowerCase().includes(q) || (p.empresa || "").toLowerCase().includes(q)) {
-      out.push({ type: "pago", id: p.id, label: `Pago ${montoLabel(p.monto)} — ${p.metodoPago}`, sub: p.empresa, empresa: p.empresa });
-    }
-  });
+  // Ahora que Pagos publicitarios queda oculto por completo sin el permiso
+  // (no solo enmascarado), no tiene sentido que la búsqueda global siga
+  // devolviendo resultados de pagos para esa persona — llevaría a un
+  // callejón sin salida al tocarlos (goToSearchResult intenta abrir una
+  // pestaña que ya no existe para ella). montoLabel queda sin uso acá, pero
+  // no hace daño dejarlo por si en el futuro se necesita volver a mostrar
+  // algo enmascarado en vez de ocultar.
+  if (canSeeMontos) {
+    payments.forEach((p) => {
+      if ((p.nota || "").toLowerCase().includes(q) || (p.metodoPago || "").toLowerCase().includes(q) || (p.empresa || "").toLowerCase().includes(q)) {
+        out.push({ type: "pago", id: p.id, label: `Pago ${montoLabel(p.monto)} — ${p.metodoPago}`, sub: p.empresa, empresa: p.empresa });
+      }
+    });
+  }
   invoices.forEach((i) => {
     if ((i.concepto || "").toLowerCase().includes(q) || (i.numeroFactura || "").toLowerCase().includes(q) || (i.empresa || "").toLowerCase().includes(q)) {
       out.push({ type: "factura", id: i.id, label: i.concepto, sub: `${i.empresa}${i.numeroFactura ? " · #" + i.numeroFactura : ""}`, empresa: i.empresa });

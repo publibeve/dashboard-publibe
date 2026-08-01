@@ -147,6 +147,15 @@ function App() {
   }
 
   const [activeTab, setActiveTab] = useState("flujo");
+  // Si en algún momento activeTab quedara en "pagos" sin el permiso
+  // verMontos (por ejemplo, Diego le revoca el permiso a alguien que lo
+  // tenía abierto, o quedó guardado de una sesión anterior), lo saca de ahí
+  // solo — así ningún bloque que renderiza según activeTab==="pagos" puede
+  // llegar a mostrarse sin el permiso, sin tener que repetir el chequeo en
+  // cada uno de esos lugares por separado.
+  useEffect(() => {
+    if (activeTab === "pagos" && !can("verMontos")) setActiveTab("flujo");
+  }, [activeTab, can]);
   const [columnVisibleCounts, setColumnVisibleCounts] = useState({});
   useEffect(() => {
     const activeBtn = document.querySelector(".tabbar .tab-active");
@@ -772,9 +781,11 @@ function App() {
           <button className={"tab" + (activeTab === "notas" ? " tab-active" : "")} onClick={() => setActiveTab("notas")}>
             <StickyNote size={14} /> Notas
           </button>
+          {can("verMontos") && (
           <button className={"tab" + (activeTab === "pagos" ? " tab-active" : "")} onClick={() => setActiveTab("pagos")}>
             <Wallet size={14} /> Pagos publicitarios
           </button>
+          )}
         </div>
 
         {activeTab === "flujo" && showTaskTrash && (
