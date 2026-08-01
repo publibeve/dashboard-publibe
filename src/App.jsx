@@ -63,6 +63,8 @@ import { useInversiones } from "./hooks/useInversiones";
 import { useInvoices } from "./hooks/useInvoices";
 import { useNotes } from "./hooks/useNotes";
 import { useGuiones } from "./hooks/useGuiones";
+import { useGuionCategoriasCustom } from "./hooks/useGuionCategorias";
+import { usePautas } from "./hooks/usePautas";
 import { usePayments } from "./hooks/usePayments";
 import { usePermissions } from "./hooks/usePermissions";
 import { usePosts } from "./hooks/usePosts";
@@ -103,6 +105,8 @@ function App() {
   } = useDebts(logActivity, setAppError);
   const { notes, updateNotes, addNote, patchNote, trashNote, restoreNote, purgeNote } = useNotes(logActivity, setAppError);
   const { guiones, updateGuiones, addGuion, patchGuion, trashGuion, restoreGuion, purgeGuion } = useGuiones(logActivity, setAppError);
+  const { customCategorias, addCategoria: addGuionCategoria } = useGuionCategoriasCustom(setAppError);
+  const { pautas } = usePautas(logActivity, setAppError);
   const {
     invoices, updateInvoices, addInvoice, patchInvoice, deleteInvoice, openInvoiceId, setOpenInvoiceId,
   } = useInvoices(logActivity, setAppError);
@@ -1155,6 +1159,11 @@ function App() {
             showTrash={showGuionesTrash}
             openGuionId={openGuionId}
             onOpenGuion={setOpenGuionId}
+            customCategorias={customCategorias}
+            canAddCategoria={can("administrativo")}
+            onAddCategoria={addGuionCategoria}
+            pautas={pautas}
+            driveConnected={driveConnected}
           />
         )}
 

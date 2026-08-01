@@ -9,28 +9,57 @@ import {
   Link2,
   Mic,
   Video,
+  Save,
+  Check,
+  BadgeCheck,
+  Film,
 } from "lucide-react";
 import { Overlay } from "../common/Overlay";
+import { AttachmentsBlock } from "../common/AttachmentsBlock";
 import { BloqueRow } from "./BloqueRow";
+import { CategoriaPicker } from "./CategoriaPicker";
 import { GuionPrintModal } from "./GuionPrintModal";
-import { GUION_CATEGORIAS } from "../../utils/constants";
-import { clientMeta, uid, guionCategoriaColor, guionProgreso } from "../../utils/helpers";
+import { clientMeta, uid, guionCategoriaColor, guionProgreso, guionEstaGrabado, guionEstaCompletado } from "../../utils/helpers";
 
-export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose }) {
+export function GuionDetailModal({ guion, showClient, customCategorias, canAddCategoria, onAddCategoria, pautaLabel, driveConnected, onPatch, onDelete, onClose }) {
   const [titulo, setTitulo] = useState(guion.titulo || "");
   const [duracion, setDuracion] = useState(guion.duracionEstimada || "");
   const [linkReferencia, setLinkReferencia] = useState(guion.linkReferencia || "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
   const [showAddPicker, setShowAddPicker] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const bloques = guion.bloques || [];
   const dragIndexRef = useRef(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [draggingIndex, setDraggingIndex] = useState(null);
   const cm = clientMeta(guion.empresa);
   const CmIcon = cm.icon;
-  const color = guionCategoriaColor(guion.categoria);
+  const color = guionCategoriaColor(guion.categoria, customCategorias);
   const progreso = guionProgreso(guion);
+
+  // El guion ya se autoguarda de inmediato en cada cambio — esto no es la
+  // única vía de guardado, es un reaseguro visual para quien está usando la
+  // app en vivo durante una grabación. Antes de cerrar (por la X, por click
+  // afuera, o al tocar este botón), se fuerza el blur del campo enfocado
+  // para que cualquier cambio recién tipeado se confirme (onBlur) antes de
+  // que el popup desaparezca — sin esto, un click afuera justo después de
+  // escribir podía perder ese último cambio si el navegador procesa el
+  // cierre antes que el blur.
+  function flushPendingEdits() {
+    if (document.activeElement && document.activeElement !== document.body && document.activeElement.blur) {
+      document.activeElement.blur();
+    }
+  }
+  function handleClose() {
+    flushPendingEdits();
+    onClose();
+  }
+  function handleGuardarClick() {
+    flushPendingEdits();
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 1600);
+  }
 
   function commitBloques(next) {
     onPatch({ bloques: next });
@@ -43,7 +72,7 @@ export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose
   }
   function addBloque(tipo) {
     commitBloques([...bloques, {
-      id: uid(), tipo, planoLugar: "", queSeRealiza: "", vozTexto: "", linkReferencia: "", completo: false,
+      id: uid(), tipo, planoLugar: "", queSeRealiza: "", vozTexto: "", nota: "", linkReferencia: "", completo: false,
     }]);
     setShowAddPicker(false);
   }
@@ -63,10 +92,6 @@ export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose
     setDragOverIndex(null);
     dragIndexRef.current = null;
     if (from === null || from === index) return;
-    // Renumeración automática y continua entre los dos tipos de bloque: como
-    // el número es solo la posición en el array (nunca un campo guardado),
-    // reordenar ya "renumera" todo solo, sin importar si se mezclan Tomas y
-    // Secuencias/Voz.
     const next = [...bloques];
     const [moved] = next.splice(from, 1);
     next.splice(index, 0, moved);
@@ -79,7 +104,7 @@ export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose
   }
 
   return (
-    <Overlay onClose={onClose}>
+    <Overlay onClose={handleClose}>
       <div className="modal guion-detail-modal" style={{ background: color }}>
         <div className="modal-head">
           <div className="guion-detail-head-main">
@@ -90,7 +115,7 @@ export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose
               onBlur={() => onPatch({ titulo })}
             />
           </div>
-          <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>
+          <button type="button" className="icon-btn" onClick={handleClose}><X size={16} /></button>
         </div>
 
         {bloques.length > 0 && (
@@ -102,37 +127,31 @@ export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose
           </div>
         )}
 
-        <div className="guion-meta-row">
-          <label className="field">
-            <span>Duración estimada</span>
-            <input
-              type="text" value={duracion} placeholder="Ej: 45 seg"
-              onChange={(e) => setDuracion(e.target.value)}
-              onBlur={() => onPatch({ duracionEstimada: duracion })}
-            />
-          </label>
-          <label className="field">
-            <span><Link2 size={11} /> Link de referencia del guion</span>
-            <input
-              type="text" value={linkReferencia} placeholder="https://…"
-              onChange={(e) => setLinkReferencia(e.target.value)}
-              onBlur={() => onPatch({ linkReferencia: linkReferencia.trim() })}
-            />
-          </label>
+        <div className="guion-estado-row">
+          <span className={"guion-estado-pill" + (guionEstaGrabado(guion) ? " guion-estado-pill-on" : "")}>
+            <Check size={11} /> {guionEstaGrabado(guion) ? "Grabado" : "No grabado"}
+          </span>
+          <span className={"guion-estado-pill" + (guionEstaCompletado(guion) ? " guion-estado-pill-on" : "")}>
+            <BadgeCheck size={11} /> {guionEstaCompletado(guion) ? "Completado" : "Sin completar"}
+          </span>
         </div>
 
-        <div className="guion-categoria-row">
-          {GUION_CATEGORIAS.map((c) => (
-            <button
-              key={c.value} type="button"
-              className={"guion-categoria-chip" + (guion.categoria === c.value ? " guion-categoria-chip-active" : "")}
-              style={{ background: c.color }}
-              onClick={() => onPatch({ categoria: c.value })}
-            >
-              {c.value}
-            </button>
-          ))}
-        </div>
+        <label className="field guion-duracion-field">
+          <span>Duración estimada</span>
+          <input
+            type="text" value={duracion} placeholder="Ej: 45 seg"
+            onChange={(e) => setDuracion(e.target.value)}
+            onBlur={() => onPatch({ duracionEstimada: duracion })}
+          />
+        </label>
+
+        <CategoriaPicker
+          value={guion.categoria}
+          customCategorias={customCategorias}
+          canAddCategoria={canAddCategoria}
+          onChange={(categoria) => onPatch({ categoria })}
+          onAddCategoria={onAddCategoria}
+        />
 
         <div className="guion-tomas-list">
           {bloques.length === 0 && (
@@ -169,13 +188,45 @@ export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose
           )}
         </div>
 
+        <label className="field guion-link-general-field">
+          <span><Link2 size={11} /> Link de referencia del guion (opcional)</span>
+          <input
+            type="text" value={linkReferencia} placeholder="https://…"
+            onChange={(e) => setLinkReferencia(e.target.value)}
+            onBlur={() => onPatch({ linkReferencia: linkReferencia.trim() })}
+          />
+          {guion.linkReferencia && (
+            <a href={guion.linkReferencia} target="_blank" rel="noopener noreferrer" className="toma-link-open">Abrir link ↗</a>
+          )}
+        </label>
+
+        <div className="guion-cierre-section">
+          <div className="guion-cierre-head"><Film size={13} /> Cierre — archivo final del reel</div>
+          <p className="hint" style={{ marginTop: 0 }}>
+            Al adjuntar el archivo terminado acá, el guion pasa a "Completado" solo — no hace falta tildar nada a mano.
+          </p>
+          <AttachmentsBlock
+            files={guion.archivosFinal || []}
+            onAdd={(f) => onPatch({ archivosFinal: [...(guion.archivosFinal || []), f] })}
+            onRemove={(id) => onPatch({ archivosFinal: (guion.archivosFinal || []).filter((f) => f.id !== id) })}
+            driveConnected={driveConnected}
+            driveFolderPath={`Guiones / ${pautaLabel} / ${titulo || "Sin título"}`}
+            driveOnly
+          />
+        </div>
+
         <div className="modal-footer modal-footer-row">
           <button type="button" className="btn-danger-ghost" onClick={() => setConfirmDelete(true)}>
             <Trash2 size={13} /> Eliminar guion
           </button>
-          <button type="button" className="btn-primary" onClick={() => setShowPrint(true)}>
-            <Printer size={14} /> Imprimir
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" className="btn-secondary" onClick={handleGuardarClick}>
+              {justSaved ? <Check size={14} /> : <Save size={14} />} {justSaved ? "Guardado" : "Guardar cambios"}
+            </button>
+            <button type="button" className="btn-primary" onClick={() => setShowPrint(true)}>
+              <Printer size={14} /> Imprimir
+            </button>
+          </div>
         </div>
       </div>
 

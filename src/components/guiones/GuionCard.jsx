@@ -1,13 +1,13 @@
 import { Clapperboard, CheckCircle2, BadgeCheck } from "lucide-react";
 import { clientMeta, guionCategoriaColor, guionProgreso, guionEstaGrabado, guionEstaCompletado } from "../../utils/helpers";
 
-export function GuionCard({ guion, showClient, onOpen }) {
+export function GuionCard({ guion, showClient, customCategorias, onOpen }) {
   const cm = clientMeta(guion.empresa);
   const CmIcon = cm.icon;
   const { hechos, total } = guionProgreso(guion);
   const grabado = guionEstaGrabado(guion);
   const completado = guionEstaCompletado(guion);
-  const color = guionCategoriaColor(guion.categoria);
+  const color = guionCategoriaColor(guion.categoria, customCategorias);
 
   return (
     <button

@@ -168,6 +168,13 @@ export const GUION_CATEGORIAS = [
   { value: "Contenido de venta", color: "#FFFFFF" },
 ];
 
+// Paleta para categorías NUEVAS que cree el admin (además de las 6 fijas de
+// arriba) — 5 colores propios, distintos a los 6 ya usados, para que nunca
+// se repita un color entre una categoría fija y una agregada. Se asignan en
+// orden (la 1ª categoría nueva se lleva el 1er color, etc.) y, si algún día
+// hay más de 5 categorías nuevas, se vuelve a empezar desde el principio.
+export const GUION_CATEGORIAS_EXTRA_COLORS = ["#FFE1C2", "#C9F0E8", "#E4E0F7", "#F5E6C8", "#F8D4D4"];
+
 export const BLOQUE_TIPOS = [
   { value: "toma", label: "Toma", labelCompleto: "Grabada" },
   { value: "secuenciaVoz", label: "Secuencia/Voz", labelCompleto: "Voz grabada" },

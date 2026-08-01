@@ -13,6 +13,8 @@ export function GuionesView({
   guiones = [], trashedGuiones = [], showClient, defaultClient,
   onAdd, onPatch, onTrash, onRestore, onPurge, showTrash,
   openGuionId: openGuionIdProp, onOpenGuion,
+  customCategorias, canAddCategoria, onAddCategoria,
+  pautas, driveConnected,
 }) {
   const [showNew, setShowNew] = useState(false);
   const [openGuionIdLocal, setOpenGuionIdLocal] = useState(null);
@@ -63,13 +65,16 @@ export function GuionesView({
       ) : (
         <MasonryGrid
           items={guiones}
-          renderItem={(g) => <GuionCard guion={g} showClient={showClient} onOpen={() => setOpenGuionId(g.id)} />}
+          renderItem={(g) => <GuionCard guion={g} showClient={showClient} customCategorias={customCategorias} onOpen={() => setOpenGuionId(g.id)} />}
         />
       )}
 
       {showNew && (
         <NewGuionModal
           empresa={defaultClient}
+          customCategorias={customCategorias}
+          canAddCategoria={canAddCategoria}
+          onAddCategoria={onAddCategoria}
           onClose={() => setShowNew(false)}
           onCreate={(g) => { onAdd(g); setShowNew(false); setOpenGuionId(g.id); }}
         />
@@ -79,6 +84,11 @@ export function GuionesView({
         <GuionDetailModal
           guion={openGuion}
           showClient={showClient}
+          customCategorias={customCategorias}
+          canAddCategoria={canAddCategoria}
+          onAddCategoria={onAddCategoria}
+          pautaLabel={(pautas || []).find((p) => p.id === openGuion.pautaId)?.etiqueta || "Sin pauta"}
+          driveConnected={driveConnected}
           onPatch={(patch) => onPatch(openGuion.id, patch)}
           onDelete={() => { onTrash(openGuion.id); setOpenGuionId(null); }}
           onClose={() => setOpenGuionId(null)}

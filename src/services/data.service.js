@@ -405,7 +405,7 @@ function demoGuiones() {
     {
       id: uid(), empresa: "TransfersMérida", pautaId: DEMO_PAUTA_ID,
       titulo: "Reel — Cómo reservar tu traslado", duracionEstimada: "45 seg",
-      categoria: "Contenido de valor", linkReferencia: "", archivoFinal: null,
+      categoria: "Contenido de valor", linkReferencia: "", archivosFinal: [],
       bloques: [
         tomaEj("En mostrador, primer plano", "Se muestra la app abierta en el celular", "¿Sabías que podés reservar tu traslado en menos de un minuto?", true),
         tomaEj("Plano medio, afuera del local", "Cliente sube a la unidad con su equipaje", "Así de fácil: reservás, confirmás, y listo.", false),
@@ -433,6 +433,16 @@ export async function loadGuiones() {
 
 export async function persistGuiones(guiones) {
   await syncObjectsTable("guiones", guiones);
+}
+
+export const GUION_CATEGORIAS_CUSTOM_KEY = "publibe-guion-categorias-custom-v1";
+
+/** Categorías extra que agregó el admin — globales, mismas para los 8 clientes. */
+export async function loadGuionCategoriasCustom() {
+  return await readJSON(GUION_CATEGORIAS_CUSTOM_KEY, true, []);
+}
+export async function persistGuionCategoriasCustom(list) {
+  await writeJSON(GUION_CATEGORIAS_CUSTOM_KEY, list, true);
 }
 
 export async function loadNotes() {

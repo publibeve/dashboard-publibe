@@ -4,18 +4,12 @@ import {
   Trash2,
   Check,
   Link2,
+  Plus,
 } from "lucide-react";
 import { FloatingSelectionToolbar } from "../notes/RichEditorToolbar";
 import { darkenHex, bloqueLabelCompleto, bloqueLabelTipo } from "../../utils/helpers";
 import { handleNoteImagePaste, handleRichLinkClick, markLinksOpenInNewTab } from "../../utils/richTextEditor";
 
-/**
- * Campos de texto enriquecido livianos a propósito (sin el sistema de
- * checklist/historial de Notas) — un guion puede tener muchos bloques, cada
- * uno con uno o dos de estos campos, así que van solo con lo esencial: el
- * toolbar flotante que aparece al seleccionar texto, sin una barra fija por
- * campo.
- */
 function RichField({ html, placeholder, onCommit }) {
   const ref = useRef(null);
   useEffect(() => {
@@ -54,7 +48,11 @@ export function BloqueRow({
   onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd,
 }) {
   const [planoLugar, setPlanoLugar] = useState(bloque.planoLugar || "");
+  const [nota, setNota] = useState(bloque.nota || "");
   const [linkReferencia, setLinkReferencia] = useState(bloque.linkReferencia || "");
+  // El link de referencia arranca oculto salvo que el bloque YA tenga uno
+  // guardado (por ejemplo, al reabrir un guion que ya lo tenía cargado).
+  const [showLink, setShowLink] = useState(!!bloque.linkReferencia);
   const esToma = bloque.tipo === "toma";
   const grabColor = darkenHex(guionColor || "#FFFFFF", 0.18);
   const labelCompleto = bloqueLabelCompleto(bloque.tipo);
@@ -103,21 +101,38 @@ export function BloqueRow({
             <RichField html={bloque.queSeRealiza} placeholder="Descripción visual de la toma…" onCommit={(html) => onUpdate({ queSeRealiza: html })} />
           </label>
         )}
+        {!esToma && (
+          <label className="field">
+            <span>Nota</span>
+            <input
+              type="text" value={nota} placeholder="Ej: Usar el video de la modelo en la playa, clip 2"
+              onChange={(e) => setNota(e.target.value)}
+              onBlur={() => onUpdate({ nota })}
+            />
+          </label>
+        )}
         <label className="field">
           <span>{esToma ? "Voz / texto" : "Texto de la voz en off"}</span>
           <RichField html={bloque.vozTexto} placeholder={esToma ? "La frase o narración que se dice…" : "El texto de la voz en off que se agrega…"} onCommit={(html) => onUpdate({ vozTexto: html })} />
         </label>
-        <label className="field">
-          <span><Link2 size={11} /> Link de referencia{!esToma && " (video externo a usar)"}</span>
-          <input
-            type="text" value={linkReferencia} placeholder="https://…"
-            onChange={(e) => setLinkReferencia(e.target.value)}
-            onBlur={() => onUpdate({ linkReferencia: normalizeLink(linkReferencia) })}
-          />
-          {bloque.linkReferencia && (
-            <a href={bloque.linkReferencia} target="_blank" rel="noopener noreferrer" className="toma-link-open">Abrir link ↗</a>
-          )}
-        </label>
+
+        {showLink ? (
+          <label className="field">
+            <span><Link2 size={11} /> Link de referencia</span>
+            <input
+              type="text" value={linkReferencia} placeholder="https://…" autoFocus={!bloque.linkReferencia}
+              onChange={(e) => setLinkReferencia(e.target.value)}
+              onBlur={() => onUpdate({ linkReferencia: normalizeLink(linkReferencia) })}
+            />
+            {bloque.linkReferencia && (
+              <a href={bloque.linkReferencia} target="_blank" rel="noopener noreferrer" className="toma-link-open">Abrir link ↗</a>
+            )}
+          </label>
+        ) : (
+          <button type="button" className="toma-add-link-btn" onClick={() => setShowLink(true)}>
+            <Plus size={12} /> Agregar link de referencia
+          </button>
+        )}
       </div>
     </div>
   );

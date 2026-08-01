@@ -5,10 +5,11 @@ import {
   Clock,
 } from "lucide-react";
 import { Overlay } from "../common/Overlay";
+import { CategoriaPicker } from "./CategoriaPicker";
 import { GUION_CATEGORIAS } from "../../utils/constants";
 import { uid } from "../../utils/helpers";
 
-export function NewGuionModal({ empresa, pautaId, onClose, onCreate }) {
+export function NewGuionModal({ empresa, pautaId, customCategorias, canAddCategoria, onAddCategoria, onClose, onCreate }) {
   const [titulo, setTitulo] = useState("");
   const [duracion, setDuracion] = useState("");
   const [categoria, setCategoria] = useState(GUION_CATEGORIAS[0].value);
@@ -18,7 +19,7 @@ export function NewGuionModal({ empresa, pautaId, onClose, onCreate }) {
     if (!titulo.trim()) { setError("Falta el título del guion."); return; }
     onCreate({
       id: uid(), empresa, pautaId: pautaId || null, titulo: titulo.trim(), duracionEstimada: duracion.trim(),
-      categoria, linkReferencia: "", archivoFinal: null, bloques: [],
+      categoria, linkReferencia: "", archivosFinal: [], bloques: [],
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     });
   }
@@ -42,18 +43,13 @@ export function NewGuionModal({ empresa, pautaId, onClose, onCreate }) {
         </label>
         <label className="field">
           <span>Categoría</span>
-          <div className="guion-categoria-row">
-            {GUION_CATEGORIAS.map((c) => (
-              <button
-                key={c.value} type="button"
-                className={"guion-categoria-chip" + (categoria === c.value ? " guion-categoria-chip-active" : "")}
-                style={{ background: c.color }}
-                onClick={() => setCategoria(c.value)}
-              >
-                {c.value}
-              </button>
-            ))}
-          </div>
+          <CategoriaPicker
+            value={categoria}
+            customCategorias={customCategorias}
+            canAddCategoria={canAddCategoria}
+            onChange={setCategoria}
+            onAddCategoria={onAddCategoria}
+          />
         </label>
 
         <button type="button" className="btn-primary full" onClick={submit} style={{ marginTop: 8 }}>Crear guion</button>

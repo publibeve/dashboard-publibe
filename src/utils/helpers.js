@@ -342,10 +342,12 @@ export function copyToClipboard(text, onDone) {
 
 /* ---- Guiones ---- */
 
-/** Color fijo de una categoría de guion — nunca editable, siempre el mismo. */
-export function guionCategoriaColor(categoria) {
-  const c = GUION_CATEGORIAS.find((c) => c.value === categoria);
-  return c ? c.color : "#FFFFFF";
+/** Color de una categoría de guion — busca primero en las 6 fijas, después en las que agregó el admin. */
+export function guionCategoriaColor(categoria, customCategorias) {
+  const fija = GUION_CATEGORIAS.find((c) => c.value === categoria);
+  if (fija) return fija.color;
+  const custom = (customCategorias || []).find((c) => c.value === categoria);
+  return custom ? custom.color : "#FFFFFF";
 }
 
 /** Etiqueta de la casilla de "completo" según el tipo de bloque (Toma -> "Grabada", Secuencia/Voz -> "Voz grabada"). */
@@ -373,7 +375,7 @@ export function guionEstaGrabado(guion) {
 
 /** "Completado" se activa únicamente al adjuntar el archivo final — nunca a mano. */
 export function guionEstaCompletado(guion) {
-  return !!guion.archivoFinal;
+  return (guion.archivosFinal || []).length > 0;
 }
 
 /** Progreso de bloques marcados como completos, para la barra de progreso y la tarjeta de lista. */
