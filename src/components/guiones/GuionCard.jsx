@@ -16,7 +16,7 @@ export function GuionCard({ guion, showClient, customCategorias, onOpen }) {
       onClick={onOpen}
     >
       <div className="note-card-head">
-        <span className="note-card-title">{guion.titulo || <span className="note-untitled">Sin título</span>}</span>
+        <span className="note-card-title guion-card-title">{guion.titulo || <span className="note-untitled">Sin título</span>}</span>
         {completado && <span className="guion-completado-badge" title="Completado — archivo final adjuntado"><BadgeCheck size={15} /></span>}
       </div>
 
@@ -38,7 +38,7 @@ export function GuionCard({ guion, showClient, customCategorias, onOpen }) {
           <span className="note-untitled"><Clapperboard size={13} /> Sin bloques todavía</span>
         ) : (
           <span className={grabado ? "guion-progress-done" : ""}>
-            <CheckCircle2 size={13} /> {hechos}/{total} grabado{grabado ? " — completo" : ""}
+            <CheckCircle2 size={13} /> Faltan {total - hechos} por grabar · {Math.round((hechos / total) * 100)}% completado
           </span>
         )}
       </div>

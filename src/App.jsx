@@ -106,7 +106,7 @@ function App() {
   const { notes, updateNotes, addNote, patchNote, trashNote, restoreNote, purgeNote } = useNotes(logActivity, setAppError);
   const { guiones, updateGuiones, addGuion, patchGuion, trashGuion, restoreGuion, purgeGuion } = useGuiones(logActivity, setAppError);
   const { customCategorias, addCategoria: addGuionCategoria } = useGuionCategoriasCustom(setAppError);
-  const { pautas } = usePautas(logActivity, setAppError);
+  const { pautas, addPauta } = usePautas(logActivity, setAppError);
   const {
     invoices, updateInvoices, addInvoice, patchInvoice, deleteInvoice, openInvoiceId, setOpenInvoiceId,
   } = useInvoices(logActivity, setAppError);
@@ -206,6 +206,9 @@ function App() {
   const [showNotesTrash, setShowNotesTrash] = useState(false);
   const [showGuionesTrash, setShowGuionesTrash] = useState(false);
   const [openGuionId, setOpenGuionId] = useState(null);
+  const [guionesSearch, setGuionesSearch] = useState("");
+  const [guionesPautaFiltro, setGuionesPautaFiltro] = useState("todas");
+  const [showNewGuion, setShowNewGuion] = useState(false);
   const [showPaymentsTrash, setShowPaymentsTrash] = useState(false);
   const [pagosMesFiltro, setPagosMesFiltro] = useState("todos");
   const [pagosSearch, setPagosSearch] = useState("");
@@ -622,10 +625,13 @@ function App() {
 
   const filteredGuiones = useMemo(() => {
     if (!guiones) return [];
+    const q = guionesSearch.trim().toLowerCase();
     return guiones
       .filter((g) => (selectedClient === "__ALL__" || g.empresa === selectedClient) && !g.deletedAt)
+      .filter((g) => guionesPautaFiltro === "todas" || (g.pautaId || "sin-pauta") === guionesPautaFiltro)
+      .filter((g) => !q || `${g.titulo} ${g.tema || ""}`.toLowerCase().includes(q))
       .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
-  }, [guiones, selectedClient]);
+  }, [guiones, selectedClient, guionesSearch, guionesPautaFiltro]);
 
   const availableNoteTags = useMemo(() => {
     const set = new Set();
@@ -893,6 +899,18 @@ function App() {
             )}
             {selectedClient !== "__ALL__" && activeTab === "guiones" && (
               <div className="header-btn-row">
+                {!showGuionesTrash && (
+                  <div className="search">
+                    <Search size={15} />
+                    <input placeholder="Buscar por producto, referencia o tema…" value={guionesSearch} onChange={(e) => setGuionesSearch(e.target.value)} />
+                    {guionesSearch && <button type="button" className="icon-btn subtle" onClick={() => setGuionesSearch("")}><X size={13} /></button>}
+                  </div>
+                )}
+                {!showGuionesTrash && (
+                  <button type="button" className="btn-primary" onClick={() => setShowNewGuion(true)}>
+                    <Plus size={16} strokeWidth={2.5} /> Nuevo guion
+                  </button>
+                )}
                 <button type="button" className="notes-trash-toggle" onClick={() => setShowGuionesTrash((s) => !s)}>
                   <Trash2 size={13} /> {showGuionesTrash ? "Volver a Guiones" : `Papelera${trashedGuiones.length ? ` (${trashedGuiones.length})` : ""}`}
                 </button>
@@ -1163,6 +1181,12 @@ function App() {
             canAddCategoria={can("administrativo")}
             onAddCategoria={addGuionCategoria}
             pautas={pautas}
+            onAddPauta={addPauta}
+            pautaFiltro={guionesPautaFiltro}
+            onChangePautaFiltro={setGuionesPautaFiltro}
+            showNew={showNewGuion}
+            onOpenNew={() => setShowNewGuion(true)}
+            onCloseNew={() => setShowNewGuion(false)}
             driveConnected={driveConnected}
           />
         )}

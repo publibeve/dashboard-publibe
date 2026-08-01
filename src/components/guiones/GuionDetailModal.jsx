@@ -23,6 +23,8 @@ import { clientMeta, uid, guionCategoriaColor, guionProgreso, guionEstaGrabado, 
 
 export function GuionDetailModal({ guion, showClient, customCategorias, canAddCategoria, onAddCategoria, pautaLabel, driveConnected, onPatch, onDelete, onClose }) {
   const [titulo, setTitulo] = useState(guion.titulo || "");
+  const [tema, setTema] = useState(guion.tema || "");
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [duracion, setDuracion] = useState(guion.duracionEstimada || "");
   const [linkReferencia, setLinkReferencia] = useState(guion.linkReferencia || "");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -51,9 +53,20 @@ export function GuionDetailModal({ guion, showClient, customCategorias, canAddCa
       document.activeElement.blur();
     }
   }
+  // Pedido a propósito aunque el guion ya se autoguarda solo — es un paso de
+  // confirmación visual, no algo que haga falta para que el dato quede
+  // guardado (eso ya pasó). "Sí" confirma y cierra; "No" cancela y te deja
+  // seguir editando.
   function handleClose() {
     flushPendingEdits();
+    setShowCloseConfirm(true);
+  }
+  function confirmCloseYes() {
+    setShowCloseConfirm(false);
     onClose();
+  }
+  function confirmCloseNo() {
+    setShowCloseConfirm(false);
   }
   function handleGuardarClick() {
     flushPendingEdits();
@@ -136,14 +149,24 @@ export function GuionDetailModal({ guion, showClient, customCategorias, canAddCa
           </span>
         </div>
 
-        <label className="field guion-duracion-field">
-          <span>Duración estimada</span>
-          <input
-            type="text" value={duracion} placeholder="Ej: 45 seg"
-            onChange={(e) => setDuracion(e.target.value)}
-            onBlur={() => onPatch({ duracionEstimada: duracion })}
-          />
-        </label>
+        <div className="guion-duracion-tema-row">
+          <label className="field guion-duracion-field">
+            <span>Duración estimada</span>
+            <input
+              type="text" value={duracion} placeholder="Ej: 45 seg"
+              onChange={(e) => setDuracion(e.target.value)}
+              onBlur={() => onPatch({ duracionEstimada: duracion })}
+            />
+          </label>
+          <label className="field guion-tema-field">
+            <span>Producto, referencia o tema principal</span>
+            <input
+              type="text" value={tema} placeholder="Ej: Combo verano, Modelo X200"
+              onChange={(e) => setTema(e.target.value)}
+              onBlur={() => onPatch({ tema })}
+            />
+          </label>
+        </div>
 
         <CategoriaPicker
           value={guion.categoria}
@@ -229,6 +252,21 @@ export function GuionDetailModal({ guion, showClient, customCategorias, canAddCa
           </div>
         </div>
       </div>
+
+      {showCloseConfirm && (
+        <Overlay onClose={confirmCloseNo}>
+          <div className="modal small confirm-warning-modal" style={{ maxWidth: 320 }}>
+            <div className="modal-head">
+              <h3>¿Desea guardar cambios?</h3>
+            </div>
+            <p className="delete-client-warning">Los cambios ya se guardaron solos mientras editabas — esto es solo para confirmar antes de cerrar.</p>
+            <div className="modal-footer-row" style={{ padding: 0, marginBottom: 0 }}>
+              <button className="btn-secondary" type="button" onClick={confirmCloseNo}>No</button>
+              <button className="btn-primary" type="button" onClick={confirmCloseYes}>Sí</button>
+            </div>
+          </div>
+        </Overlay>
+      )}
 
       {confirmDelete && (
         <Overlay onClose={() => setConfirmDelete(false)}>
