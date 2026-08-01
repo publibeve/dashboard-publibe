@@ -47,18 +47,35 @@ export function HeaderUserButton({ currentUser, onLogout }) {
 }
 
 export function UserAvatar({ user, className, style }) {
-  // Si la imagen falla al cargar (URL rota, CORS, lo que sea) — cae sola al
-  // círculo con la inicial en vez de quedar vacía. Se resetea el intento de
-  // nuevo si cambia la URL (por ejemplo, alguien actualiza su foto), para no
-  // quedar pegado en el fallback después de un error viejo.
+  // Dos motivos por los que una foto de perfil puede no verse: (a) la URL
+  // está rota/bloqueada — el navegador dispara onError, ya cubierto; (b) la
+  // URL está lenta — el navegador puede tardar 20-30 segundos en darla por
+  // vencida, y hasta entonces se ve un círculo vacío sin que onError haga
+  // nada. Por eso, además del error, hay un timeout propio: si a los 4
+  // segundos no cargó, se muestra el fallback igual — si la imagen termina
+  // apareciendo después (login lento, no rota), no se vuelve atrás.
   const [imgFailed, setImgFailed] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const avatarUrl = user?.avatarUrl;
-  useEffect(() => { setImgFailed(false); }, [avatarUrl]);
+
+  useEffect(() => {
+    setImgFailed(false);
+    setImgLoaded(false);
+    if (!avatarUrl) return;
+    const timer = setTimeout(() => {
+      setImgLoaded((loaded) => {
+        if (!loaded) setImgFailed(true);
+        return loaded;
+      });
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [avatarUrl]);
 
   if (avatarUrl && !imgFailed) {
     return (
       <img
         src={avatarUrl} alt={user.nombre} className={"avatar-img " + (className || "")} style={style}
+        onLoad={() => setImgLoaded(true)}
         onError={() => setImgFailed(true)}
       />
     );

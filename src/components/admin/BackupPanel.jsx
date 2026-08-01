@@ -6,11 +6,13 @@ import {
   History,
   Copy,
   Upload,
+  FolderKanban,
 } from "lucide-react";
 import { Overlay } from "../common/Overlay";
 import { fmtDate } from "../../utils/helpers";
+import { zohoConfigured, zohoConnected, startZohoAuth } from "../../services/zoho.service";
 
-export function BackupPanel({ lastBackupDate, onRunBackup, onRestoreBackup, can, requirePerm }) {
+export function BackupPanel({ lastBackupDate, onRunBackup, onRunWorkDriveBackup, onRestoreBackup, can, requirePerm }) {
   const canBackup = can("administrativo");
   const dias = lastBackupDate ? Math.floor((Date.now() - new Date(lastBackupDate).getTime()) / 86400000) : null;
   const stale = dias === null || dias >= 7;
@@ -18,9 +20,29 @@ export function BackupPanel({ lastBackupDate, onRunBackup, onRestoreBackup, can,
   const [pendingRestore, setPendingRestore] = useState(null); // { payload, resumen }
   const [restoreError, setRestoreError] = useState("");
   const [restoreDone, setRestoreDone] = useState(false);
+  const [wdUploading, setWdUploading] = useState(false);
+  const [wdError, setWdError] = useState("");
+  const [wdDone, setWdDone] = useState(false);
 
   function handleClick() {
     requirePerm("administrativo", onRunBackup);
+  }
+
+  function handleWorkDriveClick() {
+    requirePerm("administrativo", async () => {
+      setWdError("");
+      setWdDone(false);
+      setWdUploading(true);
+      try {
+        await onRunWorkDriveBackup();
+        setWdDone(true);
+        setTimeout(() => setWdDone(false), 4000);
+      } catch (e) {
+        setWdError("No se pudo guardar en WorkDrive: " + (e && e.message ? e.message : e));
+      } finally {
+        setWdUploading(false);
+      }
+    });
   }
 
   function onFileChosen(e) {
@@ -79,16 +101,16 @@ export function BackupPanel({ lastBackupDate, onRunBackup, onRestoreBackup, can,
         <span className="overview-section-title"><History size={15} /> Backup</span>
       </div>
       <div className="hint hint-tip" style={{ marginBottom: 14 }}>
-        Descarga una copia completa de toda la información de la app — tareas de Creativos, pagos
+        Guarda una copia completa de toda la información de la app — tareas de Creativos, pagos
         publicitarios, publicaciones planificadas, pendientes por cobrar, notas, tareas generales,
         inversiones publicitarias, facturas, gastos y nómina, y accesos de clientes — en un solo
         archivo. <b>No incluye los archivos adjuntos</b> (esos van a vivir en Google Drive, no
         tiene sentido duplicarlos acá). No es automático: te toca entrar y darle clic — lo ideal es
-        hacerlo una vez por semana. Guarda el archivo donde prefieras (tu computadora, una carpeta
-        de Drive, un disco externo — donde te sea más cómodo tenerlo a salvo). Ese archivo lo
-        descarga tu navegador directo a tu computadora, como cualquier otra descarga — la app ni
-        Netlify lo guardan en ningún lado; de ahí en adelante es responsabilidad tuya guardarlo
-        donde prefieras.
+        hacerlo una vez por semana. Dos formas de guardarlo: <b>descargarlo</b> a tu computadora (o
+        donde prefieras — Drive, un disco externo), o <b>guardarlo directo en WorkDrive</b> si ya
+        conectaste tu cuenta de Zoho (carpeta "Backups", un archivo nuevo cada vez, nunca
+        sobrescribe uno anterior). En cualquiera de los dos casos, ni la app ni Netlify lo guardan
+        en ningún lado propio — de ahí en adelante es responsabilidad tuya tenerlo a salvo.
       </div>
 
       <div className={"backup-status-row" + (stale ? " backup-status-stale" : " backup-status-ok")}>
@@ -101,9 +123,27 @@ export function BackupPanel({ lastBackupDate, onRunBackup, onRestoreBackup, can,
         </span>
       </div>
 
-      <button type="button" className="btn-primary" onClick={handleClick} disabled={!canBackup} title={!canBackup ? "Necesitas permiso de Panel Administrativo" : ""}>
-        <Copy size={14} /> Descargar backup ahora
-      </button>
+      <div className="modal-footer-row" style={{ padding: 0, marginBottom: 0, justifyContent: "flex-start" }}>
+        <button type="button" className="btn-primary" onClick={handleClick} disabled={!canBackup} title={!canBackup ? "Necesitas permiso de Panel Administrativo" : ""}>
+          <Copy size={14} /> Descargar backup ahora
+        </button>
+
+        {zohoConfigured() && !zohoConnected() ? (
+          <button type="button" className="btn-secondary" onClick={() => { try { startZohoAuth(); } catch (e) { setWdError(e.message); } }}>
+            <FolderKanban size={14} /> Conectar Zoho para guardar en WorkDrive
+          </button>
+        ) : (
+          <button
+            type="button" className="btn-secondary" onClick={handleWorkDriveClick}
+            disabled={!canBackup || wdUploading || !zohoConfigured()}
+            title={!zohoConfigured() ? "Faltan las credenciales de Zoho (ver Administrativo)" : ""}
+          >
+            <FolderKanban size={14} /> {wdUploading ? "Guardando en WorkDrive…" : "Guardar en WorkDrive"}
+          </button>
+        )}
+      </div>
+      {wdError && <div className="form-error" style={{ marginTop: 8 }}><AlertTriangle size={13} /> {wdError}</div>}
+      {wdDone && <div className="hint" style={{ marginTop: 8, color: "#2E7D46" }}><CheckCircle2 size={13} /> Backup guardado en WorkDrive, carpeta "Backups".</div>}
 
       <div className="backup-restore-block">
         <h4><Upload size={13} /> Restaurar desde un backup</h4>

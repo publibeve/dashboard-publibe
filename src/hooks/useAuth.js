@@ -28,6 +28,12 @@ export function useAuth(logActivity, setAppError) {
   const [pendingEmail, setPendingEmail] = useState("");
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const [loginOverlayExiting, setLoginOverlayExiting] = useState(false);
+  // true SOLO si el dashboard actual se montó como consecuencia de un login
+  // interactivo recién hecho en esta pestaña — nunca al refrescar con una
+  // sesión que ya existía. App.jsx usa esto para decidir si le corresponde
+  // la animación de fundido de entrada (appFadeIn) o si tiene que aparecer
+  // directo, sin repetir esa transición cada vez que se refresca la página.
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
   // true si la app arrancó desde el link de "recuperar clave" del correo
   // (ver handlePasswordRecoveryRedirect en main.jsx). Mientras esté en true,
   // App.jsx muestra la pantalla de "elegí tu nueva clave" en vez del login
@@ -101,6 +107,7 @@ export function useAuth(logActivity, setAppError) {
       // desde su primer instante, sin importar cuánto tarde en construirse.
       setShowLoginOverlay(true);
       setLoginOverlayExiting(false);
+      setJustLoggedIn(true);
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       setUsers(list);
       requestAnimationFrame(() => requestAnimationFrame(() => setLoginOverlayExiting(true)));
@@ -140,7 +147,7 @@ export function useAuth(logActivity, setAppError) {
 
   return {
     users, currentUserId, currentUser, authLoading, authErrorMsg, pendingEmail,
-    showLoginOverlay, loginOverlayExiting, recoveryMode, completePasswordRecovery,
+    showLoginOverlay, loginOverlayExiting, recoveryMode, completePasswordRecovery, justLoggedIn,
     login, logout, updateUsers, addUser, patchUser, deleteUser,
   };
 }

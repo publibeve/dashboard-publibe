@@ -76,7 +76,7 @@ function App() {
 
   const {
     users, currentUser, currentUserId, authLoading, authErrorMsg, pendingEmail,
-    showLoginOverlay, loginOverlayExiting, recoveryMode, completePasswordRecovery,
+    showLoginOverlay, loginOverlayExiting, recoveryMode, completePasswordRecovery, justLoggedIn,
     login, logout, addUser, patchUser, deleteUser,
   } = useAuth(
     (text) => logActivity(text), (msg) => setAppError(msg)
@@ -122,7 +122,7 @@ function App() {
     geminiKey, saveGeminiKey, aiMessages, aiSending, aiError,
     showAIChat, setShowAIChat, sendAIMessage, clearAIChat,
   } = useAI(logActivity);
-  const { driveConnected, toggleDriveConnected, lastBackupDate, runBackup, restoreBackup } = useBackup(logActivity);
+  const { driveConnected, toggleDriveConnected, lastBackupDate, runBackup, runWorkDriveBackup, restoreBackup } = useBackup(logActivity);
 
   const [selectedClient, setSelectedClient] = useState("__ALL__");
   const {
@@ -135,6 +135,12 @@ function App() {
 
   function handleRunBackup() {
     runBackup({ tasks, payments, posts, debts, notes, tareasGenerales, inversiones, invoices, expenses, accesos });
+  }
+  async function handleRunWorkDriveBackup() {
+    // Deja que el error suba tal cual a quien llama (BackupPanel), que ya
+    // tiene su propio manejo de "subiendo…"/error — mismo patrón que
+    // AttachmentsBlock con sus adjuntos.
+    await runWorkDriveBackup({ tasks, payments, posts, debts, notes, tareasGenerales, inversiones, invoices, expenses, accesos });
   }
   function handleRestoreBackup(payload) {
     return restoreBackup(payload, {
@@ -642,7 +648,7 @@ function App() {
   return (
     <>
     <div
-      className="app app-enter"
+      className={"app" + (justLoggedIn ? " app-enter" : "")}
       style={{ "--sidebar-width": `${sidebarOffset}px` }}
       onAnimationEnd={(e) => {
         // El "filter: blur(...)" de esta animación de entrada, mientras sigue aplicado (aunque
@@ -709,6 +715,7 @@ function App() {
             onEditClient={openEditClient}
             lastBackupDate={lastBackupDate}
             onRunBackup={handleRunBackup}
+            onRunWorkDriveBackup={handleRunWorkDriveBackup}
             onRestoreBackup={handleRestoreBackup}
             onOpenMobileMenu={() => setMobileSidebarOpen(true)}
             onLogout={logout}
@@ -740,7 +747,7 @@ function App() {
           </div>
 
           <div className="controls">
-            {activeTab === "tareas" && (
+            {selectedClient !== "__ALL__" && activeTab === "tareas" && (
               <>
                 <div className="search">
                   <Search size={15} />
