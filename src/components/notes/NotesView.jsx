@@ -9,9 +9,13 @@ import { NoteCard } from "./NoteCard";
 import { NoteComposer } from "./NoteComposer";
 import { NoteDetailModal } from "./NoteDetailModal";
 
-export function NotesView({ notes = [], trashedNotes = [], showClient, defaultClient, onAdd, onPatch, onTrash, onRestore, onPurge, showTrash, tagFilter, driveConnected }) {
+export function NotesView({ notes = [], trashedNotes = [], showClient, defaultClient, onAdd, onPatch, onTrash, onRestore, onPurge, showTrash, tagFilter, driveConnected, openNoteId: openNoteIdProp, onOpenNote }) {
   const [composerOpen, setComposerOpen] = useState(false);
-  const [openNoteId, setOpenNoteId] = useState(null);
+  const [openNoteIdLocal, setOpenNoteIdLocal] = useState(null);
+  // Mismo patrón que subTab en AdminModule: controlado desde afuera si se
+  // pasan las props (para reflejarlo en la URL), si no, estado propio.
+  const openNoteId = openNoteIdProp !== undefined ? openNoteIdProp : openNoteIdLocal;
+  const setOpenNoteId = onOpenNote || setOpenNoteIdLocal;
   const [previewImgUrl, setPreviewImgUrl] = useState(null);
 
   const tagFiltered = tagFilter === "Todas" ? notes : notes.filter((n) => (n.tags || []).includes(tagFilter));

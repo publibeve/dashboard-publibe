@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { buildPath, parsePath } from "./routes";
 import {
   AlertTriangle,
   Bell,
@@ -68,6 +70,8 @@ import { CLIENTES, DEMO_MODULES, DEMO_MODULE_KEYS, DISENADORES, ESTADOS, EXPENSE
 import { clientMeta, darkenHex, daysUntil, fmtDate, hasUnreadComments, hexToRgba, monthLabelEs, tagColor } from "./utils/helpers";
 
 function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [appError, setAppError] = useState("");
 
   const {
@@ -212,11 +216,141 @@ function App() {
   const [showNewSaldoFavor, setShowNewSaldoFavor] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [adminView, setAdminView] = useState(false);
+  const [adminSubTab, setAdminSubTab] = useState("finanzas");
+  const [openNoteId, setOpenNoteId] = useState(null);
   const [showNewTareaGeneral, setShowNewTareaGeneral] = useState(false);
   const [showNewInversion, setShowNewInversion] = useState(false);
   const [showNewAcceso, setShowNewAcceso] = useState(false);
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [showNewExpense, setShowNewExpense] = useState(false);
+
+  // ---------------------------------------------------------------------
+  // Enrutamiento — URLs persistentes al refrescar/compartir un link.
+  //
+  // Principio de seguridad (no negociable): la URL decide A DÓNDE apunta la
+  // app, JAMÁS qué permisos tiene la sesión. Por eso, al leer una URL, esto
+  // pasa por los MISMOS checks que ya existían para un clic normal
+  // (requestPermission / can()) — nunca setea adminView o el monto de un
+  // pago directamente sin pasar por ahí. Alguien sin permiso que entra
+  // directo a una URL restringida ve exactamente lo mismo que vería
+  // navegando: el modal de "permiso denegado", o el monto enmascarado —
+  // nunca el contenido real.
+  // useState, no useRef, a propósito: un ref se actualiza al instante, pero
+  // el estado de React (selectedClient, activeTab, etc.) que setea el
+  // Efecto A recién se aplica en el próximo render. Si esta guarda fuera un
+  // ref, el Efecto B podía correr en esa MISMA pasada todavía con los
+  // valores viejos (los de arranque) y pisar la URL real con la que llegó
+  // la página. Con useState, el Efecto B ve el valor viejo (false) en esa
+  // primera pasada y se frena — recién en el próximo render, ya con el
+  // estado real aplicado, vuelve a correr y ahí sí sincroniza bien.
+  const [routeInitialized, setRouteInitialized] = useState(false);
+
+  // Efecto A: URL -> estado. Corre al cargar la página y cada vez que la
+  // URL cambia por fuera de esta misma sincronización (atrás/adelante del
+  // navegador, un link pegado, refrescar). Depende también de si ya hay
+  // sesión — si alguien entra por un link ANTES de loguearse, se aplica
+  // recién cuando el login termina, no antes (no hay permisos que chequear
+  // todavía).
+  useEffect(() => {
+    if (!currentUser || authLoading || recoveryMode) return;
+    const loc = parsePath(location.pathname, CLIENTES);
+
+    if (!loc) {
+      // Ruta desconocida (por ejemplo, un cliente que ya no existe): se
+      // limpia sola en vez de dejar la app en un estado roto.
+      navigate("/", { replace: true });
+      return;
+    }
+
+    if (loc.admin) {
+      requestPermission("administrativo", () => {
+        setAdminView(true);
+        setAdminSubTab(loc.adminSubTab || "finanzas");
+        setOpenInvoiceId(loc.adminItemType === "factura" ? loc.adminItemId : null);
+        setOpenExpenseId(loc.adminItemType === "gasto" ? loc.adminItemId : null);
+      });
+      // Si NO tiene el permiso, requestPermission ya muestra el modal de
+      // "permiso denegado" — adminView se queda en false, como si nunca
+      // hubiese tocado el botón. No se toca nada más.
+      setRouteInitialized(true);
+      return;
+    }
+
+    setAdminView(false);
+
+    if (!loc.cliente || loc.cliente === "__ALL__") {
+      // Dashboard general — "fuera del contexto de cliente". Lo único que
+      // puede estar abierto acá es una tarea general (desde el feed de
+      // Novedades); no hay pestaña que aplicar.
+      setSelectedClient("__ALL__");
+      setOpenTaskId(null);
+      setOpenTareaGeneralId(loc.itemId || null);
+      setOpenNoteId(null);
+      setOpenPaymentId(null);
+      setOpenPostId(null);
+      setRouteInitialized(true);
+      return;
+    }
+
+    setSelectedClient(loc.cliente);
+    // "pagos" sin el permiso verMontos nunca queda activo por URL — mismo
+    // criterio que ya existía para cuando alguien pierde el permiso estando
+    // ahí adentro (ver el otro efecto, más abajo, que hace lo mismo por las
+    // dudas). Así nunca hay ni un instante de la pantalla de Pagos
+    // renderizada para quien no debería verla.
+    const tab = loc.tab === "pagos" && !can("verMontos") ? "flujo" : (loc.tab || "flujo");
+    setActiveTab(tab);
+
+    const itemId = tab === loc.tab ? (loc.itemId || null) : null;
+    setOpenTaskId(tab === "flujo" ? itemId : null);
+    setOpenTareaGeneralId(tab === "tareas" ? itemId : null);
+    setOpenNoteId(tab === "notas" ? itemId : null);
+    setOpenPaymentId(tab === "pagos" ? itemId : null);
+    setOpenPostId(tab === "calendario" ? itemId : null);
+
+    setRouteInitialized(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, currentUser, authLoading, recoveryMode]);
+
+  // Efecto B: estado -> URL. Corre cuando cambia cualquier cosa que
+  // "dónde estoy" represente. Se salta a propósito la primerísima vez (ver
+  // routeInitialized) para no pisar la URL con la que arrancó la página
+  // ANTES de que el Efecto A llegue a leerla — si no, un refresh en
+  // cualquier URL profunda rebotaría a "/" en el primer instante.
+  useEffect(() => {
+    if (!currentUser || authLoading || recoveryMode) return;
+    if (!routeInitialized) return;
+
+    let loc;
+    if (adminView) {
+      loc = {
+        admin: true,
+        adminSubTab,
+        adminItemType: openInvoiceId ? "factura" : openExpenseId ? "gasto" : null,
+        adminItemId: openInvoiceId || openExpenseId || null,
+      };
+    } else if (selectedClient === "__ALL__") {
+      // Dashboard general: el único ítem posible es una tarea general.
+      loc = { cliente: "__ALL__", itemId: openTareaGeneralId || null };
+    } else {
+      loc = {
+        cliente: selectedClient,
+        tab: activeTab,
+        itemId: openTaskId || openTareaGeneralId || openNoteId || openPaymentId || openPostId || null,
+      };
+    }
+
+    const path = buildPath(loc, CLIENTES);
+    if (path !== location.pathname) navigate(path, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    routeInitialized,
+    adminView, adminSubTab, openInvoiceId, openExpenseId,
+    selectedClient, activeTab, openTaskId, openTareaGeneralId, openNoteId, openPaymentId, openPostId,
+    currentUser, authLoading, recoveryMode,
+  ]);
+  // ---------------------------------------------------------------------
+
 
   function goToSearchResult(r) {
     setShowGlobalSearch(false);
@@ -546,6 +680,8 @@ function App() {
           <AdminModule
             invoices={invoices || []}
             expenses={expenses || []}
+            subTab={adminSubTab}
+            onSubTabChange={setAdminSubTab}
             onOpenInvoice={(id) => setOpenInvoiceId(id)}
             onNewInvoice={() => setShowNewInvoice(true)}
             onOpenExpense={(id) => setOpenExpenseId(id)}
@@ -645,7 +781,7 @@ function App() {
                 </div>
               </>
             )}
-            {selectedClient !== "__ALL__" && activeTab === "pagos" && (
+            {selectedClient !== "__ALL__" && activeTab === "pagos" && can("verMontos") && (
               <>
                 <div className="toolbar-select">
                   <CustomSelect
@@ -879,7 +1015,7 @@ function App() {
           </main>
         )}
 
-        {activeTab === "pagos" && (
+        {activeTab === "pagos" && can("verMontos") && (
           <PagosView
             payments={filteredPayments}
             trashedPayments={trashedPayments}
@@ -961,6 +1097,8 @@ function App() {
             showTrash={showNotesTrash}
             tagFilter={notesTagFilter}
             driveConnected={driveConnected}
+            openNoteId={openNoteId}
+            onOpenNote={setOpenNoteId}
           />
         )}
 

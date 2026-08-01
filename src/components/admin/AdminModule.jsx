@@ -33,8 +33,14 @@ import { HeaderUserButton } from "../layout/Sidebar";
 import { ADMIN_GRADIENT, ADMIN_PRIMARY, CLIENTES, DEMO_MODULES, DEMO_MODULE_KEYS, PERMISOS_LIST } from "../../utils/constants";
 import { clientMeta, fmtDate, fmtMonto, invoiceEstado, monthLabelEs, sumAbonos } from "../../utils/helpers";
 
-export function AdminModule({ invoices = [], expenses = [], onOpenInvoice, onNewInvoice, onOpenExpense, onNewExpense, accesos = [], onOpenAcceso, onNewAcceso, clientsBump, onDeleteClient, activity, onClearHistory, onLoadDemoData, onDeleteDemoData, can, users, onAddUser, onPatchUser, onDeleteUser, currentUser, geminiKey, onSaveGeminiKey, driveConnected, onToggleDriveConnected, onAddClient, onEditClient, onOpenMobileMenu, onLogout, lastBackupDate, onRunBackup, onRestoreBackup }) {
-  const [subTab, setSubTab] = useState("finanzas");
+export function AdminModule({ invoices = [], expenses = [], onOpenInvoice, onNewInvoice, onOpenExpense, onNewExpense, accesos = [], onOpenAcceso, onNewAcceso, clientsBump, onDeleteClient, activity, onClearHistory, onLoadDemoData, onDeleteDemoData, can, users, onAddUser, onPatchUser, onDeleteUser, currentUser, geminiKey, onSaveGeminiKey, driveConnected, onToggleDriveConnected, onAddClient, onEditClient, onOpenMobileMenu, onLogout, lastBackupDate, onRunBackup, onRestoreBackup, subTab: subTabProp, onSubTabChange }) {
+  // Controlado desde afuera (App.jsx, para poder reflejarlo en la URL) si se
+  // pasan las props; si no, se comporta exactamente como antes (estado
+  // propio) — así no rompe nada si en algún momento se usa este componente
+  // sin esa integración.
+  const [subTabLocal, setSubTabLocal] = useState("finanzas");
+  const subTab = subTabProp !== undefined ? subTabProp : subTabLocal;
+  const setSubTab = onSubTabChange || setSubTabLocal;
   useEffect(() => {
     // Mismo comportamiento que las pestañas de cada empresa (Tareas/Creativos/etc): al elegir una
     // pestaña que queda parcialmente tapada, se desliza sola hasta dejarla visible.
