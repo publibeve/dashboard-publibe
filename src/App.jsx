@@ -13,6 +13,7 @@ import {
   Printer,
   Search,
   StickyNote,
+  Clapperboard,
   Trash2,
   Wallet,
   X,
@@ -42,6 +43,7 @@ import { LoginExitOverlay, LoginScreen } from "./components/layout/LoginScreen";
 import { ResetPasswordScreen } from "./components/layout/ResetPasswordScreen";
 import { HeaderUserButton, Sidebar } from "./components/layout/Sidebar";
 import { NotesView } from "./components/notes/NotesView";
+import { GuionesView } from "./components/guiones/GuionesView";
 import { NewDebtModal } from "./components/task/NewDebtModal";
 import { NewTareaGeneralModal } from "./components/task/NewTareaGeneralModal";
 import { NewTaskModal } from "./components/task/NewTaskModal";
@@ -60,6 +62,7 @@ import { useExpenses } from "./hooks/useExpenses";
 import { useInversiones } from "./hooks/useInversiones";
 import { useInvoices } from "./hooks/useInvoices";
 import { useNotes } from "./hooks/useNotes";
+import { useGuiones } from "./hooks/useGuiones";
 import { usePayments } from "./hooks/usePayments";
 import { usePermissions } from "./hooks/usePermissions";
 import { usePosts } from "./hooks/usePosts";
@@ -99,6 +102,7 @@ function App() {
     saldosFavor, updateSaldosFavor, addSaldoFavor, removeSaldoFavor,
   } = useDebts(logActivity, setAppError);
   const { notes, updateNotes, addNote, patchNote, trashNote, restoreNote, purgeNote } = useNotes(logActivity, setAppError);
+  const { guiones, updateGuiones, addGuion, patchGuion, trashGuion, restoreGuion, purgeGuion } = useGuiones(logActivity, setAppError);
   const {
     invoices, updateInvoices, addInvoice, patchInvoice, deleteInvoice, openInvoiceId, setOpenInvoiceId,
   } = useInvoices(logActivity, setAppError);
@@ -172,7 +176,7 @@ function App() {
     if (activeBtn) activeBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [activeTab]);
 
-  const TAB_ORDER = ["tareas", "flujo", "calendario", "notas", "pagos"];
+  const TAB_ORDER = ["tareas", "flujo", "calendario", "notas", "guiones", "pagos"];
   const tabSwipeStartX = useRef(null);
   function onTabTouchStart(e) { tabSwipeStartX.current = e.touches[0].clientX; }
   function onTabTouchEnd(e) {
@@ -196,6 +200,8 @@ function App() {
   const [showTaskTrash, setShowTaskTrash] = useState(false);
   const [showPostTrash, setShowPostTrash] = useState(false);
   const [showNotesTrash, setShowNotesTrash] = useState(false);
+  const [showGuionesTrash, setShowGuionesTrash] = useState(false);
+  const [openGuionId, setOpenGuionId] = useState(null);
   const [showPaymentsTrash, setShowPaymentsTrash] = useState(false);
   const [pagosMesFiltro, setPagosMesFiltro] = useState("todos");
   const [pagosSearch, setPagosSearch] = useState("");
@@ -292,6 +298,7 @@ function App() {
       setOpenTaskId(null);
       setOpenTareaGeneralId(loc.itemId || null);
       setOpenNoteId(null);
+      setOpenGuionId(null);
       setOpenPaymentId(null);
       setOpenPostId(null);
       setRouteInitialized(true);
@@ -311,6 +318,7 @@ function App() {
     setOpenTaskId(tab === "flujo" ? itemId : null);
     setOpenTareaGeneralId(tab === "tareas" ? itemId : null);
     setOpenNoteId(tab === "notas" ? itemId : null);
+    setOpenGuionId(tab === "guiones" ? itemId : null);
     setOpenPaymentId(tab === "pagos" ? itemId : null);
     setOpenPostId(tab === "calendario" ? itemId : null);
 
@@ -342,7 +350,7 @@ function App() {
       loc = {
         cliente: selectedClient,
         tab: activeTab,
-        itemId: openTaskId || openTareaGeneralId || openNoteId || openPaymentId || openPostId || null,
+        itemId: openTaskId || openTareaGeneralId || openNoteId || openGuionId || openPaymentId || openPostId || null,
       };
     }
 
@@ -352,7 +360,7 @@ function App() {
   }, [
     routeInitialized,
     adminView, adminSubTab, openInvoiceId, openExpenseId,
-    selectedClient, activeTab, openTaskId, openTareaGeneralId, openNoteId, openPaymentId, openPostId,
+    selectedClient, activeTab, openTaskId, openTareaGeneralId, openNoteId, openGuionId, openPaymentId, openPostId,
     currentUser, authLoading, recoveryMode,
   ]);
   // ---------------------------------------------------------------------
@@ -608,6 +616,13 @@ function App() {
       .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
   }, [notes, selectedClient]);
 
+  const filteredGuiones = useMemo(() => {
+    if (!guiones) return [];
+    return guiones
+      .filter((g) => (selectedClient === "__ALL__" || g.empresa === selectedClient) && !g.deletedAt)
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+  }, [guiones, selectedClient]);
+
   const availableNoteTags = useMemo(() => {
     const set = new Set();
     filteredNotes.forEach((n) => (n.tags || []).forEach((t) => set.add(t)));
@@ -620,6 +635,13 @@ function App() {
       .filter((n) => (selectedClient === "__ALL__" || n.empresa === selectedClient) && n.deletedAt)
       .sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
   }, [notes, selectedClient]);
+
+  const trashedGuiones = useMemo(() => {
+    if (!guiones) return [];
+    return guiones
+      .filter((g) => (selectedClient === "__ALL__" || g.empresa === selectedClient) && g.deletedAt)
+      .sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
+  }, [guiones, selectedClient]);
 
   if (recoveryMode) {
     // Se llegó desde el link de "recuperar clave" del correo — se pide la
@@ -865,6 +887,13 @@ function App() {
                 </button>
               </div>
             )}
+            {selectedClient !== "__ALL__" && activeTab === "guiones" && (
+              <div className="header-btn-row">
+                <button type="button" className="notes-trash-toggle" onClick={() => setShowGuionesTrash((s) => !s)}>
+                  <Trash2 size={13} /> {showGuionesTrash ? "Volver a Guiones" : `Papelera${trashedGuiones.length ? ` (${trashedGuiones.length})` : ""}`}
+                </button>
+              </div>
+            )}
             {selectedClient === "__ALL__" && activeTab !== "tareas" && (
               <div className="all-accounts-search-row">
                 <SidebarSearchBox
@@ -923,6 +952,9 @@ function App() {
           </button>
           <button className={"tab" + (activeTab === "notas" ? " tab-active" : "")} onClick={() => setActiveTab("notas")}>
             <StickyNote size={14} /> Notas
+          </button>
+          <button className={"tab" + (activeTab === "guiones" ? " tab-active" : "")} onClick={() => setActiveTab("guiones")}>
+            <Clapperboard size={14} /> Guiones
           </button>
           {can("verMontos") && (
           <button className={"tab" + (activeTab === "pagos" ? " tab-active" : "")} onClick={() => setActiveTab("pagos")}>
@@ -1106,6 +1138,23 @@ function App() {
             driveConnected={driveConnected}
             openNoteId={openNoteId}
             onOpenNote={setOpenNoteId}
+          />
+        )}
+
+        {activeTab === "guiones" && (
+          <GuionesView
+            guiones={filteredGuiones}
+            trashedGuiones={trashedGuiones}
+            showClient={selectedClient === "__ALL__"}
+            defaultClient={defaultClientForNew}
+            onAdd={addGuion}
+            onPatch={patchGuion}
+            onTrash={trashGuion}
+            onRestore={restoreGuion}
+            onPurge={purgeGuion}
+            showTrash={showGuionesTrash}
+            openGuionId={openGuionId}
+            onOpenGuion={setOpenGuionId}
           />
         )}
 

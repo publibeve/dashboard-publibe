@@ -9,7 +9,7 @@
  * (requestPermission, can()) se usan también acá, nunca se saltean.
  */
 
-const TAB_SLUGS = { flujo: "creativos", tareas: "tareas", calendario: "planificacion", notas: "notas", pagos: "pagos" };
+const TAB_SLUGS = { flujo: "creativos", tareas: "tareas", calendario: "planificacion", notas: "notas", guiones: "guiones", pagos: "pagos" };
 const SLUG_TO_TAB = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [v, k]));
 
 const ADMIN_SUBTABS = new Set(["finanzas", "datos", "config", "usuarios", "backup"]);

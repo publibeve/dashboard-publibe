@@ -369,6 +369,45 @@ export function demoNotes() {
   ];
 }
 
+function demoGuiones() {
+  // Un guion de ejemplo por cliente, chico, para que la pantalla no se vea
+  // vacía la primera vez — mismo criterio que demoNotes/demoTasks.
+  const tomaEj = (planoLugar, queSeRealiza, vozTexto, grabada) => ({
+    id: uid(), planoLugar, queSeRealiza: `<p>${queSeRealiza}</p>`, vozTexto: `<p>${vozTexto}</p>`, grabada,
+  });
+  return [
+    {
+      id: uid(), empresa: "TransfersMérida", titulo: "Reel — Cómo reservar tu traslado", duracionEstimada: "45 seg",
+      color: "#D6E7FA", categoria: "Contenido de valor",
+      tomas: [
+        tomaEj("En mostrador, primer plano", "Se muestra la app abierta en el celular", "¿Sabías que podés reservar tu traslado en menos de un minuto?", true),
+        tomaEj("Plano medio, afuera del local", "Cliente sube a la unidad con su equipaje", "Así de fácil: reservás, confirmás, y listo.", false),
+        tomaEj("Primer plano del conductor", "Saluda a cámara", "Te esperamos.", false),
+      ],
+      createdAt: new Date(Date.now() - 40 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date(Date.now() - 40 * 60 * 60 * 1000).toISOString(),
+    },
+  ];
+}
+
+export async function loadGuiones() {
+  try {
+    const list = await loadObjectsTable("guiones");
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const purged = list.filter((g) => !g.deletedAt || new Date(g.deletedAt).getTime() >= cutoff);
+    if (purged.length !== list.length) persistGuiones(purged);
+    if (list.length || (await wasSeeded("guiones"))) return purged;
+  } catch (e) { console.error("No se pudo leer la tabla 'guiones' de Supabase, se usará modo local:", e); }
+  const seeded = demoGuiones();
+  persistGuiones(seeded);
+  markSeeded("guiones");
+  return seeded;
+}
+
+export async function persistGuiones(guiones) {
+  await syncObjectsTable("guiones", guiones);
+}
+
 export async function loadNotes() {
   try {
     const list = await loadObjectsTable("notes");

@@ -1043,3 +1043,71 @@
 .notif-row-body{ display:flex; flex-direction:column; gap:3px; min-width:0; }
 .notif-row-title{ font-size:12px; font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .notif-row-meta{ display:flex; align-items:center; gap:4px; font-size:10.5px; color:var(--ink-soft); }
+
+/* ============================================================================
+   Módulo Guiones — tarjetas, editor de tomas (drag-and-drop), impresión
+   ============================================================================ */
+
+/* ---- Tarjeta de guion (lista) ---- */
+.guion-card{ display:flex; flex-direction:column; gap:6px; }
+.guion-card-progress{
+  display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; color:var(--ink-soft); margin-top:4px;
+}
+.guion-progress-done{ color:#2E7D46; }
+
+/* ---- Modal de detalle ---- */
+.guion-detail-modal{ max-width:min(680px, 94vw); }
+.guion-detail-head-main{ display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; }
+.guion-titulo-input{
+  border:none; outline:none; background:transparent; font-family:'Space Grotesk',sans-serif;
+  font-size:17px; font-weight:700; color:var(--ink); width:100%;
+}
+.guion-meta-row{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px; margin:10px 0 16px; }
+.guion-meta-row .field{ margin-bottom:0; min-width:140px; flex:1; }
+.guion-tomas-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.guion-add-toma-btn{ width:100%; justify-content:center; margin-bottom:4px; }
+
+/* ---- Fila de una toma ---- */
+.toma-row{
+  border:1px solid var(--border); border-radius:14px; padding:12px 14px; background:var(--surface);
+  transition:background .15s, opacity .15s, transform .12s;
+}
+.toma-row-dragging{ opacity:0.4; }
+.toma-row-dragover{ border-color:var(--primary); transform:translateY(2px); }
+.toma-row-grabada{ /* el color de fondo real lo pone el inline style (tono oscuro del color del guion) */ }
+.toma-row-grabada .toma-numero,
+.toma-row-grabada .toma-row-body{ opacity:0.7; }
+.toma-row-grabada .toma-rich-field,
+.toma-row-grabada input[type="text"]{ text-decoration:line-through; }
+.toma-row-head{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.toma-drag-handle{ color:var(--ink-soft); cursor:grab; flex-shrink:0; }
+.toma-drag-handle:active{ cursor:grabbing; }
+.toma-numero{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--ink); }
+.toma-grabada-check{
+  display:flex; align-items:center; gap:6px; margin-left:auto; font-size:12px; font-weight:600; color:var(--ink-soft); cursor:pointer;
+}
+.toma-grabada-check input{ display:none; }
+.toma-grabada-box{
+  width:17px; height:17px; border-radius:5px; border:1.5px solid var(--border); background:var(--bg);
+  display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0;
+}
+.toma-grabada-check input:checked + .toma-grabada-box{ background:var(--primary); border-color:var(--primary); }
+.toma-row-body{ display:flex; flex-direction:column; gap:10px; }
+.toma-rich-field{
+  min-height:40px; outline:none; font-size:13px; color:var(--ink); line-height:1.5; padding:8px 10px;
+  font-family:'Inter',sans-serif; border:1px solid var(--border); border-radius:10px; background:var(--bg);
+}
+.toma-rich-field:empty:before{ content:attr(data-placeholder); color:var(--ink-soft); }
+
+/* ---- Impresión de guion (reusa .report-printable / .report-header ya
+   unificados — solo agrega el bloque propio de tomas) ---- */
+.guion-print-tomas{ display:flex; flex-direction:column; gap:14px; }
+.guion-print-toma{ padding-bottom:12px; border-bottom:1px solid var(--border); }
+.guion-print-toma:last-child{ border-bottom:none; }
+.guion-print-toma-head{ display:flex; align-items:center; gap:10px; font-size:11pt; margin-bottom:6px; flex-wrap:wrap; }
+.guion-print-toma-head span{ color:var(--ink-soft); font-size:10pt; }
+.guion-print-grabada-tag{ display:flex; align-items:center; gap:3px; color:#2E7D46; font-size:9pt; font-weight:700; }
+.guion-print-toma-grabada{ opacity:0.75; }
+.guion-print-toma-grabada .guion-print-toma-field div{ text-decoration:line-through; }
+.guion-print-toma-field{ font-size:10pt; margin-top:4px; }
+.guion-print-toma-field span{ display:block; font-weight:700; color:var(--ink-soft); font-size:8.5pt; text-transform:uppercase; letter-spacing:.03em; margin-bottom:1px; }
