@@ -369,17 +369,44 @@ export function demoNotes() {
   ];
 }
 
+const DEMO_PAUTA_ID = "demo-pauta-1";
+
+function demoPautas() {
+  return [
+    { id: DEMO_PAUTA_ID, empresa: "TransfersMérida", etiqueta: "Primera pauta", createdAt: new Date(Date.now() - 41 * 60 * 60 * 1000).toISOString() },
+  ];
+}
+
+export async function loadPautas() {
+  try {
+    const list = await loadObjectsTable("pautas");
+    if (list.length || (await wasSeeded("pautas"))) return list;
+  } catch (e) { console.error("No se pudo leer la tabla 'pautas' de Supabase, se usará modo local:", e); }
+  const seeded = demoPautas();
+  persistPautas(seeded);
+  markSeeded("pautas");
+  return seeded;
+}
+
+export async function persistPautas(pautas) {
+  await syncObjectsTable("pautas", pautas);
+}
+
 function demoGuiones() {
-  // Un guion de ejemplo por cliente, chico, para que la pantalla no se vea
-  // vacía la primera vez — mismo criterio que demoNotes/demoTasks.
-  const tomaEj = (planoLugar, queSeRealiza, vozTexto, grabada) => ({
-    id: uid(), planoLugar, queSeRealiza: `<p>${queSeRealiza}</p>`, vozTexto: `<p>${vozTexto}</p>`, grabada,
+  // Un guion de ejemplo, chico, para que la pantalla no se vea vacía la
+  // primera vez — mismo criterio que demoNotes/demoTasks. "completo" es el
+  // mismo campo interno para ambos tipos de bloque (Toma/Secuencia-Voz); la
+  // UI le pone la etiqueta correspondiente ("Grabada"/"Voz grabada") según
+  // el tipo — ver bloqueLabelCompleto en utils/helpers.js.
+  const tomaEj = (planoLugar, queSeRealiza, vozTexto, completo) => ({
+    id: uid(), tipo: "toma", planoLugar, queSeRealiza: `<p>${queSeRealiza}</p>`, vozTexto: `<p>${vozTexto}</p>`, linkReferencia: "", completo,
   });
   return [
     {
-      id: uid(), empresa: "TransfersMérida", titulo: "Reel — Cómo reservar tu traslado", duracionEstimada: "45 seg",
-      color: "#D6E7FA", categoria: "Contenido de valor",
-      tomas: [
+      id: uid(), empresa: "TransfersMérida", pautaId: DEMO_PAUTA_ID,
+      titulo: "Reel — Cómo reservar tu traslado", duracionEstimada: "45 seg",
+      categoria: "Contenido de valor", linkReferencia: "", archivoFinal: null,
+      bloques: [
         tomaEj("En mostrador, primer plano", "Se muestra la app abierta en el celular", "¿Sabías que podés reservar tu traslado en menos de un minuto?", true),
         tomaEj("Plano medio, afuera del local", "Cliente sube a la unidad con su equipaje", "Así de fácil: reservás, confirmás, y listo.", false),
         tomaEj("Primer plano del conductor", "Saluda a cámara", "Te esperamos.", false),

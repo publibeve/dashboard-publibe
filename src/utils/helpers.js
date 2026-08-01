@@ -8,7 +8,7 @@ import {
   FileType,
   Tag,
 } from "lucide-react";
-import { CLIENTES, ICONS_CATALOG, NOTE_TAGS, PRIMARY_DEFAULT, REDES, TAREA_ESTADOS } from "./constants";
+import { CLIENTES, ICONS_CATALOG, NOTE_TAGS, PRIMARY_DEFAULT, REDES, TAREA_ESTADOS, GUION_CATEGORIAS, BLOQUE_TIPOS } from "./constants";
 
 export function iconFor(key) { return (ICONS_CATALOG.find((i) => i.key === key) || ICONS_CATALOG[8]).icon; }
 
@@ -338,4 +338,47 @@ export function copyToClipboard(text, onDone) {
   } else {
     fallbackCopy();
   }
+}
+
+/* ---- Guiones ---- */
+
+/** Color fijo de una categoría de guion — nunca editable, siempre el mismo. */
+export function guionCategoriaColor(categoria) {
+  const c = GUION_CATEGORIAS.find((c) => c.value === categoria);
+  return c ? c.color : "#FFFFFF";
+}
+
+/** Etiqueta de la casilla de "completo" según el tipo de bloque (Toma -> "Grabada", Secuencia/Voz -> "Voz grabada"). */
+export function bloqueLabelCompleto(tipo) {
+  const t = BLOQUE_TIPOS.find((t) => t.value === tipo);
+  return t ? t.labelCompleto : "Completo";
+}
+
+/** Nombre corto del tipo de bloque, para mostrar junto al número (ej. "Toma 3", "Secuencia/Voz 4"). */
+export function bloqueLabelTipo(tipo) {
+  const t = BLOQUE_TIPOS.find((t) => t.value === tipo);
+  return t ? t.label : "Bloque";
+}
+
+/**
+ * "Grabado" es siempre calculado, nunca un campo que se guarda — se deriva
+ * de que TODOS los bloques (sea cual sea su tipo) estén marcados como
+ * completos. Un guion sin bloques no cuenta como grabado (no hay nada que
+ * mostrar como "listo" todavía).
+ */
+export function guionEstaGrabado(guion) {
+  const bloques = guion.bloques || [];
+  return bloques.length > 0 && bloques.every((b) => b.completo);
+}
+
+/** "Completado" se activa únicamente al adjuntar el archivo final — nunca a mano. */
+export function guionEstaCompletado(guion) {
+  return !!guion.archivoFinal;
+}
+
+/** Progreso de bloques marcados como completos, para la barra de progreso y la tarjeta de lista. */
+export function guionProgreso(guion) {
+  const bloques = guion.bloques || [];
+  const hechos = bloques.filter((b) => b.completo).length;
+  return { hechos, total: bloques.length };
 }

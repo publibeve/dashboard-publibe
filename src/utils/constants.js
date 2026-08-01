@@ -155,6 +155,24 @@ export const ADMIN_GRADIENT = "linear-gradient(120deg, #6B6E72 0%, #86898D 55%, 
 
 export const NOTE_COLORS = ["#FFFFFF", "#FEF7CD", "#D7F2DD", "#D6E7FA", "#FBDCE4", "#EBDCF9"];
 
+// Guiones: categorías fijas, cada una con su color fijo — ni Diego puede
+// cambiar el color de una categoría (a propósito, para que el color sea
+// siempre un identificador confiable de qué tipo de contenido es un guion,
+// sin importar quién lo creó). Reusa la misma paleta que ya usan las Notas.
+export const GUION_CATEGORIAS = [
+  { value: "Contenido de valor", color: "#D6E7FA" },
+  { value: "Contenido viral", color: "#FBDCE4" },
+  { value: "Storytelling", color: "#EBDCF9" },
+  { value: "Carrusel", color: "#FEF7CD" },
+  { value: "Historias / Stories", color: "#D7F2DD" },
+  { value: "Contenido de venta", color: "#FFFFFF" },
+];
+
+export const BLOQUE_TIPOS = [
+  { value: "toma", label: "Toma", labelCompleto: "Grabada" },
+  { value: "secuenciaVoz", label: "Secuencia/Voz", labelCompleto: "Voz grabada" },
+];
+
 export const NOTE_SIZES = [
   { value: "standard", label: "Estándar", short: "S" },
   { value: "medium", label: "Intermedio (como una hoja)", short: "M" },

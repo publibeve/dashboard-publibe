@@ -1,20 +1,23 @@
-import { Clapperboard, CheckCircle2 } from "lucide-react";
-import { clientMeta, tagColor } from "../../utils/helpers";
+import { Clapperboard, CheckCircle2, BadgeCheck } from "lucide-react";
+import { clientMeta, guionCategoriaColor, guionProgreso, guionEstaGrabado, guionEstaCompletado } from "../../utils/helpers";
 
 export function GuionCard({ guion, showClient, onOpen }) {
   const cm = clientMeta(guion.empresa);
   const CmIcon = cm.icon;
-  const tomas = guion.tomas || [];
-  const grabadas = tomas.filter((t) => t.grabada).length;
+  const { hechos, total } = guionProgreso(guion);
+  const grabado = guionEstaGrabado(guion);
+  const completado = guionEstaCompletado(guion);
+  const color = guionCategoriaColor(guion.categoria);
 
   return (
     <button
       className="note-card guion-card"
-      style={{ background: guion.color || "#fff" }}
+      style={{ background: color }}
       onClick={onOpen}
     >
       <div className="note-card-head">
         <span className="note-card-title">{guion.titulo || <span className="note-untitled">Sin título</span>}</span>
+        {completado && <span className="guion-completado-badge" title="Completado — archivo final adjuntado"><BadgeCheck size={15} /></span>}
       </div>
 
       <div className="note-card-meta">
@@ -26,16 +29,16 @@ export function GuionCard({ guion, showClient, onOpen }) {
 
       {guion.categoria && (
         <div className="note-tag-row">
-          <span className="note-tag-chip" style={{ color: tagColor(guion.categoria), background: tagColor(guion.categoria) + "18" }}>{guion.categoria}</span>
+          <span className="note-tag-chip guion-categoria-tag-chip">{guion.categoria}</span>
         </div>
       )}
 
       <div className="guion-card-progress">
-        {tomas.length === 0 ? (
-          <span className="note-untitled"><Clapperboard size={13} /> Sin tomas todavía</span>
+        {total === 0 ? (
+          <span className="note-untitled"><Clapperboard size={13} /> Sin bloques todavía</span>
         ) : (
-          <span className={grabadas === tomas.length ? "guion-progress-done" : ""}>
-            <CheckCircle2 size={13} /> {grabadas}/{tomas.length} tomas grabadas
+          <span className={grabado ? "guion-progress-done" : ""}>
+            <CheckCircle2 size={13} /> {hechos}/{total} grabado{grabado ? " — completo" : ""}
           </span>
         )}
       </div>

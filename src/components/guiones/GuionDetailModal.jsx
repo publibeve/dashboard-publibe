@@ -6,37 +6,46 @@ import {
   AlertTriangle,
   Printer,
   Clapperboard,
+  Link2,
+  Mic,
+  Video,
 } from "lucide-react";
 import { Overlay } from "../common/Overlay";
-import { TomaRow } from "./TomaRow";
+import { BloqueRow } from "./BloqueRow";
 import { GuionPrintModal } from "./GuionPrintModal";
-import { NOTE_COLORS } from "../../utils/constants";
-import { clientMeta, uid } from "../../utils/helpers";
+import { GUION_CATEGORIAS } from "../../utils/constants";
+import { clientMeta, uid, guionCategoriaColor, guionProgreso } from "../../utils/helpers";
 
 export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose }) {
   const [titulo, setTitulo] = useState(guion.titulo || "");
   const [duracion, setDuracion] = useState(guion.duracionEstimada || "");
-  const [categoria, setCategoria] = useState(guion.categoria || "");
+  const [linkReferencia, setLinkReferencia] = useState(guion.linkReferencia || "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
-  const tomas = guion.tomas || [];
+  const [showAddPicker, setShowAddPicker] = useState(false);
+  const bloques = guion.bloques || [];
   const dragIndexRef = useRef(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [draggingIndex, setDraggingIndex] = useState(null);
   const cm = clientMeta(guion.empresa);
   const CmIcon = cm.icon;
+  const color = guionCategoriaColor(guion.categoria);
+  const progreso = guionProgreso(guion);
 
-  function commitTomas(next) {
-    onPatch({ tomas: next });
+  function commitBloques(next) {
+    onPatch({ bloques: next });
   }
-  function updateToma(id, patch) {
-    commitTomas(tomas.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  function updateBloque(id, patch) {
+    commitBloques(bloques.map((b) => (b.id === id ? { ...b, ...patch } : b)));
   }
-  function deleteToma(id) {
-    commitTomas(tomas.filter((t) => t.id !== id));
+  function deleteBloque(id) {
+    commitBloques(bloques.filter((b) => b.id !== id));
   }
-  function addToma() {
-    commitTomas([...tomas, { id: uid(), planoLugar: "", queSeRealiza: "", vozTexto: "", grabada: false }]);
+  function addBloque(tipo) {
+    commitBloques([...bloques, {
+      id: uid(), tipo, planoLugar: "", queSeRealiza: "", vozTexto: "", linkReferencia: "", completo: false,
+    }]);
+    setShowAddPicker(false);
   }
 
   function handleDragStart(index) {
@@ -54,12 +63,14 @@ export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose
     setDragOverIndex(null);
     dragIndexRef.current = null;
     if (from === null || from === index) return;
-    // Renumeración automática: como el número de toma es solo la posición
-    // (nunca un campo guardado), reordenar el array ya "renumera" todo solo.
-    const next = [...tomas];
+    // Renumeración automática y continua entre los dos tipos de bloque: como
+    // el número es solo la posición en el array (nunca un campo guardado),
+    // reordenar ya "renumera" todo solo, sin importar si se mezclan Tomas y
+    // Secuencias/Voz.
+    const next = [...bloques];
     const [moved] = next.splice(from, 1);
     next.splice(index, 0, moved);
-    commitTomas(next);
+    commitBloques(next);
   }
   function handleDragEnd() {
     setDraggingIndex(null);
@@ -69,7 +80,7 @@ export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose
 
   return (
     <Overlay onClose={onClose}>
-      <div className="modal guion-detail-modal">
+      <div className="modal guion-detail-modal" style={{ background: color }}>
         <div className="modal-head">
           <div className="guion-detail-head-main">
             {showClient && <span className="note-card-empresa" style={{ color: cm.color }}><CmIcon size={11} />{guion.empresa}</span>}
@@ -82,6 +93,15 @@ export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose
           <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>
         </div>
 
+        {bloques.length > 0 && (
+          <div className="guion-progress-bar-wrap">
+            <div className="guion-progress-bar-track">
+              <div className="guion-progress-bar-fill" style={{ width: `${(progreso.hechos / progreso.total) * 100}%` }} />
+            </div>
+            <span className="guion-progress-bar-label">{progreso.hechos}/{progreso.total}</span>
+          </div>
+        )}
+
         <div className="guion-meta-row">
           <label className="field">
             <span>Duración estimada</span>
@@ -92,37 +112,42 @@ export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose
             />
           </label>
           <label className="field">
-            <span>Categoría</span>
+            <span><Link2 size={11} /> Link de referencia del guion</span>
             <input
-              type="text" value={categoria} placeholder="Ej: Contenido de valor"
-              onChange={(e) => setCategoria(e.target.value)}
-              onBlur={() => onPatch({ categoria })}
+              type="text" value={linkReferencia} placeholder="https://…"
+              onChange={(e) => setLinkReferencia(e.target.value)}
+              onBlur={() => onPatch({ linkReferencia: linkReferencia.trim() })}
             />
           </label>
-          <div className="note-color-row">
-            {NOTE_COLORS.map((c) => (
-              <button
-                key={c} type="button" className={"note-swatch" + (guion.color === c ? " note-swatch-active" : "")}
-                style={{ background: c }} onClick={() => onPatch({ color: c })}
-              />
-            ))}
-          </div>
+        </div>
+
+        <div className="guion-categoria-row">
+          {GUION_CATEGORIAS.map((c) => (
+            <button
+              key={c.value} type="button"
+              className={"guion-categoria-chip" + (guion.categoria === c.value ? " guion-categoria-chip-active" : "")}
+              style={{ background: c.color }}
+              onClick={() => onPatch({ categoria: c.value })}
+            >
+              {c.value}
+            </button>
+          ))}
         </div>
 
         <div className="guion-tomas-list">
-          {tomas.length === 0 && (
-            <div className="empty-pane"><Clapperboard size={20} /> Todavía no hay tomas. Usa "Agregar toma" para empezar.</div>
+          {bloques.length === 0 && (
+            <div className="empty-pane"><Clapperboard size={20} /> Todavía no hay bloques. Usa "Añadir" para empezar.</div>
           )}
-          {tomas.map((t, i) => (
-            <TomaRow
-              key={t.id}
-              toma={t}
+          {bloques.map((b, i) => (
+            <BloqueRow
+              key={b.id}
+              bloque={b}
               numero={i + 1}
-              guionColor={guion.color}
+              guionColor={color}
               dragging={draggingIndex === i}
               isDragOver={dragOverIndex === i && draggingIndex !== i}
-              onUpdate={(patch) => updateToma(t.id, patch)}
-              onDelete={() => deleteToma(t.id)}
+              onUpdate={(patch) => updateBloque(b.id, patch)}
+              onDelete={() => deleteBloque(b.id)}
               onDragStart={() => handleDragStart(i)}
               onDragOver={(e) => handleDragOver(e, i)}
               onDragLeave={() => setDragOverIndex((d) => (d === i ? null : d))}
@@ -132,16 +157,24 @@ export function GuionDetailModal({ guion, showClient, onPatch, onDelete, onClose
           ))}
         </div>
 
-        <button type="button" className="btn-secondary guion-add-toma-btn" onClick={addToma}>
-          <Plus size={14} /> Agregar toma
-        </button>
+        <div className="guion-add-wrap">
+          <button type="button" className="btn-secondary guion-add-toma-btn" onClick={() => setShowAddPicker((s) => !s)}>
+            <Plus size={14} /> Añadir
+          </button>
+          {showAddPicker && (
+            <div className="guion-add-picker">
+              <button type="button" onClick={() => addBloque("toma")}><Video size={14} /> Toma</button>
+              <button type="button" onClick={() => addBloque("secuenciaVoz")}><Mic size={14} /> Secuencia/Voz</button>
+            </div>
+          )}
+        </div>
 
         <div className="modal-footer modal-footer-row">
           <button type="button" className="btn-danger-ghost" onClick={() => setConfirmDelete(true)}>
             <Trash2 size={13} /> Eliminar guion
           </button>
           <button type="button" className="btn-primary" onClick={() => setShowPrint(true)}>
-            <Printer size={14} /> Imprimir / Compartir
+            <Printer size={14} /> Imprimir
           </button>
         </div>
       </div>

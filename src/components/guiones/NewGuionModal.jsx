@@ -5,21 +5,20 @@ import {
   Clock,
 } from "lucide-react";
 import { Overlay } from "../common/Overlay";
-import { NOTE_COLORS } from "../../utils/constants";
+import { GUION_CATEGORIAS } from "../../utils/constants";
 import { uid } from "../../utils/helpers";
 
-export function NewGuionModal({ empresa, onClose, onCreate }) {
+export function NewGuionModal({ empresa, pautaId, onClose, onCreate }) {
   const [titulo, setTitulo] = useState("");
   const [duracion, setDuracion] = useState("");
-  const [categoria, setCategoria] = useState("");
-  const [color, setColor] = useState(NOTE_COLORS[0]);
+  const [categoria, setCategoria] = useState(GUION_CATEGORIAS[0].value);
   const [error, setError] = useState("");
 
   function submit() {
     if (!titulo.trim()) { setError("Falta el título del guion."); return; }
     onCreate({
-      id: uid(), empresa, titulo: titulo.trim(), duracionEstimada: duracion.trim(),
-      categoria: categoria.trim(), color, tomas: [],
+      id: uid(), empresa, pautaId: pautaId || null, titulo: titulo.trim(), duracionEstimada: duracion.trim(),
+      categoria, linkReferencia: "", archivoFinal: null, bloques: [],
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     });
   }
@@ -43,16 +42,16 @@ export function NewGuionModal({ empresa, onClose, onCreate }) {
         </label>
         <label className="field">
           <span>Categoría</span>
-          <input value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Ej: Contenido de valor" onKeyDown={(e) => { if (e.key === "Enter") submit(); }} />
-        </label>
-        <label className="field">
-          <span>Color</span>
-          <div className="note-color-row">
-            {NOTE_COLORS.map((c) => (
+          <div className="guion-categoria-row">
+            {GUION_CATEGORIAS.map((c) => (
               <button
-                key={c} type="button" className={"note-swatch" + (color === c ? " note-swatch-active" : "")}
-                style={{ background: c }} onClick={() => setColor(c)}
-              />
+                key={c.value} type="button"
+                className={"guion-categoria-chip" + (categoria === c.value ? " guion-categoria-chip-active" : "")}
+                style={{ background: c.color }}
+                onClick={() => setCategoria(c.value)}
+              >
+                {c.value}
+              </button>
             ))}
           </div>
         </label>

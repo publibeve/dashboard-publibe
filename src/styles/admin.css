@@ -1111,3 +1111,34 @@
 .guion-print-toma-grabada .guion-print-toma-field div{ text-decoration:line-through; }
 .guion-print-toma-field{ font-size:10pt; margin-top:4px; }
 .guion-print-toma-field span{ display:block; font-weight:700; color:var(--ink-soft); font-size:8.5pt; text-transform:uppercase; letter-spacing:.03em; margin-bottom:1px; }
+
+/* ---- Guiones — categorías fijas, progreso, selector de tipo de bloque ---- */
+.guion-categoria-row{ display:flex; flex-wrap:wrap; gap:6px; }
+.guion-categoria-chip{
+  border:1.5px solid rgba(0,0,0,0.08); border-radius:20px; padding:5px 12px; font-size:11.5px; font-weight:600;
+  color:rgba(0,0,0,0.65); cursor:pointer; font-family:inherit; transition:border-color .15s, transform .1s;
+}
+.guion-categoria-chip-active{ border-color:var(--ink); transform:scale(1.03); font-weight:700; }
+.guion-categoria-tag-chip{ background:rgba(0,0,0,0.06); color:rgba(0,0,0,0.6); }
+.guion-completado-badge{ color:#2E7D46; flex-shrink:0; }
+
+.guion-progress-bar-wrap{ display:flex; align-items:center; gap:8px; margin:2px 0 14px; }
+.guion-progress-bar-track{ flex:1; height:7px; border-radius:5px; background:rgba(0,0,0,0.08); overflow:hidden; }
+.guion-progress-bar-fill{ height:100%; background:var(--primary); border-radius:5px; transition:width .2s; }
+.guion-progress-bar-label{ font-size:10.5px; font-weight:700; color:var(--ink-soft); flex-shrink:0; }
+
+.guion-add-wrap{ position:relative; margin-bottom:4px; }
+.guion-add-toma-btn{ width:100%; justify-content:center; }
+.guion-add-picker{
+  position:absolute; bottom:calc(100% + 6px); left:0; right:0; z-index:20;
+  background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 26px rgba(0,0,0,0.14);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.guion-add-picker button{
+  display:flex; align-items:center; gap:8px; padding:10px 14px; border:none; background:none; text-align:left;
+  font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; font-family:inherit;
+}
+.guion-add-picker button:hover{ background:var(--bg); }
+.guion-add-picker button + button{ border-top:1px solid var(--border); }
+
+.toma-link-open{ font-size:11px; color:var(--primary); margin-top:4px; display:inline-block; text-decoration:underline; }
