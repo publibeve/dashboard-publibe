@@ -122,6 +122,8 @@ export function ImportGuionesModal({ empresa, pautas, defaultPautaId, customCate
   const [extrayendo, setExtrayendo] = useState(false);
   const [error, setError] = useState("");
   const [extraidos, setExtraidos] = useState([]);
+  const [importando, setImportando] = useState(false);
+  const [importError, setImportError] = useState("");
 
   async function handleExtraer() {
     if (!texto.trim()) { setError("Pegá el documento primero."); return; }
@@ -150,12 +152,22 @@ export function ImportGuionesModal({ empresa, pautas, defaultPautaId, customCate
 
   const incluidos = extraidos.filter((g) => g._incluido);
 
-  function confirmar() {
-    incluidos.forEach((g) => {
-      const { _incluido, ...limpio } = g;
-      onImport(limpio);
-    });
-    onClose();
+  async function confirmar() {
+    setImportError("");
+    setImportando(true);
+    try {
+      const limpios = incluidos.map(({ _incluido, ...g }) => g);
+      await onImport(limpios); // UNA sola llamada con todos — ver el porqué en useGuiones.addGuiones
+      onClose();
+    } catch (e) {
+      // Antes esto podía fallar sin que se viera nada — ahora, si la
+      // escritura real a Supabase falla, se muestra acá y el modal se
+      // queda abierto (con la vista previa intacta) para poder reintentar
+      // sin tener que pegar y extraer todo de nuevo.
+      setImportError("No se pudieron guardar los guiones: " + (e && e.message ? e.message : e));
+    } finally {
+      setImportando(false);
+    }
   }
 
   return (
@@ -212,11 +224,11 @@ export function ImportGuionesModal({ empresa, pautas, defaultPautaId, customCate
                 />
               ))}
             </div>
-            {error && <div className="form-error"><AlertTriangle size={13} /> {error}</div>}
+            {importError && <div className="form-error"><AlertTriangle size={13} /> {importError}</div>}
             <div className="modal-footer modal-footer-row">
-              <button type="button" className="btn-secondary" onClick={() => setStep("pegar")}>Volver</button>
-              <button type="button" className="btn-primary" onClick={confirmar} disabled={incluidos.length === 0}>
-                <Check size={14} /> Confirmar e importar ({incluidos.length})
+              <button type="button" className="btn-secondary" onClick={() => setStep("pegar")} disabled={importando}>Volver</button>
+              <button type="button" className="btn-primary" onClick={confirmar} disabled={incluidos.length === 0 || importando}>
+                {importando ? <><Loader2 size={14} className="spin" /> Guardando…</> : <><Check size={14} /> Confirmar e importar ({incluidos.length})</>}
               </button>
             </div>
           </>

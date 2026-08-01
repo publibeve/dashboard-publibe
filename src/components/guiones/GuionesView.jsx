@@ -17,7 +17,7 @@ import { uid } from "../../utils/helpers";
 
 export function GuionesView({
   guiones = [], trashedGuiones = [], showClient, defaultClient,
-  onAdd, onPatch, onTrash, onRestore, onPurge, showTrash,
+  onAdd, onImportMany, onPatch, onTrash, onRestore, onPurge, showTrash,
   openGuionId: openGuionIdProp, onOpenGuion,
   customCategorias, canAddCategoria, onAddCategoria,
   pautas, onAddPauta, pautaFiltro, onChangePautaFiltro,
@@ -142,7 +142,7 @@ export function GuionesView({
           onAddCategoria={onAddCategoria}
           geminiKey={geminiKey}
           onClose={closeImport}
-          onImport={onAdd}
+          onImport={onImportMany}
         />
       )}
 

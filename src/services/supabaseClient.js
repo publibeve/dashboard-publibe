@@ -89,6 +89,11 @@ export async function syncTable(table, list, idField = "id") {
     }
   } catch (e) {
     console.error(`No se pudo sincronizar la tabla "${table}" en Supabase:`, e?.code, e?.message, e?.details, e?.hint, e);
+    // Antes esto se quedaba solo en la consola — quien llamaba nunca se
+    // enteraba de que la escritura había fallado. Ahora se re-lanza, para
+    // que cada pantalla pueda mostrar un error visible en vez de fallar en
+    // silencio (ver bug de "Confirmar e importar" en Guiones).
+    throw e;
   }
 }
 

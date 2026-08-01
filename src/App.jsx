@@ -105,7 +105,7 @@ function App() {
     saldosFavor, updateSaldosFavor, addSaldoFavor, removeSaldoFavor,
   } = useDebts(logActivity, setAppError);
   const { notes, updateNotes, addNote, patchNote, trashNote, restoreNote, purgeNote } = useNotes(logActivity, setAppError);
-  const { guiones, updateGuiones, addGuion, patchGuion, trashGuion, restoreGuion, purgeGuion } = useGuiones(logActivity, setAppError);
+  const { guiones, updateGuiones, addGuion, addGuiones, patchGuion, trashGuion, restoreGuion, purgeGuion } = useGuiones(logActivity, setAppError);
   const { customCategorias, addCategoria: addGuionCategoria } = useGuionCategoriasCustom(setAppError);
   const { pautas, addPauta } = usePautas(logActivity, setAppError);
   const {
@@ -1177,6 +1177,7 @@ function App() {
             showClient={selectedClient === "__ALL__"}
             defaultClient={defaultClientForNew}
             onAdd={addGuion}
+            onImportMany={addGuiones}
             onPatch={patchGuion}
             onTrash={trashGuion}
             onRestore={restoreGuion}
