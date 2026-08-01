@@ -14,6 +14,7 @@ import {
   Search,
   StickyNote,
   Clapperboard,
+  Sparkles,
   Trash2,
   Wallet,
   X,
@@ -209,6 +210,7 @@ function App() {
   const [guionesSearch, setGuionesSearch] = useState("");
   const [guionesPautaFiltro, setGuionesPautaFiltro] = useState("todas");
   const [showNewGuion, setShowNewGuion] = useState(false);
+  const [showImportGuiones, setShowImportGuiones] = useState(false);
   const [showPaymentsTrash, setShowPaymentsTrash] = useState(false);
   const [pagosMesFiltro, setPagosMesFiltro] = useState("todos");
   const [pagosSearch, setPagosSearch] = useState("");
@@ -911,6 +913,11 @@ function App() {
                     <Plus size={16} strokeWidth={2.5} /> Nuevo guion
                   </button>
                 )}
+                {!showGuionesTrash && (
+                  <button type="button" className="btn-secondary" onClick={() => setShowImportGuiones(true)}>
+                    <Sparkles size={14} /> Importar guiones
+                  </button>
+                )}
                 <button type="button" className="notes-trash-toggle" onClick={() => setShowGuionesTrash((s) => !s)}>
                   <Trash2 size={13} /> {showGuionesTrash ? "Volver a Guiones" : `Papelera${trashedGuiones.length ? ` (${trashedGuiones.length})` : ""}`}
                 </button>
@@ -1187,6 +1194,10 @@ function App() {
             showNew={showNewGuion}
             onOpenNew={() => setShowNewGuion(true)}
             onCloseNew={() => setShowNewGuion(false)}
+            showImport={showImportGuiones}
+            onOpenImport={() => setShowImportGuiones(true)}
+            onCloseImport={() => setShowImportGuiones(false)}
+            geminiKey={geminiKey}
             driveConnected={driveConnected}
           />
         )}

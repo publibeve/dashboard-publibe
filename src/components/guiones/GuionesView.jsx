@@ -11,6 +11,7 @@ import { MasonryGrid } from "../notes/NotesView";
 import { GuionCard } from "./GuionCard";
 import { GuionDetailModal } from "./GuionDetailModal";
 import { NewGuionModal } from "./NewGuionModal";
+import { ImportGuionesModal } from "./ImportGuionesModal";
 import { CustomSelect } from "../common/CustomSelect";
 import { uid } from "../../utils/helpers";
 
@@ -21,12 +22,17 @@ export function GuionesView({
   customCategorias, canAddCategoria, onAddCategoria,
   pautas, onAddPauta, pautaFiltro, onChangePautaFiltro,
   showNew: showNewProp, onOpenNew, onCloseNew,
+  showImport: showImportProp, onOpenImport, onCloseImport,
+  geminiKey,
   driveConnected,
 }) {
   const [showNewLocal, setShowNewLocal] = useState(false);
   const showNew = showNewProp !== undefined ? showNewProp : showNewLocal;
-  const openNew = onOpenNew || (() => setShowNewLocal(true));
   const closeNew = onCloseNew || (() => setShowNewLocal(false));
+
+  const [showImportLocal, setShowImportLocal] = useState(false);
+  const showImport = showImportProp !== undefined ? showImportProp : showImportLocal;
+  const closeImport = onCloseImport || (() => setShowImportLocal(false));
 
   const [openGuionIdLocal, setOpenGuionIdLocal] = useState(null);
   const openGuionId = openGuionIdProp !== undefined ? openGuionIdProp : openGuionIdLocal;
@@ -123,6 +129,20 @@ export function GuionesView({
           onAddCategoria={onAddCategoria}
           onClose={closeNew}
           onCreate={(g) => { onAdd(g); closeNew(); setOpenGuionId(g.id); }}
+        />
+      )}
+
+      {showImport && (
+        <ImportGuionesModal
+          empresa={defaultClient}
+          pautas={pautas}
+          defaultPautaId={pautaFiltro && pautaFiltro !== "todas" ? pautaFiltro : ""}
+          customCategorias={customCategorias}
+          canAddCategoria={canAddCategoria}
+          onAddCategoria={onAddCategoria}
+          geminiKey={geminiKey}
+          onClose={closeImport}
+          onImport={onAdd}
         />
       )}
 

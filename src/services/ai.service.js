@@ -236,3 +236,101 @@ export async function askGemini(apiKey, history, userMessage, dataContext) {
   if (!text) throw new Error("Gemini no devolvió una respuesta.");
   return text;
 }
+
+/* ---------------- Importar guiones (extracción estructurada) --------------
+ * A diferencia de askGemini (que arma una conversación con el asistente
+ * general de la app), esto es una llamada de una sola vez, con su propia
+ * instrucción de sistema enfocada solo en extraer datos — nunca usa el
+ * contexto del dashboard ni mezcla nada de eso.
+ * ---------------------------------------------------------------------- */
+
+function buildImportGuionesPrompt(categoriasDisponibles) {
+  return `Sos un asistente que convierte guiones de video escritos en texto libre (formato humano, sin estructura fija — a veces "Gancho/Contexto/Desarrollo/Cierre", a veces "Setup/Complicación/Remate", listas de ideas sueltas, etc.) en JSON estructurado.
+
+El documento puede describir VARIOS guiones (por ejemplo, una pauta completa de un mes, organizada en grupos). Identificá dónde empieza y termina cada guion individual.
+
+Reglas importantes, basadas en cómo se escriben estos documentos en la práctica:
+- La categoría muchas veces se declara UNA VEZ por GRUPO de guiones (ej. un encabezado "## GRUPO A" seguido de "Categoría: Contenido de valor"), y aplica a todos los guiones de ese grupo hasta que aparezca otra categoría declarada. No hace falta que cada guion repita su categoría.
+- Después del nombre de la categoría puede venir texto extra en la misma línea (notas de estilo, instrucciones) — ignoralo, quedate solo con el nombre de la categoría.
+- Si el documento tiene una sección aparte de ideas sueltas, notas generales de producción, o dice explícitamente que "esto no son guiones" — NO generes guiones a partir de esa sección. Extraé solo entradas que tengan estructura real de guion (título + tomas/bloques).
+- El campo de tema puede aparecer como "Tema:", "Elenco:", o algo similar — usá lo que mejor describa de qué trata o quién participa en el guion.
+- En "Voz/texto", si el documento pone una nota entre paréntesis en vez de una frase literal (ej. "(libre)", "(actuado)", "(sin diálogo)", "(libre, guiada por la comparación en cámara)") — copiá esa nota tal cual como vozTexto, no la trates como vacío: es información real sobre cómo grabar esa parte, aunque no sea una línea fija.
+- La etiqueta entre paréntesis junto al número de toma (ej. "Toma 1 (Gancho)", "Toma 2 (Complicación)") es solo contexto narrativo — no hace falta guardarla aparte, se pierde y no importa.
+
+Cada guion tiene:
+- "titulo": título corto del guion/reel.
+- "duracionEstimada": duración tal cual la escribe el documento (ej: "42s", "45 seg", "1 min"), sin convertir unidades. Si NO se menciona para ese guion en particular, usá null — NUNCA inventes un número.
+- "categoria": elegí la que mejor calce de esta lista EXACTA (usá el texto tal cual, no inventes categorías nuevas): ${categoriasDisponibles.join(", ")}. Si ninguna calza bien, usá la primera de la lista.
+- "tema": el producto, referencia, tema principal o elenco del guion, en pocas palabras.
+- "bloques": lista ordenada de los pasos/tomas del guion, en el mismo orden en que aparecen. Cada bloque tiene:
+  - "tipo": "toma" si es algo que se graba directo a cámara (una persona, un lugar, una acción real, actuado o no). "secuenciaVoz" SOLO si el texto describe material visual YA EXISTENTE o externo (un video de stock, un clip de otra fuente, contenido ya grabado) combinado con una voz en off que hay que grabar aparte — es la excepción, no la regla; ante cualquier duda, usá "toma".
+  - Si tipo="toma": "planoLugar" (dónde/qué plano, texto corto), "queSeRealiza" (qué pasa visualmente, puede ser más largo), "vozTexto" (la frase, narración, o nota de dirección de esa toma — ver regla de arriba; si de verdad no hay nada, string vacío).
+  - Si tipo="secuenciaVoz": "nota" (qué material visual usar, texto corto), "vozTexto" (el texto de la voz en off, o nota de dirección si no hay línea fija).
+
+Devolvé SOLO este JSON, sin texto antes ni después, sin bloques de código markdown, sin comentarios:
+{"guiones":[{"titulo":"","duracionEstimada":null,"categoria":"","tema":"","bloques":[{"tipo":"toma","planoLugar":"","queSeRealiza":"","vozTexto":""}]}]}`;
+}
+
+export async function extractGuionesFromText(apiKey, texto, categoriasDisponibles) {
+  const systemInstruction = { parts: [{ text: buildImportGuionesPrompt(categoriasDisponibles) }] };
+  const contents = [{ role: "user", parts: [{ text: texto }] }];
+  const savedOverride = await loadGeminiModelOverride();
+  const primaryModel = savedOverride || GEMINI_MODEL_DEFAULT;
+
+  // maxOutputTokens generoso a propósito: un documento con 20+ guiones
+  // devuelve un JSON grande, y sin esto Gemini podía cortar la respuesta a
+  // mitad de camino con su límite por defecto.
+  async function call(model) {
+    return fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ systemInstruction, contents, generationConfig: { maxOutputTokens: 16384, temperature: 0.2 } }),
+      }
+    );
+  }
+
+  let res = await call(primaryModel);
+  if (res.status === 404) {
+    const available = await listGeminiModels(apiKey);
+    const candidate =
+      available.find((m) => /flash-lite/i.test(m) && !/preview|exp/i.test(m)) ||
+      available.find((m) => /flash/i.test(m) && !/preview|exp|image|tts|audio/i.test(m)) ||
+      available.find((m) => /flash/i.test(m)) ||
+      available[0];
+    if (candidate) {
+      const retryRes = await call(candidate);
+      persistGeminiModelOverride(candidate);
+      res = retryRes;
+    } else if (available.length === 0) {
+      throw new Error("Tu clave de Gemini no tiene ningún modelo disponible en este momento (revísala en Google AI Studio).");
+    }
+  }
+
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new Error(`Gemini respondió ${res.status}: ${errBody.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const finishReason = data?.candidates?.[0]?.finishReason;
+  const rawText = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
+  if (!rawText) throw new Error("Gemini no devolvió nada — probá de nuevo, o con un documento más corto.");
+
+  // Gemini a veces envuelve el JSON en \`\`\`json ... \`\`\` a pesar de la
+  // instrucción — se limpia antes de parsear, por las dudas.
+  const cleaned = rawText.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    if (finishReason === "MAX_TOKENS") {
+      throw new Error("El documento es demasiado largo para procesarlo de una — probá pegándolo en dos partes más chicas.");
+    }
+    throw new Error("La IA no devolvió un JSON válido esta vez. Probá de nuevo, o con el documento dividido en partes más chicas.");
+  }
+  if (!parsed || !Array.isArray(parsed.guiones)) {
+    throw new Error("La respuesta de la IA no tuvo la forma esperada. Probá de nuevo.");
+  }
+  return parsed.guiones;
+}
