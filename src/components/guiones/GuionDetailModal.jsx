@@ -21,7 +21,7 @@ import { CategoriaPicker } from "./CategoriaPicker";
 import { GuionPrintModal } from "./GuionPrintModal";
 import { clientMeta, uid, guionCategoriaColor, guionProgreso, guionEstaGrabado, guionEstaCompletado } from "../../utils/helpers";
 
-export function GuionDetailModal({ guion, showClient, customCategorias, canAddCategoria, onAddCategoria, pautaLabel, driveConnected, onPatch, onDelete, onClose }) {
+export function GuionDetailModal({ guion, showClient, customCategorias, canAddCategoria, onAddCategoria, pautas, pautaLabel, driveConnected, onPatch, onDelete, onClose }) {
   const [titulo, setTitulo] = useState(guion.titulo || "");
   const [tema, setTema] = useState(guion.tema || "");
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
@@ -165,6 +165,13 @@ export function GuionDetailModal({ guion, showClient, customCategorias, canAddCa
               onChange={(e) => setTema(e.target.value)}
               onBlur={() => onPatch({ tema })}
             />
+          </label>
+          <label className="field guion-tema-field">
+            <span>Pauta</span>
+            <select value={guion.pautaId || ""} onChange={(e) => onPatch({ pautaId: e.target.value || null })}>
+              <option value="">Sin pauta</option>
+              {(pautas || []).map((p) => <option key={p.id} value={p.id}>{p.etiqueta}</option>)}
+            </select>
           </label>
         </div>
 

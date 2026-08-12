@@ -1232,3 +1232,54 @@
   font-family:inherit; font-size:12px; line-height:1.4; padding:6px 8px; border:1px solid var(--border);
   border-radius:8px; background:var(--surface); resize:vertical;
 }
+
+/* ---- Correcciones ronda 4 de Guiones: tabs de Pauta, filtro de estado, textareas planos ---- */
+.pauta-tabbar{ padding:0 0 4px; background:none; border-bottom:none; margin-bottom:10px; align-items:center; }
+.pauta-tab{
+  position:relative; display:flex; align-items:center; gap:2px; border-radius:20px; background:var(--surface);
+  border:1px solid var(--border); padding:2px; flex-shrink:0; transition:border-color .15s, background .15s;
+}
+.pauta-tab-active{ border-color:var(--primary); background:var(--primary); }
+.pauta-tab-active .pauta-tab-label{ color:#fff; }
+.pauta-tab-active .pauta-tab-icon-btn{ color:rgba(255,255,255,0.75); }
+.pauta-tab-dragging{ opacity:0.4; }
+.pauta-tab-dragover{ border-color:var(--primary); transform:translateY(-2px); }
+.pauta-tab-label{
+  border:none; background:none; padding:6px 4px 6px 12px; font-size:12.5px; font-weight:600; color:var(--ink);
+  cursor:pointer; font-family:inherit; white-space:nowrap;
+}
+.pauta-tab-icon-btn{
+  border:none; background:none; padding:5px; color:var(--ink-soft); cursor:pointer; display:flex; border-radius:50%;
+}
+.pauta-tab-icon-btn:hover{ background:rgba(0,0,0,0.08); }
+.pauta-tab-editing input{
+  border:1.5px solid var(--primary); border-radius:18px; padding:6px 12px; font-size:12.5px; font-family:inherit;
+  outline:none; min-width:160px;
+}
+.pauta-tab-add-btn{
+  flex-shrink:0; width:28px; height:28px; border-radius:50%; border:1px dashed var(--border); background:none;
+  color:var(--ink-soft); display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.pauta-tab-add-inline{ display:flex; align-items:center; gap:4px; flex-shrink:0; }
+.pauta-tab-add-inline input{
+  border:1px solid var(--border); border-radius:18px; padding:6px 12px; font-size:12.5px; font-family:inherit;
+  outline:none; min-width:200px;
+}
+.pauta-tab-add-inline input:focus{ border-color:var(--primary); }
+
+.guion-estado-filtro-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+.guion-estado-filtro-chip{
+  border:1px solid var(--border); border-radius:20px; padding:5px 12px; font-size:11.5px; font-weight:600;
+  color:var(--ink-soft); background:var(--surface); cursor:pointer; font-family:inherit;
+}
+.guion-estado-filtro-chip-active{ background:var(--ink); border-color:var(--ink); color:#fff; }
+
+/* Campos de Toma/Secuencia-Voz: texto plano, no contentEditable (dictado
+   por voz nativo poco confiable con contentEditable) — y más anchos, para
+   anotar diálogos de varias líneas/personas más cómodo. */
+.guion-detail-modal{ max-width:min(760px, 96vw); }
+.toma-plain-textarea{
+  width:100%; font-family:'Inter',sans-serif; font-size:13px; line-height:1.5; padding:8px 10px;
+  border:1px solid var(--border); border-radius:10px; background:var(--bg); resize:vertical; min-height:52px;
+}
+.guion-print-plain-text{ white-space:pre-line; }

@@ -25,8 +25,8 @@ function extractedToGuion(ex, empresa, pautaId) {
     bloques: (ex.bloques || []).map((b) => ({
       id: uid(),
       tipo: b.tipo === "secuenciaVoz" ? "secuenciaVoz" : "toma",
-      planoLugar: b.planoLugar || "", queSeRealiza: b.queSeRealiza ? `<p>${b.queSeRealiza}</p>` : "",
-      nota: b.nota || "", vozTexto: b.vozTexto ? `<p>${b.vozTexto}</p>` : "",
+      planoLugar: b.planoLugar || "", queSeRealiza: b.queSeRealiza || "",
+      nota: b.nota || "", vozTexto: b.vozTexto || "",
       linkReferencia: "", completo: false,
     })),
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
@@ -50,9 +50,9 @@ function BloquePreviewRow({ bloque, onChange }) {
         <input type="text" value={bloque.nota} placeholder="Nota (material a usar)" onChange={(e) => onChange({ nota: e.target.value })} />
       )}
       {esToma && (
-        <textarea rows={2} value={bloque.queSeRealiza.replace(/<\/?p>/g, "")} placeholder="Qué se va a realizar" onChange={(e) => onChange({ queSeRealiza: `<p>${e.target.value}</p>` })} />
+        <textarea rows={2} value={bloque.queSeRealiza} placeholder="Qué se va a realizar" onChange={(e) => onChange({ queSeRealiza: e.target.value })} />
       )}
-      <textarea rows={2} value={bloque.vozTexto.replace(/<\/?p>/g, "")} placeholder="Voz/texto" onChange={(e) => onChange({ vozTexto: `<p>${e.target.value}</p>` })} />
+      <textarea rows={2} value={bloque.vozTexto} placeholder="Voz/texto" onChange={(e) => onChange({ vozTexto: e.target.value })} />
     </div>
   );
 }

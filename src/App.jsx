@@ -73,7 +73,7 @@ import { useTareasGenerales } from "./hooks/useTareasGenerales";
 import { useTasks } from "./hooks/useTasks";
 import { demoAccesos, demoExpenses, demoInversiones, demoInvoices, demoNotes, demoPayments, demoPosts, demoTareasGenerales, demoTasks } from "./services/data.service";
 import { CLIENTES, DEMO_MODULES, DEMO_MODULE_KEYS, DISENADORES, ESTADOS, EXPENSE_CATEGORIAS, FORMATOS, PRIMARY_DEFAULT, REDES } from "./utils/constants";
-import { clientMeta, darkenHex, daysUntil, fmtDate, hasUnreadComments, hexToRgba, monthLabelEs, tagColor } from "./utils/helpers";
+import { clientMeta, darkenHex, daysUntil, fmtDate, hasUnreadComments, hexToRgba, monthLabelEs, tagColor, guionEstaGrabado, guionEstaCompletado } from "./utils/helpers";
 
 function App() {
   const location = useLocation();
@@ -107,7 +107,19 @@ function App() {
   const { notes, updateNotes, addNote, patchNote, trashNote, restoreNote, purgeNote } = useNotes(logActivity, setAppError);
   const { guiones, updateGuiones, addGuion, addGuiones, patchGuion, trashGuion, restoreGuion, purgeGuion } = useGuiones(logActivity, setAppError);
   const { customCategorias, addCategoria: addGuionCategoria } = useGuionCategoriasCustom(setAppError);
-  const { pautas, addPauta } = usePautas(logActivity, setAppError);
+  const { pautas, updatePautas, addPauta, patchPauta, deletePauta } = usePautas(logActivity, setAppError);
+  function handleDeletePauta(pautaId) {
+    // Los guiones de esta pauta NO se borran — quedan "Sin pauta" (pautaId
+    // null). Se hace con una sola llamada a updateGuiones (no un forEach de
+    // patchGuion por cada uno) por el mismo motivo que ya se corrigió en la
+    // importación con IA: varias llamadas seguidas a una función que lee el
+    // mismo estado capturado se pisan entre sí.
+    const afectados = (guiones || []).filter((g) => g.pautaId === pautaId);
+    if (afectados.length) {
+      updateGuiones((guiones || []).map((g) => (g.pautaId === pautaId ? { ...g, pautaId: null } : g)));
+    }
+    deletePauta(pautaId);
+  }
   const {
     invoices, updateInvoices, addInvoice, patchInvoice, deleteInvoice, openInvoiceId, setOpenInvoiceId,
   } = useInvoices(logActivity, setAppError);
@@ -209,6 +221,7 @@ function App() {
   const [openGuionId, setOpenGuionId] = useState(null);
   const [guionesSearch, setGuionesSearch] = useState("");
   const [guionesPautaFiltro, setGuionesPautaFiltro] = useState("todas");
+  const [guionesEstadoFiltro, setGuionesEstadoFiltro] = useState("todos");
   const [showNewGuion, setShowNewGuion] = useState(false);
   const [showImportGuiones, setShowImportGuiones] = useState(false);
   const [showPaymentsTrash, setShowPaymentsTrash] = useState(false);
@@ -632,8 +645,24 @@ function App() {
       .filter((g) => (selectedClient === "__ALL__" || g.empresa === selectedClient) && !g.deletedAt)
       .filter((g) => guionesPautaFiltro === "todas" || (g.pautaId || "sin-pauta") === guionesPautaFiltro)
       .filter((g) => !q || `${g.titulo} ${g.tema || ""}`.toLowerCase().includes(q))
-      .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
-  }, [guiones, selectedClient, guionesSearch, guionesPautaFiltro]);
+      .filter((g) => {
+        if (guionesEstadoFiltro === "todos") return true;
+        const grabado = guionEstaGrabado(g);
+        const completado = guionEstaCompletado(g);
+        if (guionesEstadoFiltro === "grabado") return grabado;
+        if (guionesEstadoFiltro === "no-grabado") return !grabado;
+        if (guionesEstadoFiltro === "completado") return completado;
+        if (guionesEstadoFiltro === "incompleto") return !completado;
+        return true;
+      })
+      // Orden estable — por fecha de creación, nunca por "última edición".
+      // Antes ordenaba por updatedAt, que cambia con CADA autoguardado — el
+      // guion que estabas editando en ese momento se iba al principio de la
+      // lista solo, saltando de posición constantemente durante una
+      // grabación en vivo. createdAt no cambia nunca después de crear el
+      // guion, así que el orden queda fijo y predecible.
+      .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+  }, [guiones, selectedClient, guionesSearch, guionesPautaFiltro, guionesEstadoFiltro]);
 
   const availableNoteTags = useMemo(() => {
     const set = new Set();
@@ -1190,8 +1219,13 @@ function App() {
             onAddCategoria={addGuionCategoria}
             pautas={pautas}
             onAddPauta={addPauta}
+            onRenamePauta={(id, etiqueta) => patchPauta(id, { etiqueta })}
+            onDeletePauta={handleDeletePauta}
+            onReorderPautas={updatePautas}
             pautaFiltro={guionesPautaFiltro}
             onChangePautaFiltro={setGuionesPautaFiltro}
+            estadoFiltro={guionesEstadoFiltro}
+            onChangeEstadoFiltro={setGuionesEstadoFiltro}
             showNew={showNewGuion}
             onOpenNew={() => setShowNewGuion(true)}
             onCloseNew={() => setShowNewGuion(false)}

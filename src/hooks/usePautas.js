@@ -24,6 +24,13 @@ export function usePautas(logActivity, setAppError) {
     try { updatePautas((pautas || []).map((p) => (p.id === id ? { ...p, ...patch } : p))); }
     catch (e) { setAppError("No se pudo actualizar la pauta: " + (e && e.message ? e.message : e)); }
   }
+  function deletePauta(id) {
+    try {
+      const p = (pautas || []).find((x) => x.id === id);
+      updatePautas((pautas || []).filter((x) => x.id !== id));
+      if (p) logActivity(`Se eliminó la pauta "${p.etiqueta}"`);
+    } catch (e) { setAppError("No se pudo eliminar la pauta: " + (e && e.message ? e.message : e)); }
+  }
 
-  return { pautas, setPautas, updatePautas, addPauta, patchPauta };
+  return { pautas, setPautas, updatePautas, addPauta, patchPauta, deletePauta };
 }

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useState } from "react";
 import {
   GripVertical,
   Trash2,
@@ -6,35 +6,7 @@ import {
   Link2,
   Plus,
 } from "lucide-react";
-import { FloatingSelectionToolbar } from "../notes/RichEditorToolbar";
-import { darkenHex, bloqueLabelCompleto, bloqueLabelTipo } from "../../utils/helpers";
-import { handleNoteImagePaste, handleRichLinkClick, markLinksOpenInNewTab } from "../../utils/richTextEditor";
-
-function RichField({ html, placeholder, onCommit }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (ref.current && ref.current.innerHTML !== (html || "")) {
-      ref.current.innerHTML = html || "";
-      markLinksOpenInNewTab(ref.current);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return (
-    <>
-      <div
-        ref={ref}
-        className="toma-rich-field"
-        contentEditable
-        suppressContentEditableWarning
-        data-placeholder={placeholder}
-        onPaste={(e) => handleNoteImagePaste(e, ref, () => {})}
-        onClick={(e) => handleRichLinkClick(e)}
-        onBlur={() => onCommit(ref.current.innerHTML)}
-      />
-      <FloatingSelectionToolbar targetRef={ref} onAfterCommand={() => onCommit(ref.current.innerHTML)} />
-    </>
-  );
-}
+import { darkenHex, bloqueLabelCompleto, bloqueLabelTipo, stripHtmlToPlainText } from "../../utils/helpers";
 
 function normalizeLink(url) {
   const v = (url || "").trim();
@@ -49,9 +21,13 @@ export function BloqueRow({
 }) {
   const [planoLugar, setPlanoLugar] = useState(bloque.planoLugar || "");
   const [nota, setNota] = useState(bloque.nota || "");
+  // stripHtmlToPlainText normaliza contenido viejo (guardado con el editor
+  // enriquecido que tenían estos campos antes) a texto plano con saltos de
+  // línea reales — así los bloques creados antes de este cambio se ven bien
+  // acá sin tener que migrar nada a mano. Si ya es texto plano, no cambia.
+  const [queSeRealiza, setQueSeRealiza] = useState(stripHtmlToPlainText(bloque.queSeRealiza));
+  const [vozTexto, setVozTexto] = useState(stripHtmlToPlainText(bloque.vozTexto));
   const [linkReferencia, setLinkReferencia] = useState(bloque.linkReferencia || "");
-  // El link de referencia arranca oculto salvo que el bloque YA tenga uno
-  // guardado (por ejemplo, al reabrir un guion que ya lo tenía cargado).
   const [showLink, setShowLink] = useState(!!bloque.linkReferencia);
   const esToma = bloque.tipo === "toma";
   const grabColor = darkenHex(guionColor || "#FFFFFF", 0.18);
@@ -98,7 +74,11 @@ export function BloqueRow({
         {esToma && (
           <label className="field">
             <span>Qué se va a realizar</span>
-            <RichField html={bloque.queSeRealiza} placeholder="Descripción visual de la toma…" onCommit={(html) => onUpdate({ queSeRealiza: html })} />
+            <textarea
+              className="toma-plain-textarea" rows={2} value={queSeRealiza} placeholder="Descripción visual de la toma…"
+              onChange={(e) => setQueSeRealiza(e.target.value)}
+              onBlur={() => onUpdate({ queSeRealiza })}
+            />
           </label>
         )}
         {!esToma && (
@@ -113,7 +93,16 @@ export function BloqueRow({
         )}
         <label className="field">
           <span>{esToma ? "Voz / texto" : "Texto de la voz en off"}</span>
-          <RichField html={bloque.vozTexto} placeholder={esToma ? "La frase o narración que se dice…" : "El texto de la voz en off que se agrega…"} onCommit={(html) => onUpdate({ vozTexto: html })} />
+          {/* Texto plano, no contentEditable — el dictado por voz nativo de
+              Android/iOS es poco confiable con contentEditable, y acá no
+              hace falta negrita/itálica. Enter sigue funcionando normal
+              para separar diálogos de varias personas en la misma toma. */}
+          <textarea
+            className="toma-plain-textarea" rows={2} value={vozTexto}
+            placeholder={esToma ? "La frase o narración que se dice…" : "El texto de la voz en off que se agrega…"}
+            onChange={(e) => setVozTexto(e.target.value)}
+            onBlur={() => onUpdate({ vozTexto })}
+          />
         </label>
 
         {showLink ? (

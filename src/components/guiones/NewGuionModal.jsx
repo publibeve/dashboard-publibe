@@ -9,10 +9,11 @@ import { CategoriaPicker } from "./CategoriaPicker";
 import { GUION_CATEGORIAS } from "../../utils/constants";
 import { uid } from "../../utils/helpers";
 
-export function NewGuionModal({ empresa, pautaId, customCategorias, canAddCategoria, onAddCategoria, onClose, onCreate }) {
+export function NewGuionModal({ empresa, pautas, defaultPautaId, customCategorias, canAddCategoria, onAddCategoria, onClose, onCreate }) {
   const [titulo, setTitulo] = useState("");
   const [duracion, setDuracion] = useState("");
   const [tema, setTema] = useState("");
+  const [pautaId, setPautaId] = useState(defaultPautaId || "");
   const [categoria, setCategoria] = useState(GUION_CATEGORIAS[0].value);
   const [error, setError] = useState("");
 
@@ -45,6 +46,13 @@ export function NewGuionModal({ empresa, pautaId, customCategorias, canAddCatego
         <label className="field">
           <span>Producto, referencia o tema principal</span>
           <input value={tema} onChange={(e) => setTema(e.target.value)} placeholder="Ej: Combo verano, Modelo X200" onKeyDown={(e) => { if (e.key === "Enter") submit(); }} />
+        </label>
+        <label className="field">
+          <span>Pauta</span>
+          <select value={pautaId} onChange={(e) => setPautaId(e.target.value)}>
+            <option value="">Sin pauta</option>
+            {(pautas || []).map((p) => <option key={p.id} value={p.id}>{p.etiqueta}</option>)}
+          </select>
         </label>
         <label className="field">
           <span>Categoría</span>

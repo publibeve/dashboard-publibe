@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { Overlay } from "../common/Overlay";
 import { waitForFontsReady } from "../../utils/printReady";
-import { bloqueLabelTipo, bloqueLabelCompleto } from "../../utils/helpers";
+import { bloqueLabelTipo, bloqueLabelCompleto, stripHtmlToPlainText } from "../../utils/helpers";
 
 /**
  * Reusa exactamente la misma plantilla/infraestructura que Pagos y Notas
@@ -63,13 +63,13 @@ export function GuionPrintModal({ guion, onClose }) {
                   {b.queSeRealiza && (
                     <div className="guion-print-toma-field">
                       <span>Qué se realiza:</span>
-                      <div dangerouslySetInnerHTML={{ __html: b.queSeRealiza }} />
+                      <div className="guion-print-plain-text">{stripHtmlToPlainText(b.queSeRealiza)}</div>
                     </div>
                   )}
                   {b.vozTexto && (
                     <div className="guion-print-toma-field">
                       <span>{b.tipo === "toma" ? "Voz/texto:" : "Texto de la voz en off:"}</span>
-                      <div dangerouslySetInnerHTML={{ __html: b.vozTexto }} />
+                      <div className="guion-print-plain-text">{stripHtmlToPlainText(b.vozTexto)}</div>
                     </div>
                   )}
                   {b.linkReferencia && (

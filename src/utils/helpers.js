@@ -340,7 +340,26 @@ export function copyToClipboard(text, onDone) {
   }
 }
 
-/* ---- Guiones ---- */
+/**
+ * Convierte HTML simple (como lo guardaba el editor enriquecido viejo de
+ * Toma/Secuencia-Voz) a texto plano con saltos de línea reales — para que
+ * los bloques creados antes de este cambio se vean bien en el nuevo
+ * <textarea> de texto plano, sin tener que migrar nada a mano. Si el valor
+ * ya es texto plano (sin tags), lo devuelve tal cual.
+ */
+export function stripHtmlToPlainText(html) {
+  if (!html) return "";
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>\s*<p>/gi, "\n")
+    .replace(/<\/?p>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .trim();
+}
 
 /** Color de una categoría de guion — busca primero en las 6 fijas, después en las que agregó el admin. */
 export function guionCategoriaColor(categoria, customCategorias) {
