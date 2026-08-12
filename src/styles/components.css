@@ -88,8 +88,17 @@
   background:rgba(255,255,255,0.86); border:1px solid rgba(255,255,255,0.6); border-radius:22px; padding:24px 24px 30px 24px; width:100%;
   box-shadow:0 30px 70px rgba(20,20,25,0.28), inset 0 1px 0 rgba(255,255,255,0.7); max-height:92vh; overflow-y:auto; overflow-x:hidden;
   backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%);
-  transform-origin:center; animation:modalIn .28s var(--ease-spring) both;
+  transform-origin:center; animation:modalIn .28s var(--ease-spring) backwards;
 }
+/* IMPORTANTE — por qué "backwards" y no "both": con "both", el transform del
+   último keyframe (aunque sea identidad) queda aplicado para siempre, y un
+   elemento con transform se vuelve el contenedor de posicionamiento de
+   cualquier position:fixed adentro suyo — eso corría de lugar y recortaba
+   al selector de color (ColorPickerPopover) y al panel flotante de
+   comentarios (task-chat-floating), que calculan coordenadas de pantalla.
+   Con "backwards", la animación de entrada se ve idéntica pero al terminar
+   el transform deja de aplicar y los fixed vuelven a medirse contra la
+   pantalla, como corresponde. */
 @keyframes modalIn{ from{ opacity:0; transform:scale(.94) translateY(10px); } to{ opacity:1; transform:scale(1) translateY(0); } }
 /* Nota: esta entrada es solo de apertura. Una salida animada simétrica
    (que el modal se "retraiga" en vez de desaparecer de golpe) requiere que
@@ -393,6 +402,17 @@
 ::-webkit-scrollbar-thumb:hover{ background:rgba(28,28,30,0.32); background-clip:padding-box; }
 *{ scrollbar-width:thin; scrollbar-color:rgba(28,28,30,0.22) transparent; }
 
-.pane{ padding:22px 28px 40px 24px; flex:1; overflow-y:auto; scrollbar-gutter:stable; box-sizing:border-box; }
+.pane{
+  padding:22px 28px 40px 24px; flex:1; overflow-y:auto; overflow-x:hidden; scrollbar-gutter:stable; box-sizing:border-box;
+  min-width:0; width:100%;
+}
+/* min-width:0 + overflow-x:hidden a propósito: sin esto, cualquier
+   descendiente con contenido que no se ajuste (una fila sin wrap, algo con
+   ancho mínimo fijo) puede empujar el ancho de .pane más allá del viewport
+   — y como .pane es hijo de .main (flex-column), ese empuje no se ve como
+   overflow recortado sino como toda la columna corriéndose, dejando una
+   franja en blanco del otro lado. Con esto, ese contenido se contiene
+   adentro de .pane (con su propio scroll horizontal si hace falta) en vez
+   de arrastrar a todo el layout con él. */
 .empty-pane{ font-size:13px; color:var(--ink-soft); border:1px dashed var(--border); border-radius:10px; padding:28px; text-align:center; }
 

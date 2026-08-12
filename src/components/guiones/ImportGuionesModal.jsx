@@ -115,9 +115,21 @@ function GuionPreviewCard({ guion, customCategorias, canAddCategoria, onAddCateg
   );
 }
 
-export function ImportGuionesModal({ empresa, pautas, defaultPautaId, customCategorias, canAddCategoria, onAddCategoria, geminiKey, onClose, onImport }) {
+export function ImportGuionesModal({ empresa, pautas, defaultPautaId, customCategorias, canAddCategoria, onAddCategoria, onAddPauta, geminiKey, onClose, onImport }) {
   const [texto, setTexto] = useState("");
   const [pautaId, setPautaId] = useState(defaultPautaId || "");
+  const [creandoPauta, setCreandoPauta] = useState(false);
+  const [nuevaPautaTexto, setNuevaPautaTexto] = useState("");
+
+  function confirmarNuevaPauta() {
+    const clean = nuevaPautaTexto.trim();
+    if (!clean) { setCreandoPauta(false); return; }
+    const p = { id: uid(), empresa, etiqueta: clean, createdAt: new Date().toISOString() };
+    onAddPauta(p);
+    setPautaId(p.id); // queda seleccionada al toque — para eso la creaste
+    setNuevaPautaTexto("");
+    setCreandoPauta(false);
+  }
   const [step, setStep] = useState("pegar"); // "pegar" | "revisar"
   const [extrayendo, setExtrayendo] = useState(false);
   const [error, setError] = useState("");
@@ -186,10 +198,27 @@ export function ImportGuionesModal({ empresa, pautas, defaultPautaId, customCate
             </p>
             <label className="field">
               <span>Pauta a la que quedan asociados</span>
-              <select value={pautaId} onChange={(e) => setPautaId(e.target.value)}>
-                <option value="">Sin pauta</option>
-                {(pautas || []).map((p) => <option key={p.id} value={p.id}>{p.etiqueta}</option>)}
-              </select>
+              <div className="import-pauta-row">
+                <select value={pautaId} onChange={(e) => setPautaId(e.target.value)}>
+                  <option value="">Sin pauta</option>
+                  {(pautas || []).map((p) => <option key={p.id} value={p.id}>{p.etiqueta}</option>)}
+                </select>
+                {!creandoPauta ? (
+                  <button type="button" className="icon-btn subtle" onClick={() => setCreandoPauta(true)} title="Crear una pauta nueva sin salir de acá">
+                    <Plus size={15} />
+                  </button>
+                ) : (
+                  <div className="guion-pauta-add-inline">
+                    <input
+                      type="text" autoFocus value={nuevaPautaTexto} placeholder='Ej: "1 de agosto — Modelo Astrid"'
+                      onChange={(e) => setNuevaPautaTexto(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") confirmarNuevaPauta(); if (e.key === "Escape") setCreandoPauta(false); }}
+                    />
+                    <button type="button" className="icon-btn subtle" onClick={confirmarNuevaPauta}><Check size={14} /></button>
+                    <button type="button" className="icon-btn subtle" onClick={() => { setCreandoPauta(false); setNuevaPautaTexto(""); }}><X size={14} /></button>
+                  </div>
+                )}
+              </div>
             </label>
             <label className="field">
               <span>Documento</span>

@@ -334,3 +334,75 @@ export async function extractGuionesFromText(apiKey, texto, categoriasDisponible
   }
   return parsed.guiones;
 }
+
+/* ---------------- Nueva tarea con IA (Creativos) --------------------------
+ * Mismo criterio que la importación de guiones: la IA propone, nunca crea
+ * el registro — solo llena el formulario para que Diego lo revise y edite
+ * antes de tocar "Crear tarea".
+ * ---------------------------------------------------------------------- */
+
+function buildTaskIdeaPrompt() {
+  return `Sos un asistente de una agencia gráfica que ayuda a redactar el pedido de una pieza de diseño (flyer, post, banner, etc.) a partir de una idea breve que da el cliente interno de la agencia.
+
+Te dan el nombre de la empresa para la que es la pieza, y una descripción corta de lo que se necesita. Devolvés dos cosas:
+- "titulo": un "Trabajo solicitado" corto y concreto (como un título de tarea), sin inventar fechas ni datos que no te dieron.
+- "notasHtml": el desarrollo de la idea para el campo "Notas de diseño" — qué debería tener la pieza, tono, elementos clave a incluir. Usá HTML simple para que se vea prolijo: <p> para párrafos, <b> para lo importante, <ul><li> para listas si tiene sentido. Nada de <script>, <style>, ni atributos — solo esas etiquetas básicas. No inventes precios, fechas, ni datos de contacto que no te dieron; si hace falta un dato así, dejalo como algo genérico para que Diego lo complete ("agregar la fecha del evento acá").
+
+Devolvé SOLO este JSON, sin texto antes ni después, sin bloques de código markdown:
+{"titulo":"","notasHtml":""}`;
+}
+
+export async function generateTaskIdea(apiKey, empresa, descripcionBreve) {
+  const systemInstruction = { parts: [{ text: buildTaskIdeaPrompt() }] };
+  const contents = [{ role: "user", parts: [{ text: `Empresa: ${empresa}\nIdea breve: ${descripcionBreve}` }] }];
+  const savedOverride = await loadGeminiModelOverride();
+  const primaryModel = savedOverride || GEMINI_MODEL_DEFAULT;
+
+  async function call(model) {
+    return fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ systemInstruction, contents, generationConfig: { maxOutputTokens: 2048, temperature: 0.6 } }),
+      }
+    );
+  }
+
+  let res = await call(primaryModel);
+  if (res.status === 404) {
+    const available = await listGeminiModels(apiKey);
+    const candidate =
+      available.find((m) => /flash-lite/i.test(m) && !/preview|exp/i.test(m)) ||
+      available.find((m) => /flash/i.test(m) && !/preview|exp|image|tts|audio/i.test(m)) ||
+      available.find((m) => /flash/i.test(m)) ||
+      available[0];
+    if (candidate) {
+      const retryRes = await call(candidate);
+      persistGeminiModelOverride(candidate);
+      res = retryRes;
+    } else if (available.length === 0) {
+      throw new Error("Tu clave de Gemini no tiene ningún modelo disponible en este momento (revísala en Google AI Studio).");
+    }
+  }
+
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new Error(`Gemini respondió ${res.status}: ${errBody.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const rawText = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
+  if (!rawText) throw new Error("Gemini no devolvió nada — probá de nuevo.");
+
+  const cleaned = rawText.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    throw new Error("La IA no devolvió un JSON válido esta vez. Probá de nuevo.");
+  }
+  if (!parsed || typeof parsed.titulo !== "string") {
+    throw new Error("La respuesta de la IA no tuvo la forma esperada. Probá de nuevo.");
+  }
+  return { titulo: parsed.titulo || "", notasHtml: parsed.notasHtml || "" };
+}

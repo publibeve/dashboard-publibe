@@ -4,6 +4,9 @@ import {
   AlertTriangle,
   StickyNote,
   ListChecks,
+  Sparkles,
+  Loader2,
+  Check,
 } from "lucide-react";
 import { CustomDatePicker } from "../common/CustomDatePicker";
 import { CustomSelect } from "../common/CustomSelect";
@@ -12,9 +15,21 @@ import { Overlay } from "../common/Overlay";
 import { FloatingSelectionToolbar, ImageActionMenu, RichToolbar } from "../notes/RichEditorToolbar";
 import { DISENADORES } from "../../utils/constants";
 import { clientMeta, uid } from "../../utils/helpers";
+import { generateTaskIdea } from "../../services/ai.service";
 import { cleanChecklistHtml, handleCheckLineClick, handleChecklistEnterKey, handleEditorHistoryBeforeInput, handleEditorHistoryKeydown, handleNoteImageClick, handleNoteImagePaste, handleRichLinkClick, insertChecklistLine, snapshotEditorHistoryDebounced } from "../../utils/richTextEditor";
 
-export function NewTaskModal({ onClose, onCreate, defaultClient, lockedClient }) {
+// Saneo mínimo antes de volcar lo que devuelve la IA como innerHTML — el
+// prompt ya le pide solo p/b/ul/li sin atributos, esto es un resguardo
+// extra por si alguna vez se cuela algo que no debería (script, on*, etc.)
+function sanitizeAiHtml(html) {
+  return String(html || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/\son\w+="[^"]*"/gi, "")
+    .replace(/\son\w+='[^']*'/gi, "");
+}
+
+export function NewTaskModal({ onClose, onCreate, defaultClient, lockedClient, geminiKey }) {
   const [titulo, setTitulo] = useState("");
   const [empresa, setEmpresa] = useState(lockedClient || defaultClient);
   const [asignado, setAsignado] = useState("");
@@ -22,10 +37,35 @@ export function NewTaskModal({ onClose, onCreate, defaultClient, lockedClient })
   const [fechaEntrega, setFechaEntrega] = useState("");
   const [error, setError] = useState("");
   const [imgMenu, setImgMenu] = useState(null);
+  const [showAiPrompt, setShowAiPrompt] = useState(false);
+  const [aiDescripcion, setAiDescripcion] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
   const firstRef = useRef(null);
   const notasRef = useRef(null);
 
   useEffect(() => { firstRef.current?.focus(); }, []);
+
+  async function handleGenerarConIA() {
+    if (!aiDescripcion.trim()) { setAiError("Contá brevemente qué necesitás."); return; }
+    if (!geminiKey) { setAiError('Falta configurar la clave de Gemini (Administrativo → Usuarios y permisos → Asistente IA).'); return; }
+    setAiLoading(true);
+    setAiError("");
+    try {
+      const { titulo: tituloIA, notasHtml } = await generateTaskIdea(geminiKey, empresa, aiDescripcion.trim());
+      if (tituloIA) setTitulo(tituloIA);
+      if (notasHtml && notasRef.current) {
+        notasRef.current.innerHTML = sanitizeAiHtml(notasHtml);
+        snapshotEditorHistoryDebounced(notasRef.current);
+      }
+      setShowAiPrompt(false);
+      setAiDescripcion("");
+    } catch (e) {
+      setAiError(e && e.message ? e.message : String(e));
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   function submit() {
     if (!titulo.trim()) { setError("Falta el trabajo solicitado."); return; }
@@ -61,6 +101,31 @@ export function NewTaskModal({ onClose, onCreate, defaultClient, lockedClient })
             onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
           />
         </label>
+
+        {!showAiPrompt ? (
+          <button type="button" className="btn-secondary full" style={{ marginBottom: 14 }} onClick={() => setShowAiPrompt(true)}>
+            <Sparkles size={14} /> Generar idea con IA
+          </button>
+        ) : (
+          <div className="ai-task-idea-box">
+            <label className="field" style={{ marginBottom: 8 }}>
+              <span>Contale a la IA qué necesitás — ella arma el título y desarrolla las notas de diseño</span>
+              <input
+                type="text" autoFocus value={aiDescripcion} onChange={(e) => setAiDescripcion(e.target.value)}
+                placeholder='Ej: "promoción de fin de semana para el taller"'
+                onKeyDown={(e) => { if (e.key === "Enter") handleGenerarConIA(); }}
+              />
+            </label>
+            {aiError && <div className="form-error"><AlertTriangle size={13} /> {aiError}</div>}
+            <div className="ai-task-idea-actions">
+              <button type="button" className="btn-secondary" onClick={() => { setShowAiPrompt(false); setAiError(""); }} disabled={aiLoading}>Cancelar</button>
+              <button type="button" className="btn-primary" onClick={handleGenerarConIA} disabled={aiLoading}>
+                {aiLoading ? <><Loader2 size={14} className="spin" /> Generando…</> : <><Sparkles size={14} /> Generar</>}
+              </button>
+            </div>
+            <p className="hint" style={{ marginTop: 6, marginBottom: 0 }}>Completa el título y las notas de diseño — vos revisás y editás antes de crear la tarea, y completás empresa/asignado/fechas a mano (eso la IA no lo inventa).</p>
+          </div>
+        )}
 
         <EmpresaField locked={!!lockedClient} value={empresa} onChange={setEmpresa} />
 

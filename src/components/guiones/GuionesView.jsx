@@ -133,6 +133,7 @@ export function GuionesView({
         <ImportGuionesModal
           empresa={defaultClient}
           pautas={pautas}
+          onAddPauta={onAddPauta}
           defaultPautaId={pautaFiltro && pautaFiltro !== "todas" ? pautaFiltro : ""}
           customCategorias={customCategorias}
           canAddCategoria={canAddCategoria}

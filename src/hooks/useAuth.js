@@ -128,7 +128,22 @@ export function useAuth(logActivity, setAppError) {
     if (result.ok) setRecoveryMode(false); // sigue directo al dashboard: la sesión ya es válida
     return result;
   }
-  function updateUsers(next) { setUsers(next); persistUsers(next); }
+  function updateUsers(next) {
+    setUsers(next);
+    // El persist es asíncrono — un try/catch alrededor no atrapa su rechazo.
+    // Este .catch() sí: cualquier fallo real de escritura (ej. una columna
+    // que no existe en la tabla, como pasó con `modulos`) se muestra en
+    // pantalla en vez de quedar solo en la consola mientras la interfaz
+    // aparenta que todo se guardó.
+    Promise.resolve(persistUsers(next)).catch((e) => {
+      setAppError("El cambio de usuarios NO se pudo guardar en el servidor: " + (e && e.message ? e.message : e) + " — se ve en pantalla, pero al recargar se va a perder.");
+    });
+  }
+  /** Guardado maestro explícito — reenvía la lista completa y ESPERA el
+   * resultado real, para el botón "Guardar cambios" del panel de usuarios. */
+  async function saveUsersNow() {
+    await persistUsers(users || []);
+  }
   function addUser(u) {
     try { updateUsers([...(users || []), u]); logActivity(`Se agregó el usuario ${u.nombre}`); }
     catch (e) { setAppError("No se pudo agregar el usuario: " + (e && e.message ? e.message : e)); }
@@ -148,6 +163,6 @@ export function useAuth(logActivity, setAppError) {
   return {
     users, currentUserId, currentUser, authLoading, authErrorMsg, pendingEmail,
     showLoginOverlay, loginOverlayExiting, recoveryMode, completePasswordRecovery, justLoggedIn,
-    login, logout, updateUsers, addUser, patchUser, deleteUser,
+    login, logout, updateUsers, addUser, patchUser, deleteUser, saveUsersNow,
   };
 }

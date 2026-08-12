@@ -83,7 +83,7 @@ function App() {
   const {
     users, currentUser, currentUserId, authLoading, authErrorMsg, pendingEmail,
     showLoginOverlay, loginOverlayExiting, recoveryMode, completePasswordRecovery, justLoggedIn,
-    login, logout, addUser, patchUser, deleteUser,
+    login, logout, addUser, patchUser, deleteUser, saveUsersNow,
   } = useAuth(
     (text) => logActivity(text), (msg) => setAppError(msg)
   );
@@ -796,6 +796,7 @@ function App() {
             currentUser={currentUser}
             onAddUser={addUser}
             onPatchUser={patchUser}
+            onSaveAll={saveUsersNow}
             onDeleteUser={deleteUser}
             geminiKey={geminiKey}
             onSaveGeminiKey={saveGeminiKey}
@@ -1304,6 +1305,7 @@ function App() {
         <NewTaskModal
           defaultClient={defaultClientForNew}
           lockedClient={selectedClient !== "__ALL__" ? selectedClient : null}
+          geminiKey={geminiKey}
           onClose={() => setShowNew(false)}
           onCreate={(t) => { addTask(t); setShowNew(false); }}
         />

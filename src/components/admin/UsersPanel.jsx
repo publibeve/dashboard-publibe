@@ -16,8 +16,23 @@ import { PERMISOS_LIST, PERMISOS_NINGUNO, MODULOS_LIST } from "../../utils/const
 import { uid } from "../../utils/helpers";
 import { sendPasswordReset } from "../../services/auth.service";
 
-export function UsersPanel({ users = [], currentUser, can, onAddUser, onPatchUser, onDeleteUser, requirePerm }) {
+export function UsersPanel({ users = [], currentUser, can, onAddUser, onPatchUser, onDeleteUser, requirePerm, onSaveAll }) {
   const [showNewUser, setShowNewUser] = useState(false);
+  const [saveAllState, setSaveAllState] = useState("idle"); // idle | saving | saved | error
+  const [saveAllError, setSaveAllError] = useState("");
+
+  async function handleSaveAll() {
+    setSaveAllState("saving");
+    setSaveAllError("");
+    try {
+      await onSaveAll();
+      setSaveAllState("saved");
+      setTimeout(() => setSaveAllState("idle"), 2500);
+    } catch (e) {
+      setSaveAllState("error");
+      setSaveAllError(e && e.message ? e.message : String(e));
+    }
+  }
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
   const canManage = can("gestionarUsuarios");
 
@@ -25,13 +40,28 @@ export function UsersPanel({ users = [], currentUser, can, onAddUser, onPatchUse
     <section className="overview-section">
       <div className="overview-section-head admin-section-head">
         <span className="overview-section-title"><User size={15} /> Usuarios y permisos</span>
-        <button
-          type="button" className="btn-primary"
-          onClick={() => requirePerm("gestionarUsuarios", () => setShowNewUser(true))}
-        >
-          <Plus size={14} /> Agregar usuario
-        </button>
+        <div className="users-head-actions">
+          {canManage && onSaveAll && (
+            <button
+              type="button" className="btn-secondary"
+              onClick={handleSaveAll} disabled={saveAllState === "saving"}
+            >
+              {saveAllState === "saving" ? "Guardando…" : saveAllState === "saved" ? <><Check size={14} /> Guardado</> : "Guardar cambios"}
+            </button>
+          )}
+          <button
+            type="button" className="btn-primary"
+            onClick={() => requirePerm("gestionarUsuarios", () => setShowNewUser(true))}
+          >
+            <Plus size={14} /> Agregar usuario
+          </button>
+        </div>
       </div>
+      {saveAllState === "error" && (
+        <div className="form-error" style={{ marginBottom: 10 }}>
+          <AlertTriangle size={13} /> No se pudo guardar: {saveAllError}
+        </div>
+      )}
       {!canManage && (
         <div className="hint hint-tip" style={{ marginBottom: 10 }}>
           Solo puedes ver esta lista — pídele a alguien con el permiso "Gestionar usuarios" que haga cambios aquí.

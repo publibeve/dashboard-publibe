@@ -17,7 +17,7 @@
 
 @media (max-width:900px){
   .sidebar{
-    position:fixed; left:0; top:0; z-index:207;
+    position:fixed; left:0; top:0; z-index:207; height:100dvh;
     transform:translateX(-100%);
     transition:transform .32s var(--ease-spring), width .3s var(--ease-spring);
     box-shadow:8px 0 40px rgba(0,0,0,0.35);

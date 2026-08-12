@@ -278,16 +278,13 @@
 
 @media (max-width: 900px){
   .mobile-menu-btn{ display:flex; }
-  .sidebar{
-    position:fixed; top:0; left:0; z-index:210; height:100dvh;
-    margin-left:-320px; transition:margin-left .25s ease; box-shadow:none;
-  }
-  .sidebar.mobile-open{ margin-left:0; box-shadow:12px 0 40px rgba(0,0,0,0.35); }
-  .sidebar-backdrop{
-    display:block; position:fixed; inset:0; z-index:205; background:rgba(10,10,12,0.5);
-    animation:sidebarBackdropIn .2s ease;
-  }
-  @keyframes sidebarBackdropIn{ from{ opacity:0; } to{ opacity:1; } }
+  /* El sidebar en mobile (mostrar/ocultar + scrim) ahora vive SOLO en
+     layout.css (transform-based, del apple-design) — este archivo carga
+     DESPUÉS de layout.css, así que la regla vieja de acá (margin-left)
+     quedaba apilada ENCIMA sin pisar el transform (son propiedades
+     distintas), corriendo el sidebar el doble de lo que debía, y el scrim
+     de acá tenía su propio z-index distinto al de layout.css compitiendo
+     por el mismo elemento. Se saca de acá para que quede un solo dueño. */
   .topbar{ flex-direction:column; align-items:stretch; padding:60px 16px 16px; gap:12px; position:relative; }
   .mobile-menu-btn{ position:absolute; top:16px; left:16px; }
   .header-bell-btn{ position:absolute; top:16px; right:62px; margin-left:0; width:34px; height:34px; }
@@ -1254,6 +1251,13 @@
   cursor:pointer; font-family:inherit; white-space:nowrap;
 }
 button.pauta-tab.pauta-tab-label{ padding:9px 14px; }
+/* El botón "Todas las pautas" lleva las DOS clases en el MISMO elemento (no
+   anidadas como los demás segmentos) — el selector descendiente
+   ".pauta-tab-active .pauta-tab-label" nunca le aplicaba, y quedaba texto
+   gris oscuro sobre fondo azul oscuro: ilegible. Estos selectores compuestos
+   (sin espacio) sí le pegan al elemento único. */
+button.pauta-tab.pauta-tab-label.pauta-tab-active{ color:#fff; }
+button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ color:var(--ink); }
 .pauta-tab-icon-btn{
   border:none; background:none; padding:5px; color:var(--ink-soft); cursor:pointer; display:flex; border-radius:50%;
 }
@@ -1305,3 +1309,13 @@ button.pauta-tab.pauta-tab-label{ padding:9px 14px; }
   font-size:10.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em;
   margin:12px 0 6px;
 }
+
+.users-head-actions{ display:flex; align-items:center; gap:8px; }
+
+.import-pauta-row{ display:flex; align-items:center; gap:8px; }
+.import-pauta-row select{ flex:1; min-width:0; }
+
+.ai-task-idea-box{
+  border:1px dashed rgba(0,0,0,0.15); border-radius:14px; padding:12px; margin-bottom:14px; background:rgba(255,255,255,0.35);
+}
+.ai-task-idea-actions{ display:flex; justify-content:flex-end; gap:8px; }
