@@ -87,7 +87,7 @@ function App() {
   } = useAuth(
     (text) => logActivity(text), (msg) => setAppError(msg)
   );
-  const { can, requestPermission, permDeniedLabel, setPermDeniedLabel } = usePermissions(currentUser);
+  const { can, canView, requestPermission, permDeniedLabel, setPermDeniedLabel } = usePermissions(currentUser);
   const { activity, logActivity, clearActivity, commentReads, markTaskSeen } = useActivity(currentUser);
 
   const {
@@ -181,19 +181,28 @@ function App() {
   // Si en algún momento activeTab quedara en "pagos" sin el permiso
   // verMontos (por ejemplo, Diego le revoca el permiso a alguien que lo
   // tenía abierto, o quedó guardado de una sesión anterior), lo saca de ahí
-  // solo — así ningún bloque que renderiza según activeTab==="pagos" puede
-  // llegar a mostrarse sin el permiso, sin tener que repetir el chequeo en
-  // cada uno de esos lugares por separado.
+  // solo — así ningún bloque que renderiza según activeTab==="pagos" (o
+  // cualquier otro módulo con acceso restringido) puede llegar a mostrarse
+  // sin permiso, sin tener que repetir el chequeo en cada uno de esos
+  // lugares por separado. Mismo criterio para "Ver montos" (pagos) y para
+  // el acceso a módulos por usuario (canView) — si el módulo activo deja de
+  // estar permitido (se lo restringieron en Admin mientras estaba ahí
+  // adentro, por ejemplo), rebota al primer módulo accesible.
   useEffect(() => {
-    if (activeTab === "pagos" && !can("verMontos")) setActiveTab("flujo");
-  }, [activeTab, can]);
+    const permitido = activeTab === "pagos" ? can("verMontos") : canView(activeTab);
+    if (permitido) return;
+    const orden = ["tareas", "flujo", "calendario", "notas", "guiones"];
+    const siguiente = orden.find((t) => canView(t)) || "flujo";
+    setActiveTab(siguiente);
+  }, [activeTab, can, canView]);
   const [columnVisibleCounts, setColumnVisibleCounts] = useState({});
   useEffect(() => {
     const activeBtn = document.querySelector(".tabbar .tab-active");
     if (activeBtn) activeBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [activeTab]);
 
-  const TAB_ORDER = ["tareas", "flujo", "calendario", "notas", "guiones", "pagos"];
+  const TAB_ORDER_ALL = ["tareas", "flujo", "calendario", "notas", "guiones", "pagos"];
+  const TAB_ORDER = TAB_ORDER_ALL.filter((t) => (t === "pagos" ? can("verMontos") : canView(t)));
   const tabSwipeStartX = useRef(null);
   function onTabTouchStart(e) { tabSwipeStartX.current = e.touches[0].clientX; }
   function onTabTouchEnd(e) {
@@ -328,12 +337,15 @@ function App() {
     }
 
     setSelectedClient(loc.cliente);
-    // "pagos" sin el permiso verMontos nunca queda activo por URL — mismo
-    // criterio que ya existía para cuando alguien pierde el permiso estando
-    // ahí adentro (ver el otro efecto, más abajo, que hace lo mismo por las
-    // dudas). Así nunca hay ni un instante de la pantalla de Pagos
-    // renderizada para quien no debería verla.
-    const tab = loc.tab === "pagos" && !can("verMontos") ? "flujo" : (loc.tab || "flujo");
+    // Ni "pagos" sin el permiso verMontos, ni ningún otro módulo restringido
+    // por usuario, quedan activos por URL — mismo criterio que ya existía
+    // para cuando alguien pierde el acceso estando ahí adentro (ver el otro
+    // efecto, más abajo, que hace lo mismo por las dudas). Así nunca hay ni
+    // un instante de una pantalla restringida renderizada para quien no
+    // debería verla, ni siquiera entrando por un link directo.
+    const tabPedido = loc.tab || "flujo";
+    const tabPermitido = tabPedido === "pagos" ? can("verMontos") : canView(tabPedido);
+    const tab = tabPermitido ? tabPedido : (["tareas", "flujo", "calendario", "notas", "guiones"].find((t) => canView(t)) || "flujo");
     setActiveTab(tab);
 
     const itemId = tab === loc.tab ? (loc.itemId || null) : null;
@@ -969,6 +981,15 @@ function App() {
               </div>
             )}
           </div>
+          {activeTab === "guiones" && selectedClient !== "__ALL__" && guionesSyncStatus && (
+            <span className={"header-sync-badge header-sync-badge-" + guionesSyncStatus} title={
+              guionesSyncStatus === "offline" ? "Sin conexión — los cambios se guardan en el dispositivo y se suben solos al volver la señal"
+              : guionesSyncStatus === "syncing" ? "Sincronizando cambios pendientes…"
+              : "En línea — todo sincronizado"
+            }>
+              {guionesSyncStatus === "offline" ? "Sin conexión" : guionesSyncStatus === "syncing" ? "Sincronizando…" : "En línea"}
+            </span>
+          )}
           <button
             type="button"
             className={"header-bell-btn" + (selectedClient !== "__ALL__" ? " header-bell-mobile-hide" : "")}
@@ -999,21 +1020,31 @@ function App() {
         ) : (
         <>
         <div className="tabbar" onTouchStart={onTabTouchStart} onTouchEnd={onTabTouchEnd}>
+          {canView("tareas") && (
           <button className={"tab" + (activeTab === "tareas" ? " tab-active" : "")} onClick={() => setActiveTab("tareas")}>
             <ListChecks size={14} /> Tareas
           </button>
+          )}
+          {canView("flujo") && (
           <button className={"tab" + (activeTab === "flujo" ? " tab-active" : "")} onClick={() => setActiveTab("flujo")}>
             <LayoutGrid size={14} /> Creativos
           </button>
+          )}
+          {canView("calendario") && (
           <button className={"tab" + (activeTab === "calendario" ? " tab-active" : "")} onClick={() => setActiveTab("calendario")}>
             <CalendarDays size={14} /> Planificación
           </button>
+          )}
+          {canView("notas") && (
           <button className={"tab" + (activeTab === "notas" ? " tab-active" : "")} onClick={() => setActiveTab("notas")}>
             <StickyNote size={14} /> Notas
           </button>
+          )}
+          {canView("guiones") && (
           <button className={"tab" + (activeTab === "guiones" ? " tab-active" : "")} onClick={() => setActiveTab("guiones")}>
             <Clapperboard size={14} /> Guiones
           </button>
+          )}
           {can("verMontos") && (
           <button className={"tab" + (activeTab === "pagos" ? " tab-active" : "")} onClick={() => setActiveTab("pagos")}>
             <Wallet size={14} /> Pagos publicitarios
@@ -1226,7 +1257,6 @@ function App() {
             onChangePautaFiltro={setGuionesPautaFiltro}
             estadoFiltro={guionesEstadoFiltro}
             onChangeEstadoFiltro={setGuionesEstadoFiltro}
-            syncStatus={guionesSyncStatus}
             showNew={showNewGuion}
             onOpenNew={() => setShowNewGuion(true)}
             onCloseNew={() => setShowNewGuion(false)}

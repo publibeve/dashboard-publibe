@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Overlay } from "../common/Overlay";
 import { UserAvatar } from "../layout/Sidebar";
-import { PERMISOS_LIST, PERMISOS_NINGUNO } from "../../utils/constants";
+import { PERMISOS_LIST, PERMISOS_NINGUNO, MODULOS_LIST } from "../../utils/constants";
 import { uid } from "../../utils/helpers";
 import { sendPasswordReset } from "../../services/auth.service";
 
@@ -188,6 +188,28 @@ export function UserRow({ u, currentUser, canManage, onPatchUser, onDelete }) {
               onClick={() => onPatchUser(u.id, { permisos: { ...u.permisos, [p.key]: !active } })}
             >
               {active ? <Check size={11} /> : <X size={11} />} {p.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Acceso a módulos (pestañas) — separado de los permisos de arriba a
+          propósito: acá el default es "visible", los permisos de arriba
+          son "denegado salvo que se otorgue". Sirve para, por ejemplo,
+          restringir Guiones a un usuario que no debería verlo. */}
+      <div className="users-modulos-label">Acceso a módulos</div>
+      <div className="users-perms-grid">
+        {MODULOS_LIST.map((m) => {
+          const active = u.modulos ? u.modulos[m.key] !== false : true;
+          return (
+            <button
+              type="button" key={m.key}
+              className={"perm-chip" + (active ? " perm-chip-active" : "")}
+              disabled={!canManage}
+              title={active ? `${u.nombre} puede ver esta pestaña` : `${u.nombre} NO ve esta pestaña`}
+              onClick={() => onPatchUser(u.id, { modulos: { ...(u.modulos || {}), [m.key]: !active } })}
+            >
+              {active ? <Check size={11} /> : <X size={11} />} {m.label}
             </button>
           );
         })}

@@ -38,7 +38,7 @@ export function GuionCard({ guion, showClient, customCategorias, onOpen }) {
           <span className="note-untitled"><Clapperboard size={13} /> Sin bloques todavía</span>
         ) : (
           <span className={grabado ? "guion-progress-done" : ""}>
-            <CheckCircle2 size={13} /> Faltan {total - hechos} por grabar · {Math.round((hechos / total) * 100)}% completado
+            <CheckCircle2 size={13} /> Faltan {total - hechos} por grabar · {Math.round((hechos / total) * 100)}% grabado
           </span>
         )}
       </div>

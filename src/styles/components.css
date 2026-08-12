@@ -7,6 +7,7 @@
   background:linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 45%), rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.5); min-width:270px; max-width:290px; flex:1; border-radius:18px;
   box-shadow:0 1px 2px rgba(28,28,30,0.04), 0 8px 20px rgba(28,28,30,0.05), inset 0 1px 0 rgba(255,255,255,0.7);
   transition:background .15s, box-shadow .15s; padding:14px; margin:0; display:flex; flex-direction:column;
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
 }
 .column-drop{ background:rgba(29,53,87,0.07); box-shadow:inset 0 0 0 2px var(--primary); }
 .column-head{ display:flex; align-items:center; gap:6px; padding:4px 6px 12px; color:var(--ink-soft); }
@@ -25,11 +26,13 @@
 .card{
   text-align:left; width:100%; background:rgba(255,255,255,0.78); border:1px solid rgba(255,255,255,0.55); border-left:4px solid var(--border);
   border-radius:16px; padding:13px 14px 11px; cursor:grab; font-family:inherit; display:flex; flex-direction:column; gap:8px;
-  transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s, opacity .12s; box-shadow:0 1px 2px rgba(28,28,30,0.04), 0 8px 24px rgba(28,28,30,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+  transition:transform .22s var(--ease-spring), box-shadow .22s var(--ease-spring), opacity .12s;
+  box-shadow:0 1px 2px rgba(28,28,30,0.04), 0 8px 24px rgba(28,28,30,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+  backdrop-filter:blur(10px);
 }
-.card:active{ cursor:grabbing; }
-.card-dragging{ opacity:.4; }
 .card:hover{ transform:scale(1.02) translateY(-3px); box-shadow:0 2px 4px rgba(28,28,30,0.06), 0 16px 36px rgba(28,28,30,0.11), inset 0 1px 0 rgba(255,255,255,0.7); }
+.card:active{ cursor:grabbing; transform:scale(1.01) translateY(-1px); transition-duration:.08s; }
+.card-dragging{ opacity:.4; transform:scale(1.03) rotate(-1deg); box-shadow:0 20px 40px rgba(28,28,30,0.18); }
 .card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
 .card-unread-dot{
   width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0; margin-top:3px;
@@ -53,7 +56,13 @@
 .badge-unread{ color:var(--accent); font-weight:700; }
 
 /* Overlay & Modal */
-.overlay{ position:fixed; inset:0; background:rgba(28,28,30,0.45); display:flex; align-items:center; justify-content:center; padding:20px 20px 20px calc(20px + var(--sidebar-width, 0px)); box-sizing:border-box; z-index:20; }
+.overlay{
+  position:fixed; inset:0; background:rgba(28,28,30,0.45); display:flex; align-items:center; justify-content:center;
+  padding:20px 20px 20px calc(20px + var(--sidebar-width, 0px)); box-sizing:border-box; z-index:20;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  animation:overlayIn .22s var(--ease-out-expo) both;
+}
+@keyframes overlayIn{ from{ opacity:0; } to{ opacity:1; } }
 
 .img-preview-overlay{ z-index:40; background:rgba(15,15,16,0.78); }
 .img-preview-box{
@@ -75,7 +84,18 @@
 .icon-btn:disabled{ opacity:.3; cursor:default; }
 .img-preview-error{ display:flex; flex-direction:column; align-items:center; gap:10px; padding:40px 20px; color:var(--ink-soft); text-align:center; }
 .img-preview-error p{ margin:0; font-size:12.5px; }
-.modal{ background:rgba(255,255,255,0.86); border:1px solid rgba(255,255,255,0.6); border-radius:22px; padding:24px 24px 30px 24px; width:100%; box-shadow:0 30px 70px rgba(20,20,25,0.28), inset 0 1px 0 rgba(255,255,255,0.7); max-height:92vh; overflow-y:auto; overflow-x:hidden; }
+.modal{
+  background:rgba(255,255,255,0.86); border:1px solid rgba(255,255,255,0.6); border-radius:22px; padding:24px 24px 30px 24px; width:100%;
+  box-shadow:0 30px 70px rgba(20,20,25,0.28), inset 0 1px 0 rgba(255,255,255,0.7); max-height:92vh; overflow-y:auto; overflow-x:hidden;
+  backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%);
+  transform-origin:center; animation:modalIn .28s var(--ease-spring) both;
+}
+@keyframes modalIn{ from{ opacity:0; transform:scale(.94) translateY(10px); } to{ opacity:1; transform:scale(1) translateY(0); } }
+/* Nota: esta entrada es solo de apertura. Una salida animada simétrica
+   (que el modal se "retraiga" en vez de desaparecer de golpe) requiere que
+   el componente espere a que termine la animación antes de desmontar — es
+   un cambio de lógica, no solo de CSS. Si te gusta el resultado, ese es el
+   siguiente paso natural. */
 .modal.small{ max-width:460px; width:calc(100vw - 40px); }
 .modal.large{ max-width:920px; }
 .task-modal-split{ display:block; margin-bottom:16px; }
@@ -83,9 +103,10 @@
 .chat-fab{
   position:fixed; right:88px; bottom:24px; z-index:44; width:52px; height:52px; border-radius:50%;
   background:var(--primary); color:#fff; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
-  box-shadow:0 10px 26px rgba(20,20,25,0.32); transition:transform .15s, box-shadow .15s;
+  box-shadow:0 10px 26px rgba(20,20,25,0.32); transition:transform .18s var(--ease-spring-bounce), box-shadow .15s;
 }
 .chat-fab:hover{ transform:scale(1.06); }
+.chat-fab:active{ transform:scale(0.92); transition-duration:.08s; }
 .chat-fab-active{ box-shadow:0 10px 26px rgba(20,20,25,0.32), 0 0 0 3px rgba(255,255,255,0.6); }
 .chat-fab-badge{
   position:absolute; top:4px; right:4px; background:#fff; color:var(--ink); font-size:9.5px; font-weight:700;
@@ -99,6 +120,7 @@
   background:linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0) 45%), rgba(255,255,255,0.5);
   border:1px solid rgba(255,255,255,0.5); border-radius:18px;
   padding:14px; max-height:520px; min-width:0;
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
 }
 .task-modal-chat h4{ display:flex; align-items:center; gap:6px; font-family:'Space Grotesk',sans-serif; font-size:12.5px; margin:0 0 10px; flex-shrink:0; }
 .task-chat-messages{ flex:1; max-height:none; margin-bottom:10px; }
@@ -107,7 +129,11 @@
 .modal-head h3{ font-family:'Space Grotesk',sans-serif; font-size:16px; margin:0; display:flex; align-items:center; gap:8px; }
 .title-input{ font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600; border:none; outline:none; background:transparent; flex:1; color:var(--ink); border-bottom:1px solid transparent; padding-bottom:2px; }
 .title-input:focus{ border-bottom-color:var(--border); }
-.icon-btn{ background:var(--bg); border:1px solid var(--border); border-radius:7px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink-soft); flex-shrink:0; }
+.icon-btn{
+  background:var(--bg); border:1px solid var(--border); border-radius:7px; width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; color:var(--ink-soft); flex-shrink:0; transition:transform .15s var(--ease-spring), color .15s;
+}
+.icon-btn:active{ transform:scale(0.88); }
 .icon-btn.subtle{ border:none; background:transparent; width:24px; height:24px; }
 .icon-btn.subtle:disabled{ opacity:.35; cursor:not-allowed; }
 .icon-btn.subtle:hover{ color:var(--accent); }
@@ -315,9 +341,10 @@
 .chat-anchor-btn{
   position:relative; display:flex; align-items:center; justify-content:center; width:38px; height:38px;
   border-radius:13px; background:var(--primary); color:#fff; border:none; cursor:pointer; flex-shrink:0;
-  box-shadow:0 4px 12px rgba(20,20,25,0.2); transition:transform .15s, box-shadow .15s;
+  box-shadow:0 4px 12px rgba(20,20,25,0.2); transition:transform .15s var(--ease-spring), box-shadow .15s;
 }
 .chat-anchor-btn:hover{ transform:scale(1.06); }
+.chat-anchor-btn:active{ transform:scale(0.92); transition-duration:.08s; }
 .chat-anchor-btn-active{ box-shadow:0 4px 12px rgba(20,20,25,0.2), 0 0 0 3px rgba(29,53,87,0.18); }
 .confirm-row{ display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--accent); flex-wrap:wrap; }
 .confirm-row > span{ display:flex; align-items:center; gap:6px; }
@@ -351,9 +378,10 @@
 .tab{
   display:flex; align-items:center; gap:7px; padding:9px 16px; border:none; background:transparent;
   color:var(--ink-soft); font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit;
-  border-radius:12px; transition:background .2s, color .2s, transform .2s; flex-shrink:0; white-space:nowrap;
+  border-radius:12px; transition:background .2s, color .2s, transform .18s var(--ease-spring); flex-shrink:0; white-space:nowrap;
 }
 .tab:hover{ color:var(--ink); background:rgba(28,28,30,0.05); }
+.tab:active{ transform:scale(0.95); }
 .tab-active{ color:#fff; background:var(--primary); box-shadow:0 4px 14px rgba(29,53,87,0.28); }
 .tab-active:hover{ color:#fff; background:var(--primary); }
 

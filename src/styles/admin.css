@@ -1234,20 +1234,26 @@
 }
 
 /* ---- Correcciones ronda 4 de Guiones: tabs de Pauta, filtro de estado, textareas planos ---- */
-.pauta-tabbar{ padding:0 0 4px; background:none; border-bottom:none; margin-bottom:10px; align-items:center; }
-.pauta-tab{
-  position:relative; display:flex; align-items:center; gap:2px; border-radius:20px; background:var(--surface);
-  border:1px solid var(--border); padding:2px; flex-shrink:0; transition:border-color .15s, background .15s;
+.pauta-tabbar{
+  padding:4px; border-radius:14px; border:1px solid var(--border); background:rgba(255,255,255,0.5);
+  gap:2px; margin-bottom:10px; align-items:center;
 }
-.pauta-tab-active{ border-color:var(--primary); background:var(--primary); }
+.pauta-tab{
+  position:relative; display:flex; align-items:center; gap:2px; border-radius:10px; background:none;
+  border:none; padding:0; flex-shrink:0; transition:background .15s;
+}
+.pauta-tab:hover{ background:rgba(28,28,30,0.05); }
+.pauta-tab-active{ background:var(--primary); box-shadow:0 4px 14px rgba(29,53,87,0.28); }
 .pauta-tab-active .pauta-tab-label{ color:#fff; }
+.pauta-tab-active:hover{ background:var(--primary); }
 .pauta-tab-active .pauta-tab-icon-btn{ color:rgba(255,255,255,0.75); }
 .pauta-tab-dragging{ opacity:0.4; }
-.pauta-tab-dragover{ border-color:var(--primary); transform:translateY(-2px); }
+.pauta-tab-dragover{ outline:2px solid var(--primary); outline-offset:-2px; }
 .pauta-tab-label{
-  border:none; background:none; padding:6px 4px 6px 12px; font-size:12.5px; font-weight:600; color:var(--ink);
+  border:none; background:none; padding:9px 6px 9px 14px; font-size:12.5px; font-weight:600; color:var(--ink-soft);
   cursor:pointer; font-family:inherit; white-space:nowrap;
 }
+button.pauta-tab.pauta-tab-label{ padding:9px 14px; }
 .pauta-tab-icon-btn{
   border:none; background:none; padding:5px; color:var(--ink-soft); cursor:pointer; display:flex; border-radius:50%;
 }
@@ -1284,11 +1290,18 @@
 }
 .guion-print-plain-text{ white-space:pre-line; }
 
-/* ---- Guiones offline — indicador de estado de sincronización ---- */
-.guion-sync-badge{
-  display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:11px;
-  font-weight:600; margin-bottom:12px; width:fit-content;
+/* ---- Guiones offline — indicador de estado de sincronización, en la
+   cabecera, junto a notificaciones — solo visible en la pestaña Guiones. ---- */
+@keyframes syncBadgeBlink{ 0%, 100%{ opacity:1; } 50%{ opacity:0.45; } }
+.header-sync-badge{
+  display:inline-flex; align-items:center; padding:6px 12px; border-radius:20px; font-size:11px;
+  font-weight:700; color:#fff; flex-shrink:0; animation:syncBadgeBlink 1.6s ease-in-out infinite;
 }
-.guion-sync-badge-synced{ background:rgba(46,125,70,0.1); color:#2E7D46; }
-.guion-sync-badge-offline{ background:rgba(196,120,20,0.14); color:#B4790F; }
-.guion-sync-badge-syncing{ background:rgba(11,132,255,0.1); color:#0B84FF; }
+.header-sync-badge-synced{ background:#1E9E52; }
+.header-sync-badge-offline{ background:#D64545; }
+.header-sync-badge-syncing{ background:#0B84FF; animation:none; }
+
+.users-modulos-label{
+  font-size:10.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em;
+  margin:12px 0 6px;
+}

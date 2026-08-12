@@ -95,7 +95,7 @@ export function PautaTabBar({ pautas, pautaFiltro, onChangePautaFiltro, onAddPau
 
   return (
     <div className="tabbar pauta-tabbar">
-      <button type="button" className={"tab" + (pautaFiltro === "todas" ? " tab-active" : "")} onClick={() => onChangePautaFiltro("todas")}>
+      <button type="button" className={"pauta-tab pauta-tab-label" + (pautaFiltro === "todas" ? " pauta-tab-active" : "")} onClick={() => onChangePautaFiltro("todas")}>
         Todas las pautas
       </button>
       {(pautas || []).map((p, i) => (

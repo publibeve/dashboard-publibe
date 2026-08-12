@@ -18,9 +18,37 @@
   --accent:#C1443C;
   --ok:#2E7D46;
   --border:#E4E1DA;
+
+  /* --- apple-design: curvas "spring-like" ---
+     No son springs JS reales (eso pide una librería tipo Motion), pero
+     estas cubic-bezier aproximan su sensación en CSS puro:
+     - ease-spring: entrada/salida crítica, sin rebote (la que más se usa)
+     - ease-spring-bounce: para lo que "trae momentum" (flick, drop de carta)
+     - ease-out-expo: respuesta rápida al inicio, asentamiento suave al final */
+  --ease-spring: cubic-bezier(.16,1,.3,1);
+  --ease-spring-bounce: cubic-bezier(.34,1.56,.64,1);
+  --ease-out-expo: cubic-bezier(.19,1,.22,1);
 }
 html,body{ margin:0; padding:0; }
 *{box-sizing:border-box;}
+
+/* Feedback instantáneo al presionar — vale para cualquier control clicable
+   que no tenga ya su propio :active más específico más abajo. */
+button, .card, .nav-item, .tab{ -webkit-tap-highlight-color:transparent; }
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration:0.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.001ms !important;
+    scroll-behavior:auto !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce){
+  .topbar, .modal, .overlay, .header-user-popover, .sidebar-search-dropdown, .task-modal-chat, .column{
+    backdrop-filter:none !important;
+  }
+}
 .app{
   font-family:'Inter',sans-serif; color:var(--ink); min-height:100vh; display:flex;
   background:
@@ -57,9 +85,9 @@ html,body{ margin:0; padding:0; }
   opacity: 1;
   will-change: opacity, filter, transform;
   transition:
-    opacity 0.9s cubic-bezier(.4,0,.2,1),
-    filter 0.9s cubic-bezier(.4,0,.2,1),
-    transform 0.9s cubic-bezier(.4,0,.2,1);
+    opacity 0.9s var(--ease-spring),
+    filter 0.9s var(--ease-spring),
+    transform 0.9s var(--ease-spring);
 }
 
 .login-transition-overlay.login-exit {

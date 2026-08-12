@@ -133,6 +133,29 @@ export const PERMISOS_TODOS = Object.fromEntries(PERMISOS_LIST.map((p) => [p.key
 
 export const PERMISOS_NINGUNO = Object.fromEntries(PERMISOS_LIST.map((p) => [p.key, false]));
 
+/**
+ * Acceso a módulos (pestañas) por usuario — separado del sistema de
+ * permisos de arriba a propósito, porque funciona al revés: los permisos
+ * de PERMISOS_LIST son "denegado salvo que se otorgue explícitamente" (un
+ * usuario nuevo no puede eliminar nada hasta que alguien se lo dé). Los
+ * módulos son "visible salvo que se restrinja explícitamente" — así,
+ * agregar un módulo nuevo acá (o que un usuario ya exista de antes, sin
+ * este campo todavía) nunca le oculta algo que ya podía ver.
+ *
+ * "Pagos publicitarios" queda AFUERA de esta lista a propósito — ya tiene
+ * su propio control (el permiso "Ver montos" existente), que ya hace
+ * exactamente esto mismo para esa pestaña. Agregarlo acá también
+ * duplicaría el control con dos mecanismos distintos gobernando la misma
+ * pestaña, lo cual es más confuso que útil.
+ */
+export const MODULOS_LIST = [
+  { key: "tareas", label: "Tareas" },
+  { key: "flujo", label: "Creativos" },
+  { key: "calendario", label: "Planificación" },
+  { key: "notas", label: "Notas" },
+  { key: "guiones", label: "Guiones" },
+];
+
 export const METODOS_PAGO = ["PayPal", "Zelle", "Transferencia bancaria", "WallyPay", "Efectivo", "Tarjeta", "Otro"];
 
 export const REDES = [
