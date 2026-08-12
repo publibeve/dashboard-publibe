@@ -230,6 +230,10 @@ function App() {
   const [openGuionId, setOpenGuionId] = useState(null);
   const [guionesSearch, setGuionesSearch] = useState("");
   const [guionesPautaFiltro, setGuionesPautaFiltro] = useState("todas");
+  // Al cambiar de cliente, la pauta seleccionada (si había una puntual, no
+  // "todas") casi seguro no le pertenece al cliente nuevo — se resetea para
+  // no quedar mostrando un filtro que no corresponde a nadie ahí.
+  useEffect(() => { setGuionesPautaFiltro("todas"); }, [selectedClient]);
   const [guionesEstadoFiltro, setGuionesEstadoFiltro] = useState("todos");
   const [showNewGuion, setShowNewGuion] = useState(false);
   const [showImportGuiones, setShowImportGuiones] = useState(false);
@@ -649,6 +653,17 @@ function App() {
       .filter((n) => (selectedClient === "__ALL__" || n.empresa === selectedClient) && !n.deletedAt)
       .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
   }, [notes, selectedClient]);
+
+  const filteredPautas = useMemo(() => {
+    if (!pautas) return [];
+    // Bug corregido: antes se pasaba la lista completa de pautas sin filtrar
+    // por cliente — todas compartían la misma barra sin importar en qué
+    // cliente estuvieras parado. El campo `empresa` ya existía en cada
+    // pauta desde que se creaba (ver handleAddPauta), así que esto es solo
+    // agregar el filtro que faltaba — no hace falta migrar ni tocar ningún
+    // dato ya guardado.
+    return pautas.filter((p) => p.empresa === selectedClient);
+  }, [pautas, selectedClient]);
 
   const filteredGuiones = useMemo(() => {
     if (!guiones) return [];
@@ -1248,7 +1263,7 @@ function App() {
             customCategorias={customCategorias}
             canAddCategoria={can("administrativo")}
             onAddCategoria={addGuionCategoria}
-            pautas={pautas}
+            pautas={filteredPautas}
             onAddPauta={addPauta}
             onRenamePauta={(id, etiqueta) => patchPauta(id, { etiqueta })}
             onDeletePauta={handleDeletePauta}

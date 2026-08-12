@@ -3,6 +3,7 @@ import {
   X,
   AlertTriangle,
   Palette,
+  Pipette,
 } from "lucide-react";
 import { ColorPickerPopover } from "../common/ColorPickerPopover";
 import { Overlay } from "../common/Overlay";
@@ -65,7 +66,29 @@ export function EditClientModal({ client, onClose, onSave }) {
   const [color, setColor] = useState(client.color);
   const [iconKey, setIconKey] = useState(client.iconKey || "building");
   const [showPicker, setShowPicker] = useState(false);
+  const [eyedropperError, setEyedropperError] = useState("");
   const eyedropperRef = useRef(null);
+
+  // El cuentagotas real (tomar un color de cualquier parte de la pantalla,
+  // no solo de adentro de este selector) usa la API nativa EyeDropper del
+  // navegador — hoy solo la soportan Chrome y Edge, ni Firefox ni Safari
+  // todavía. No hay margen técnico para "arreglar" eso en los navegadores
+  // que no la tienen — lo único correcto es avisarlo claro en vez de que el
+  // botón no haga nada en silencio.
+  async function handleEyedropper() {
+    setEyedropperError("");
+    if (!("EyeDropper" in window)) {
+      setEyedropperError("El cuentagotas para tomar un color de la pantalla solo funciona en Chrome o Edge — este navegador no lo soporta todavía. Podés elegir el color con la ruedita de al lado, o escribir el código manualmente.");
+      return;
+    }
+    try {
+      const eyeDropper = new window.EyeDropper();
+      const result = await eyeDropper.open();
+      setColor(result.sRGBHex);
+    } catch (e) {
+      // AbortError = el usuario canceló (tecla Escape) — no es un error real, no hay nada que avisar.
+    }
+  }
 
   function submit() {
     onSave({ color, iconKey });
@@ -93,8 +116,13 @@ export function EditClientModal({ client, onClose, onSave }) {
             />
             <div className="color-picker-wrap">
               <button
+                type="button" className="eyedropper-btn" onClick={handleEyedropper} title="Cuentagotas — tomar un color de cualquier parte de la pantalla"
+              >
+                <Pipette size={15} />
+              </button>
+              <button
                 type="button" className="eyedropper-btn" ref={eyedropperRef}
-                onClick={() => setShowPicker((s) => !s)} title="Elegir color con el selector"
+                onClick={() => setShowPicker((s) => !s)} title="Elegir color con la ruedita"
               >
                 <Palette size={15} />
               </button>
@@ -103,6 +131,7 @@ export function EditClientModal({ client, onClose, onSave }) {
               )}
             </div>
           </div>
+          {eyedropperError && <div className="form-error" style={{ marginTop: 6 }}><AlertTriangle size={13} /> {eyedropperError}</div>}
           <div className="swatch-row">
             {CLIENT_COLOR_PALETTE.map((c) => (
               <button key={c} type="button" className={"swatch" + (c === color ? " swatch-active" : "")} style={{ background: c }} onClick={() => setColor(c)} />

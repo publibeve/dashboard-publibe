@@ -35,7 +35,7 @@
 }
 .eyedropper-btn:hover{ background:var(--bg); color:var(--primary); border-color:var(--primary); }
 .eyedropper-btn-busy{ background:var(--primary); color:#fff; border-color:var(--primary); }
-.color-picker-wrap{ position:relative; }
+.color-picker-wrap{ position:relative; display:flex; align-items:center; gap:6px; }
 .color-picker-pop{
   position:absolute; top:calc(100% + 8px); left:0; z-index:30; width:220px;
   background:var(--surface); border:1px solid var(--border); border-radius:12px;
