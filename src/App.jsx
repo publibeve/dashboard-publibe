@@ -105,7 +105,7 @@ function App() {
     saldosFavor, updateSaldosFavor, addSaldoFavor, removeSaldoFavor,
   } = useDebts(logActivity, setAppError);
   const { notes, updateNotes, addNote, patchNote, trashNote, restoreNote, purgeNote } = useNotes(logActivity, setAppError);
-  const { guiones, updateGuiones, addGuion, addGuiones, patchGuion, trashGuion, restoreGuion, purgeGuion } = useGuiones(logActivity, setAppError);
+  const { guiones, updateGuiones, addGuion, addGuiones, patchGuion, trashGuion, restoreGuion, purgeGuion, syncStatus: guionesSyncStatus } = useGuiones(logActivity, setAppError);
   const { customCategorias, addCategoria: addGuionCategoria } = useGuionCategoriasCustom(setAppError);
   const { pautas, updatePautas, addPauta, patchPauta, deletePauta } = usePautas(logActivity, setAppError);
   function handleDeletePauta(pautaId) {
@@ -1226,6 +1226,7 @@ function App() {
             onChangePautaFiltro={setGuionesPautaFiltro}
             estadoFiltro={guionesEstadoFiltro}
             onChangeEstadoFiltro={setGuionesEstadoFiltro}
+            syncStatus={guionesSyncStatus}
             showNew={showNewGuion}
             onOpenNew={() => setShowNewGuion(true)}
             onCloseNew={() => setShowNewGuion(false)}

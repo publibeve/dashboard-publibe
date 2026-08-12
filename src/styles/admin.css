@@ -1283,3 +1283,12 @@
   border:1px solid var(--border); border-radius:10px; background:var(--bg); resize:vertical; min-height:52px;
 }
 .guion-print-plain-text{ white-space:pre-line; }
+
+/* ---- Guiones offline — indicador de estado de sincronización ---- */
+.guion-sync-badge{
+  display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:11px;
+  font-weight:600; margin-bottom:12px; width:fit-content;
+}
+.guion-sync-badge-synced{ background:rgba(46,125,70,0.1); color:#2E7D46; }
+.guion-sync-badge-offline{ background:rgba(196,120,20,0.14); color:#B4790F; }
+.guion-sync-badge-syncing{ background:rgba(11,132,255,0.1); color:#0B84FF; }

@@ -1,21 +1,52 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { loadGuiones, persistGuiones } from "../services/data.service";
 import { subscribeTable } from "../services/supabaseClient";
 import { useRealtimeReload } from "./useRealtimeSync";
+import { useOfflineSync } from "./useOfflineSync";
 
 export function useGuiones(logActivity, setAppError) {
   const [guiones, setGuiones] = useState(null);
+  const { syncStatus, persistWithOfflineFallback, getInitialPending } = useOfflineSync("guiones", persistGuiones);
+  const loadedOnceRef = useRef(false);
+  // useRealtimeReload congela su callback en el momento en que se monta (no
+  // se vuelve a crear en cada render) — leer `syncStatus` directo ahí adentro
+  // siempre vería el valor de ese instante inicial, nunca el actual. Con una
+  // ref, el callback siempre lee el valor más reciente sin importar cuándo
+  // se haya "congelado" el cierre.
+  const syncStatusRef = useRef(syncStatus);
+  syncStatusRef.current = syncStatus;
 
   useEffect(() => {
-    loadGuiones().then((g) => setGuiones(g));
+    // Si quedó una copia pendiente de una sesión anterior que se cerró sin
+    // señal (nunca llegó a sincronizar), esa es la versión más reciente de
+    // verdad — se usa como punto de partida en vez de lo que diga el
+    // servidor (que en ese caso está desactualizado), y useOfflineSync ya
+    // se encarga de reintentar mandarla apenas haya señal.
+    const pending = getInitialPending();
+    if (pending) {
+      setGuiones(pending);
+      loadedOnceRef.current = true;
+    }
+    loadGuiones().then((g) => {
+      if (!loadedOnceRef.current) setGuiones(g);
+      loadedOnceRef.current = true;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useRealtimeReload(
     (onChange) => subscribeTable("guiones", onChange),
-    () => loadGuiones().then((g) => setGuiones(g))
+    () => {
+      // No pisar el estado local si hay cambios sin sincronizar todavía —
+      // si no, un cambio en tiempo real llegado justo mientras se está
+      // reconectando podría reemplazar ediciones recientes que aún no
+      // terminaron de subir.
+      if (syncStatusRef.current !== "synced") return;
+      loadGuiones().then((g) => setGuiones(g));
+    }
   );
 
-  function updateGuiones(next) { setGuiones(next); persistGuiones(next); }
+  function updateGuiones(next) { setGuiones(next); persistWithOfflineFallback(next); }
   function addGuion(g) {
     try { updateGuiones([...(guiones || []), g]); logActivity(`Se creó el guion "${g.titulo || "(sin título)"}"`); }
     catch (e) { setAppError("No se pudo crear el guion: " + (e && e.message ? e.message : e)); }
@@ -31,6 +62,10 @@ export function useGuiones(logActivity, setAppError) {
    * Acá se arma la lista completa en un solo `next` y se persiste UNA sola
    * vez, de forma atómica, y se espera (await) el resultado real de esa
    * escritura para poder avisar si falló.
+   *
+   * Nota: esto NO pasa por la cola offline — para importar hace falta haber
+   * llamado a Gemini momentos antes, algo que ya requiere señal, así que no
+   * hay un escenario real de "importar estando sin conexión".
    */
   async function addGuiones(list) {
     if (!list || !list.length) return;
@@ -71,5 +106,5 @@ export function useGuiones(logActivity, setAppError) {
     } catch (e) { setAppError("No se pudo eliminar el guion: " + (e && e.message ? e.message : e)); }
   }
 
-  return { guiones, setGuiones, updateGuiones, addGuion, addGuiones, patchGuion, trashGuion, restoreGuion, purgeGuion };
+  return { guiones, setGuiones, updateGuiones, addGuion, addGuiones, patchGuion, trashGuion, restoreGuion, purgeGuion, syncStatus };
 }

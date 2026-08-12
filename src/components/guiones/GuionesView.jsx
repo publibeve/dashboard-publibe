@@ -2,6 +2,9 @@ import { useState } from "react";
 import {
   Trash2,
   History,
+  WifiOff,
+  RefreshCw,
+  Wifi,
 } from "lucide-react";
 import { MasonryGrid } from "../notes/NotesView";
 import { GuionCard } from "./GuionCard";
@@ -27,6 +30,7 @@ export function GuionesView({
   pautas, onAddPauta, onRenamePauta, onDeletePauta, onReorderPautas,
   pautaFiltro, onChangePautaFiltro,
   estadoFiltro, onChangeEstadoFiltro,
+  syncStatus,
   showNew: showNewProp, onOpenNew, onCloseNew,
   showImport: showImportProp, onOpenImport, onCloseImport,
   geminiKey,
@@ -58,6 +62,13 @@ export function GuionesView({
 
   return (
     <main className="pane notes-pane">
+      {syncStatus && !showTrash && (
+        <div className={"guion-sync-badge guion-sync-badge-" + syncStatus}>
+          {syncStatus === "offline" && <><WifiOff size={12} /> Sin conexión — se guarda solo en el dispositivo, se sube al volver la señal</>}
+          {syncStatus === "syncing" && <><RefreshCw size={12} className="spin" /> Sincronizando cambios pendientes…</>}
+          {syncStatus === "synced" && <><Wifi size={11} /> En línea</>}
+        </div>
+      )}
       {!showTrash && (
         <>
           <PautaTabBar
