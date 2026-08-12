@@ -33,7 +33,7 @@ import { HeaderUserButton } from "../layout/Sidebar";
 import { ADMIN_GRADIENT, ADMIN_PRIMARY, CLIENTES, DEMO_MODULES, DEMO_MODULE_KEYS, PERMISOS_LIST } from "../../utils/constants";
 import { clientMeta, fmtDate, fmtMonto, invoiceEstado, monthLabelEs, sumAbonos } from "../../utils/helpers";
 
-export function AdminModule({ invoices = [], expenses = [], onOpenInvoice, onNewInvoice, onOpenExpense, onNewExpense, accesos = [], onOpenAcceso, onNewAcceso, clientsBump, onDeleteClient, activity, onClearHistory, onLoadDemoData, onDeleteDemoData, can, users, onAddUser, onPatchUser, onDeleteUser, currentUser, geminiKey, onSaveGeminiKey, driveConnected, onToggleDriveConnected, onAddClient, onEditClient, onOpenMobileMenu, onLogout, lastBackupDate, onRunBackup, onRunWorkDriveBackup, onRestoreBackup, subTab: subTabProp, onSubTabChange }) {
+export function AdminModule({ invoices = [], expenses = [], onOpenInvoice, onNewInvoice, onOpenExpense, onNewExpense, accesos = [], onOpenAcceso, onNewAcceso, clientsBump, onDeleteClient, activity, onClearHistory, onLoadDemoData, onDeleteDemoData, can, users, onAddUser, onPatchUser, onSaveAll, onDeleteUser, currentUser, geminiKey, onSaveGeminiKey, driveConnected, onToggleDriveConnected, onAddClient, onEditClient, onOpenMobileMenu, onLogout, lastBackupDate, onRunBackup, onRunWorkDriveBackup, onRestoreBackup, subTab: subTabProp, onSubTabChange }) {
   // Controlado desde afuera (App.jsx, para poder reflejarlo en la URL) si se
   // pasan las props; si no, se comporta exactamente como antes (estado
   // propio) — así no rompe nada si en algún momento se usa este componente
@@ -527,6 +527,7 @@ export function AdminModule({ invoices = [], expenses = [], onOpenInvoice, onNew
               can={can}
               onAddUser={onAddUser}
               onPatchUser={onPatchUser}
+              onSaveAll={onSaveAll}
               onDeleteUser={onDeleteUser}
               requirePerm={requirePerm}
             />

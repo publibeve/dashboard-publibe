@@ -107,7 +107,7 @@ function App() {
   const { notes, updateNotes, addNote, patchNote, trashNote, restoreNote, purgeNote } = useNotes(logActivity, setAppError);
   const { guiones, updateGuiones, addGuion, addGuiones, patchGuion, trashGuion, restoreGuion, purgeGuion, syncStatus: guionesSyncStatus } = useGuiones(logActivity, setAppError);
   const { customCategorias, addCategoria: addGuionCategoria } = useGuionCategoriasCustom(setAppError);
-  const { pautas, updatePautas, addPauta, patchPauta, deletePauta } = usePautas(logActivity, setAppError);
+  const { pautas, addPauta, patchPauta, deletePauta, reorderPautas } = usePautas(logActivity, setAppError);
   function handleDeletePauta(pautaId) {
     // Los guiones de esta pauta NO se borran — quedan "Sin pauta" (pautaId
     // null). Se hace con una sola llamada a updateGuiones (no un forEach de
@@ -662,7 +662,12 @@ function App() {
     // pauta desde que se creaba (ver handleAddPauta), así que esto es solo
     // agregar el filtro que faltaba — no hace falta migrar ni tocar ningún
     // dato ya guardado.
-    return pautas.filter((p) => p.empresa === selectedClient);
+    return pautas
+      .filter((p) => p.empresa === selectedClient)
+      // `orden` es nuevo — las pautas creadas antes de este campo no lo
+      // tienen, así que caen ordenadas por fecha de creación (su orden
+      // natural de siempre) en vez de mezclarse al final o al principio.
+      .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
   }, [pautas, selectedClient]);
 
   const filteredGuiones = useMemo(() => {
@@ -1268,7 +1273,7 @@ function App() {
             onAddPauta={addPauta}
             onRenamePauta={(id, etiqueta) => patchPauta(id, { etiqueta })}
             onDeletePauta={handleDeletePauta}
-            onReorderPautas={updatePautas}
+            onReorderPautas={reorderPautas}
             pautaFiltro={guionesPautaFiltro}
             onChangePautaFiltro={setGuionesPautaFiltro}
             estadoFiltro={guionesEstadoFiltro}

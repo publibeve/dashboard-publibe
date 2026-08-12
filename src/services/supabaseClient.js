@@ -122,6 +122,32 @@ export async function syncObjectsTable(table, list) {
 }
 
 /**
+ * Operaciones puntuales, fila por fila — a diferencia de syncObjectsTable
+ * (que reescribe la tabla ENTERA a partir de un array completo tomado del
+ * estado de React), estas tocan SOLO la fila indicada. Se usan donde el
+ * riesgo de un array completo desactualizado pisando datos de otro cliente
+ * es real (ver bug de Pautas "moviéndose" de cliente — la sospecha es
+ * justamente que una instantánea vieja del array, al persistirse completa,
+ * podía faltarle una pauta de otro cliente y esa fila terminaba
+ * reescrita/borrada sin que nadie la tocara a propósito).
+ */
+export async function insertObjectRow(table, obj) {
+  await waitForSession();
+  const { error } = await supabase.from(table).insert({ id: obj.id, empresa: obj.empresa ?? null, data: obj });
+  if (error) { console.error(`No se pudo insertar en "${table}":`, error); throw error; }
+}
+export async function updateObjectRow(table, id, obj) {
+  await waitForSession();
+  const { error } = await supabase.from(table).update({ empresa: obj.empresa ?? null, data: obj }).eq("id", id);
+  if (error) { console.error(`No se pudo actualizar en "${table}":`, error); throw error; }
+}
+export async function deleteObjectRow(table, id) {
+  await waitForSession();
+  const { error } = await supabase.from(table).delete().eq("id", id);
+  if (error) { console.error(`No se pudo eliminar de "${table}":`, error); throw error; }
+}
+
+/**
  * Sincronización entre pestañas / dispositivos, vía Supabase Realtime.
  *
  * Se suscribe a los cambios (insert/update/delete) de una tabla y llama a
