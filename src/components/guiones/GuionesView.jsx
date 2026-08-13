@@ -24,7 +24,7 @@ export function GuionesView({
   onAdd, onImportMany, onPatch, onTrash, onRestore, onPurge, showTrash,
   openGuionId: openGuionIdProp, onOpenGuion,
   customCategorias, canAddCategoria, onAddCategoria,
-  pautas, onAddPauta, onRenamePauta, onDeletePauta, onReorderPautas,
+  pautas, onAddPauta, onRenamePauta, onDeletePauta, onReorderPautas, accentColor,
   pautaFiltro, onChangePautaFiltro,
   estadoFiltro, onChangeEstadoFiltro,
   showNew: showNewProp, onOpenNew, onCloseNew,
@@ -68,6 +68,7 @@ export function GuionesView({
             onRenamePauta={onRenamePauta}
             onDeletePauta={onDeletePauta}
             onReorderPautas={onReorderPautas}
+            accentColor={accentColor}
           />
           <div className="guion-estado-filtro-row">
             {ESTADO_OPCIONES.map((op) => (

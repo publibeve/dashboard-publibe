@@ -1232,36 +1232,37 @@
 
 /* ---- Correcciones ronda 4 de Guiones: tabs de Pauta, filtro de estado, textareas planos ---- */
 .pauta-tabbar{
-  padding:4px; border-radius:14px; border:1px solid var(--border); background:rgba(255,255,255,0.5);
-  gap:2px; margin-bottom:10px; align-items:center;
+  padding:5px; border-radius:14px; border:1px solid var(--border); background:rgba(255,255,255,0.6);
+  gap:6px; margin-bottom:10px; align-items:center;
 }
 .pauta-tab{
-  position:relative; display:flex; align-items:center; gap:2px; border-radius:10px; background:none;
-  border:none; padding:0; flex-shrink:0; transition:background .15s;
+  position:relative; display:flex; align-items:center; gap:2px; border-radius:11px; background:none;
+  border:none; padding:0; flex-shrink:0; transition:background .15s, box-shadow .15s;
 }
-.pauta-tab:hover{ background:rgba(28,28,30,0.05); }
-.pauta-tab-active{ background:var(--primary); box-shadow:0 4px 14px rgba(29,53,87,0.28); }
-.pauta-tab-active .pauta-tab-label{ color:#fff; }
-.pauta-tab-active:hover{ background:var(--primary); }
-.pauta-tab-active .pauta-tab-icon-btn{ color:rgba(255,255,255,0.75); }
+.pauta-tab:hover{ background:rgba(28,28,30,0.06); }
+/* El color de fondo/texto activo se aplica por JS (inline style, ver
+   PautaTabBar.jsx) — el color de marca de cada cliente varía libremente
+   (de amarillos pastel a azules casi negros), así que acá NO se fija un
+   color de texto — se calcula cuál lee mejor contra ESE color puntual en
+   cada caso, en vez de asumir uno solo que funcione para los 8 clientes. */
+.pauta-tab-active{ box-shadow:0 4px 14px rgba(0,0,0,0.18); }
 .pauta-tab-dragging{ opacity:0.4; }
 .pauta-tab-dragover{ outline:2px solid var(--primary); outline-offset:-2px; }
 .pauta-tab-label{
-  border:none; background:none; padding:9px 6px 9px 14px; font-size:12.5px; font-weight:600; color:var(--ink-soft);
+  border:none; background:none; padding:9px 6px 9px 16px; font-size:12.5px; font-weight:600; color:var(--ink);
   cursor:pointer; font-family:inherit; white-space:nowrap;
 }
-button.pauta-tab.pauta-tab-label{ padding:9px 14px; }
+button.pauta-tab.pauta-tab-label{ padding:9px 16px; }
 /* El botón "Todas las pautas" lleva las DOS clases en el MISMO elemento (no
-   anidadas como los demás segmentos) — el selector descendiente
-   ".pauta-tab-active .pauta-tab-label" nunca le aplicaba, y quedaba texto
-   gris oscuro sobre fondo azul oscuro: ilegible. Estos selectores compuestos
-   (sin espacio) sí le pegan al elemento único. */
-button.pauta-tab.pauta-tab-label.pauta-tab-active{ color:#fff; }
-button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ color:var(--ink); }
+   anidadas como los demás segmentos) — un selector descendiente normal
+   (".pauta-tab-active .pauta-tab-label") no le aplica a un único elemento
+   con ambas clases. Sin efecto práctico ahora que el color activo lo pone
+   el inline style, pero se deja el selector compuesto correcto igual. */
+button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(28,28,30,0.06); }
 .pauta-tab-icon-btn{
   border:none; background:none; padding:5px; color:var(--ink-soft); cursor:pointer; display:flex; border-radius:50%;
 }
-.pauta-tab-icon-btn:hover{ background:rgba(0,0,0,0.08); }
+.pauta-tab-icon-btn:hover{ background:rgba(0,0,0,0.1); }
 .pauta-tab-editing input{
   border:1.5px solid var(--primary); border-radius:18px; padding:6px 12px; font-size:12.5px; font-family:inherit;
   outline:none; min-width:160px;

@@ -1274,6 +1274,7 @@ function App() {
             onRenamePauta={(id, etiqueta) => patchPauta(id, { etiqueta })}
             onDeletePauta={handleDeletePauta}
             onReorderPautas={reorderPautas}
+            accentColor={accent}
             pautaFiltro={guionesPautaFiltro}
             onChangePautaFiltro={setGuionesPautaFiltro}
             estadoFiltro={guionesEstadoFiltro}

@@ -107,6 +107,25 @@ export function darkenHex(hex, amt) {
   return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
+/**
+ * Blanco u oscuro según cuál lea mejor sobre ese color de fondo — el color
+ * de marca de cada cliente lo elige Diego libremente desde Apariencia (va
+ * de amarillos pastel a azules bien oscuros), así que un solo color de
+ * texto fijo (como el "#fff" que se asumía antes) queda ilegible contra los
+ * fondos claros. Fórmula de luminancia relativa estándar (WCAG, simplificada).
+ */
+export function readableTextColor(hex) {
+  if (!hex) return "#fff";
+  const h = hex.replace("#", "");
+  if (h.length !== 6) return "#fff";
+  const r = parseInt(h.substring(0, 2), 16) / 255;
+  const g = parseInt(h.substring(2, 4), 16) / 255;
+  const b = parseInt(h.substring(4, 6), 16) / 255;
+  const lin = (c) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return luminance > 0.5 ? "#1C1C1E" : "#fff";
+}
+
 export function noteDetailMaxWidth(size) {
   if (size === "wide") return "min(1200px, 96vw)";
   if (size === "medium") return "min(760px, 92vw)";

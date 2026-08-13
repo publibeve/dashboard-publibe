@@ -7,8 +7,9 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Overlay } from "../common/Overlay";
+import { readableTextColor } from "../../utils/helpers";
 
-function PautaTab({ pauta, active, onSelect, onRename, onDelete, dragging, isDragOver, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd }) {
+function PautaTab({ pauta, active, activeTextColor, onSelect, onRename, onDelete, dragging, isDragOver, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd }) {
   const [editing, setEditing] = useState(false);
   const [texto, setTexto] = useState(pauta.etiqueta);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -32,9 +33,17 @@ function PautaTab({ pauta, active, onSelect, onRename, onDelete, dragging, isDra
     );
   }
 
+  // El color de fondo activo es el de marca del cliente (var(--primary)),
+  // que Diego elige libremente por cliente — puede ser un amarillo pastel
+  // o un azul casi negro. Un solo color de texto fijo no funciona para
+  // todos los casos, así que acá se decide blanco u oscuro según cuál lea
+  // mejor contra ESE color en particular (ver readableTextColor).
+  const activeStyle = active ? { background: "var(--primary)", color: activeTextColor } : undefined;
+
   return (
     <div
       className={"pauta-tab" + (active ? " pauta-tab-active" : "") + (dragging ? " pauta-tab-dragging" : "") + (isDragOver ? " pauta-tab-dragover" : "")}
+      style={activeStyle}
       draggable
       onDragStart={onDragStart}
       onDragOver={onDragOver}
@@ -42,9 +51,9 @@ function PautaTab({ pauta, active, onSelect, onRename, onDelete, dragging, isDra
       onDrop={onDrop}
       onDragEnd={onDragEnd}
     >
-      <button type="button" className="pauta-tab-label" onClick={onSelect} title="Arrastrar para reordenar">{pauta.etiqueta}</button>
-      <button type="button" className="pauta-tab-icon-btn" onClick={() => setEditing(true)} title="Renombrar"><Pencil size={11} /></button>
-      <button type="button" className="pauta-tab-icon-btn" onClick={() => setConfirmDelete(true)} title="Eliminar pauta"><X size={12} /></button>
+      <button type="button" className="pauta-tab-label" style={active ? { color: activeTextColor } : undefined} onClick={onSelect} title="Arrastrar para reordenar">{pauta.etiqueta}</button>
+      <button type="button" className="pauta-tab-icon-btn" style={active ? { color: activeTextColor, opacity: 0.75 } : undefined} onClick={() => setEditing(true)} title="Renombrar"><Pencil size={11} /></button>
+      <button type="button" className="pauta-tab-icon-btn" style={active ? { color: activeTextColor, opacity: 0.75 } : undefined} onClick={() => setConfirmDelete(true)} title="Eliminar pauta"><X size={12} /></button>
 
       {confirmDelete && (
         <Overlay onClose={() => setConfirmDelete(false)}>
@@ -64,12 +73,15 @@ function PautaTab({ pauta, active, onSelect, onRename, onDelete, dragging, isDra
   );
 }
 
-export function PautaTabBar({ pautas, pautaFiltro, onChangePautaFiltro, onAddPauta, onRenamePauta, onDeletePauta, onReorderPautas }) {
+export function PautaTabBar({ pautas, pautaFiltro, onChangePautaFiltro, onAddPauta, onRenamePauta, onDeletePauta, onReorderPautas, accentColor }) {
   const [addingPauta, setAddingPauta] = useState(false);
   const [nuevaPautaTexto, setNuevaPautaTexto] = useState("");
   const dragIndexRef = useRef(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [draggingIndex, setDraggingIndex] = useState(null);
+
+  const activeTextColor = readableTextColor(accentColor || "#1D3557");
+  const todasActive = pautaFiltro === "todas";
 
   function confirmAddPauta() {
     const clean = nuevaPautaTexto.trim();
@@ -95,7 +107,12 @@ export function PautaTabBar({ pautas, pautaFiltro, onChangePautaFiltro, onAddPau
 
   return (
     <div className="tabbar pauta-tabbar">
-      <button type="button" className={"pauta-tab pauta-tab-label" + (pautaFiltro === "todas" ? " pauta-tab-active" : "")} onClick={() => onChangePautaFiltro("todas")}>
+      <button
+        type="button"
+        className={"pauta-tab pauta-tab-label" + (todasActive ? " pauta-tab-active" : "")}
+        style={todasActive ? { background: "var(--primary)", color: activeTextColor } : undefined}
+        onClick={() => onChangePautaFiltro("todas")}
+      >
         Todas las pautas
       </button>
       {(pautas || []).map((p, i) => (
@@ -103,6 +120,7 @@ export function PautaTabBar({ pautas, pautaFiltro, onChangePautaFiltro, onAddPau
           key={p.id}
           pauta={p}
           active={pautaFiltro === p.id}
+          activeTextColor={activeTextColor}
           onSelect={() => onChangePautaFiltro(p.id)}
           onRename={(etiqueta) => onRenamePauta(p.id, etiqueta)}
           onDelete={() => onDeletePauta(p.id)}
