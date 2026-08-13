@@ -208,7 +208,14 @@
 .cov-row-fecha{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-soft); white-space:nowrap; }
 .cov-row-semana{ flex:1; }
 .cov-row-monto{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--ink); margin-left:14px; }
-.cov-row-editing{ flex-wrap:wrap; background:var(--surface); border-color:var(--primary); }
+.cov-row-editing{ flex-wrap:wrap; gap:8px; padding:10px 9px; background:var(--surface); border-color:var(--primary); }
+.cov-row-editing input{
+  border:1px solid var(--border); border-radius:7px; padding:7px 9px; font-size:12px; font-family:inherit;
+  outline:none; background:var(--bg);
+}
+.cov-row-editing input:first-child{ flex:2; min-width:120px; }
+.cov-row-editing input[type="number"]{ flex:1; min-width:90px; }
+.cov-row-editing input:focus{ border-color:var(--primary); }
 .cov-edit-type, .cov-add-type{ display:flex; gap:4px; }
 .cov-add-type{ margin-bottom:6px; }
 .cov-type-btn{
@@ -216,8 +223,8 @@
   font-size:11px; font-weight:600; color:var(--ink-soft); cursor:pointer; font-family:inherit;
 }
 .cov-type-active{ background:var(--primary); border-color:var(--primary); color:#fff; }
-.cov-edit-actions{ display:flex; gap:6px; width:100%; margin-top:4px; }
-.cov-edit-save, .cov-edit-cancel{ padding:5px 11px; font-size:11px; }
+.cov-edit-actions{ display:flex; gap:8px; width:100%; margin-top:6px; }
+.cov-edit-save, .cov-edit-cancel{ padding:6px 12px; font-size:11px; }
 .add-cov{ display:flex; gap:6px; flex-wrap:wrap; }
 .add-cov-date{ width:130px; flex-shrink:0; }
 .hint-tip{ font-size:10.5px; margin:6px 0 0; }

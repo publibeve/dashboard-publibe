@@ -50,13 +50,25 @@ export function useInversiones(logActivity, setAppError) {
   function deleteInversion(id) {
     try {
       const inv = (inversiones || []).find((x) => x.id === id);
-      updateInversiones((inversiones || []).filter((x) => x.id !== id)); setOpenInversionId(null);
-      if (inv) logActivity(`Se eliminó la inversión de ${inv.empresa}`);
+      updateInversiones((inversiones || []).map((x) => (x.id === id ? { ...x, deletedAt: new Date().toISOString() } : x)));
+      setOpenInversionId(null);
+      if (inv) logActivity(`Se envió a la papelera la inversión de ${inv.empresa}`);
     } catch (e) { setAppError("No se pudo eliminar la inversión: " + (e && e.message ? e.message : e)); }
+  }
+  function restoreInversion(id) {
+    try {
+      updateInversiones((inversiones || []).map((x) => (x.id === id ? { ...x, deletedAt: null } : x)));
+      logActivity("Se restauró una inversión desde la papelera");
+    } catch (e) { setAppError("No se pudo restaurar la inversión: " + (e && e.message ? e.message : e)); }
+  }
+  function purgeInversion(id) {
+    try { updateInversiones((inversiones || []).filter((x) => x.id !== id)); }
+    catch (e) { setAppError("No se pudo eliminar la inversión: " + (e && e.message ? e.message : e)); }
   }
 
   return {
-    inversiones, setInversiones, updateInversiones, addInversion, addInversiones, patchInversion, deleteInversion,
+    inversiones, setInversiones, updateInversiones, addInversion, addInversiones, patchInversion,
+    deleteInversion, restoreInversion, purgeInversion,
     openInversionId, setOpenInversionId,
   };
 }

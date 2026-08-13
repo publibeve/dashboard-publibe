@@ -126,23 +126,26 @@ export function InversionModal({ inversion, onClose, onPatch, onDelete, onDuplic
         <DesgloseEditor desglose={draft.desglose} onChange={(d) => setDraft({ ...draft, desglose: d })} montoTotal={draft.monto} canSeeMontos={canSeeMontos} />
 
         <div className="modal-footer modal-footer-row">
-          {!confirmDelete ? (
-            <>
-              <button className="btn-danger-ghost" onClick={() => setConfirmDelete(true)}><Trash2 size={13} /> Eliminar</button>
-              <button className="btn-secondary" type="button" onClick={() => onDuplicate(inversion)}><Copy size={13} /> Duplicar</button>
-              <button className="btn-primary save-draft-btn" type="button" onClick={saveDraft} disabled={!dirty}>
-                <CheckCircle2 size={14} /> Guardar cambios
-              </button>
-            </>
-          ) : (
-            <div className="confirm-row">
-              <span><AlertTriangle size={13} /> ¿Eliminar definitivamente?</span>
-              <button className="btn-danger" onClick={onDelete}>Sí, eliminar</button>
-              <button className="btn-secondary" onClick={() => setConfirmDelete(false)}>Cancelar</button>
-            </div>
-          )}
+          <button className="btn-danger-ghost" onClick={() => setConfirmDelete(true)}><Trash2 size={13} /> Eliminar</button>
+          <button className="btn-secondary" type="button" onClick={() => onDuplicate(inversion)}><Copy size={13} /> Duplicar</button>
+          <button className="btn-primary save-draft-btn" type="button" onClick={saveDraft} disabled={!dirty}>
+            <CheckCircle2 size={14} /> Guardar cambios
+          </button>
         </div>
       </div>
+
+      {confirmDelete && (
+        <Overlay onClose={() => setConfirmDelete(false)}>
+          <div className="modal small confirm-warning-modal" style={{ maxWidth: 340 }}>
+            <div className="modal-head">
+              <h3><AlertTriangle size={16} color="#B4432F" /> ¿Enviar a la papelera?</h3>
+              <button type="button" className="icon-btn" onClick={() => setConfirmDelete(false)}><X size={16} /></button>
+            </div>
+            <p className="delete-client-warning">Esta inversión quedará en la papelera 30 días, por si te arrepientes — desde ahí puedes restaurarla.</p>
+            <button className="btn-danger full" type="button" onClick={onDelete}>Sí, enviar a la papelera</button>
+          </div>
+        </Overlay>
+      )}
     </Overlay>
   );
 }

@@ -25,7 +25,7 @@ import { Overlay } from "../common/Overlay";
 import { ReportModal } from "../common/ReportModal";
 import { clientMeta, dateSearchBlob, fmtBs, fmtDate, fmtMonto, monthLabelEs, todayISO, uid, weekLabel, weekStart } from "../../utils/helpers";
 
-export function PagosView({ payments = [], trashedPayments = [], debts = [], saldosFavor = [], inversiones = [], showClient, defaultClient, onOpen, onAddDebt, onResolveDebt, onAddSaldoFavor, onRemoveSaldoFavor, onNewInversion, onImportMeta, onImportTexto, onOpenInversion, onRestorePayment, onPurgePayment, showTrash, mesFiltro, search, showReportPicker, onCloseReportPicker, canSeeMontos = false }) {
+export function PagosView({ payments = [], trashedPayments = [], debts = [], saldosFavor = [], inversiones = [], trashedInversiones = [], showInversionesTrash, onToggleInversionesTrash, onRestoreInversion, onPurgeInversion, showClient, defaultClient, onOpen, onAddDebt, onResolveDebt, onAddSaldoFavor, onRemoveSaldoFavor, onNewInversion, onImportMeta, onImportTexto, onOpenInversion, onRestorePayment, onPurgePayment, showTrash, mesFiltro, search, showReportPicker, onCloseReportPicker, canSeeMontos = false }) {
   // Sin el permiso "Ver montos de inversión y facturación", todas las cifras
   // de esta pantalla (Pagos publicitarios e Inversión por semana) se muestran
   // enmascaradas — el resto de la información (cliente, fecha, concepto,
@@ -298,11 +298,53 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
           <div className="overview-section-head admin-section-head">
             <span className="overview-section-title"><TrendingUp size={15} /> Inversión por semana</span>
             <div className="users-head-actions">
-              <button className="btn-secondary" onClick={onImportMeta}><FileSpreadsheet size={14} /> Importar desde Meta</button>
-              <button className="btn-secondary" onClick={onImportTexto}><Sparkles size={14} /> Importar desde texto</button>
-              <button className="btn-primary" onClick={onNewInversion}><Plus size={14} /> Nueva inversión</button>
+              {!showInversionesTrash && (
+                <>
+                  <button className="btn-secondary" onClick={onImportMeta}><FileSpreadsheet size={14} /> Importar desde Meta</button>
+                  <button className="btn-secondary" onClick={onImportTexto}><Sparkles size={14} /> Importar desde texto</button>
+                  <button className="btn-primary" onClick={onNewInversion}><Plus size={14} /> Nueva inversión</button>
+                </>
+              )}
+              <button type="button" className="notes-trash-toggle" onClick={onToggleInversionesTrash}>
+                <Trash2 size={13} /> {showInversionesTrash ? "Volver a Inversión" : `Papelera${(trashedInversiones || []).length ? ` (${trashedInversiones.length})` : ""}`}
+              </button>
             </div>
           </div>
+
+          {showInversionesTrash ? (
+            (trashedInversiones || []).length === 0 ? (
+              <div className="empty-pane">La papelera de inversión está vacía.</div>
+            ) : (
+              <>
+                <div className="hint trash-hint">Las inversiones se eliminan definitivamente 30 días después de enviarlas a la papelera.</div>
+                <div className="pay-table">
+                  {trashedInversiones.map((i) => {
+                    const cm = clientMeta(i.empresa);
+                    const CmIcon = cm.icon;
+                    const elapsed = Date.now() - new Date(i.deletedAt).getTime();
+                    const daysLeft = Math.max(0, 30 - Math.floor(elapsed / (24 * 60 * 60 * 1000)));
+                    return (
+                      <div className="pay-row pay-row-trashed" key={i.id}>
+                        <div className="pay-row-top">
+                          <span className="pay-primary">
+                            <span className="invest-row-semana">{i.semana}</span>
+                            <span className="pay-monto">{mMonto(i.monto)}</span>
+                          </span>
+                          {showClient && <span className="pay-empresa" style={{ color: cm.color }}><CmIcon size={12} />{i.empresa}</span>}
+                        </div>
+                        <div className="trash-actions">
+                          <span className="trash-days-left">Se elimina en {daysLeft} día(s)</span>
+                          <button className="btn-secondary" onClick={() => onRestoreInversion(i.id)}><History size={12} /> Restaurar</button>
+                          <button className="btn-danger-ghost" onClick={() => onPurgeInversion(i.id)}><Trash2 size={12} /> Eliminar ya</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )
+          ) : (
+            <>
           {investMonths.length === 0 && (
             <div className="empty-pane">
               {q ? "Ningún resultado coincide con tu búsqueda." : mesFiltro === "todos" ? "Aún no hay inversión registrada por semana." : `No hay inversión registrada en ${monthLabelEs(mesFiltro)}.`}
@@ -343,6 +385,8 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
               </div>
             );
           })}
+            </>
+          )}
         </section>
       )}
 

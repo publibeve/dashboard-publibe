@@ -11,6 +11,7 @@ import {
   Menu,
   Plus,
   Printer,
+  FileText,
   Search,
   StickyNote,
   Clapperboard,
@@ -36,6 +37,7 @@ import { CalendarioView } from "./components/dashboard/CalendarioView";
 import { InversionModal, NewInversionModal } from "./components/dashboard/InversionesModal";
 import { MetaImportModal } from "./components/dashboard/MetaImportModal";
 import { TextImportModal } from "./components/dashboard/TextImportModal";
+import { ReceiptImportModal } from "./components/dashboard/ReceiptImportModal";
 import { NewPaymentModal } from "./components/dashboard/NewPaymentModal";
 import { NewPostModal } from "./components/dashboard/NewPostModal";
 import { OverviewView } from "./components/dashboard/OverviewView";
@@ -133,7 +135,8 @@ function App() {
     accesos, updateAccesos, addAcceso, patchAcceso, deleteAcceso, openAccesoId, setOpenAccesoId,
   } = useAccesos(logActivity, setAppError);
   const {
-    inversiones, updateInversiones, addInversion, addInversiones, patchInversion, deleteInversion,
+    inversiones, updateInversiones, addInversion, addInversiones, patchInversion,
+    deleteInversion, restoreInversion, purgeInversion,
     openInversionId, setOpenInversionId,
   } = useInversiones(logActivity, setAppError);
   const {
@@ -240,6 +243,7 @@ function App() {
   const [showNewGuion, setShowNewGuion] = useState(false);
   const [showImportGuiones, setShowImportGuiones] = useState(false);
   const [showPaymentsTrash, setShowPaymentsTrash] = useState(false);
+  const [showInversionesTrash, setShowInversionesTrash] = useState(false);
   const [pagosMesFiltro, setPagosMesFiltro] = useState("todos");
   const [pagosSearch, setPagosSearch] = useState("");
   const [showPagosReportPicker, setShowPagosReportPicker] = useState(false);
@@ -254,6 +258,8 @@ function App() {
   const [dragOverCol, setDragOverCol] = useState(null);
   const [showNewPayment, setShowNewPayment] = useState(false);
   const [duplicatePayment, setDuplicatePayment] = useState(null);
+  const [showReceiptImport, setShowReceiptImport] = useState(false);
+  const [receiptDraft, setReceiptDraft] = useState(null);
   const [showNewPost, setShowNewPost] = useState(false);
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [selectedDay, setSelectedDay] = useState(null);
@@ -642,7 +648,14 @@ function App() {
 
   const filteredInversiones = useMemo(() => {
     if (!inversiones) return [];
-    return inversiones.filter((i) => selectedClient === "__ALL__" || i.empresa === selectedClient);
+    return inversiones.filter((i) => (selectedClient === "__ALL__" || i.empresa === selectedClient) && !i.deletedAt);
+  }, [inversiones, selectedClient]);
+
+  const trashedInversiones = useMemo(() => {
+    if (!inversiones) return [];
+    return inversiones
+      .filter((i) => (selectedClient === "__ALL__" || i.empresa === selectedClient) && i.deletedAt)
+      .sort((a, b) => (a.deletedAt < b.deletedAt ? 1 : -1));
   }, [inversiones, selectedClient]);
 
   const pagosMesesDisponibles = useMemo(() => {
@@ -906,6 +919,9 @@ function App() {
                 </div>
                 <button className="btn-primary" onClick={() => setShowNewPayment(true)}>
                   <Plus size={16} strokeWidth={2.5} /> Nuevo pago
+                </button>
+                <button className="btn-secondary" onClick={() => setShowReceiptImport(true)}>
+                  <FileText size={14} /> Importar desde PDF de Meta
                 </button>
                 <div className="header-btn-row">
                   <button type="button" className="btn-secondary" onClick={() => setShowPagosReportPicker(true)}>
@@ -1192,6 +1208,11 @@ function App() {
             onRestorePayment={restorePayment}
             onPurgePayment={purgePayment}
             showTrash={showPaymentsTrash}
+            trashedInversiones={trashedInversiones}
+            showInversionesTrash={showInversionesTrash}
+            onToggleInversionesTrash={() => setShowInversionesTrash((s) => !s)}
+            onRestoreInversion={restoreInversion}
+            onPurgeInversion={purgeInversion}
             mesFiltro={pagosMesFiltro}
             search={pagosSearch}
             showReportPicker={showPagosReportPicker}
@@ -1341,14 +1362,27 @@ function App() {
       )}
       {taskPreviewFile && <ImagePreviewModal file={taskPreviewFile} onClose={() => setTaskPreviewFile(null)} />}
 
-      {(showNewPayment || duplicatePayment) && (
+      {(showNewPayment || duplicatePayment || receiptDraft) && (
         <NewPaymentModal
           defaultClient={defaultClientForNew}
           lockedClient={selectedClient !== "__ALL__" ? selectedClient : null}
           canSeeMontos={can("verMontos")}
-          duplicateFrom={duplicatePayment}
-          onClose={() => { setShowNewPayment(false); setDuplicatePayment(null); }}
-          onCreate={(p) => { addPayment(p); setShowNewPayment(false); setDuplicatePayment(null); }}
+          duplicateFrom={duplicatePayment || receiptDraft}
+          duplicateLabel={receiptDraft ? {
+            title: "Pago importado desde PDF",
+            submit: "Crear pago",
+            hint: "Estos datos se extrajeron automáticamente del recibo — revisalos antes de confirmar. El desglose y la semana de inversión no se completaron (quedan para cargar a mano si hace falta).",
+          } : undefined}
+          onClose={() => { setShowNewPayment(false); setDuplicatePayment(null); setReceiptDraft(null); }}
+          onCreate={(p) => { addPayment(p); setShowNewPayment(false); setDuplicatePayment(null); setReceiptDraft(null); }}
+        />
+      )}
+
+      {showReceiptImport && (
+        <ReceiptImportModal
+          geminiKey={geminiKey}
+          onClose={() => setShowReceiptImport(false)}
+          onExtracted={(draft) => { setReceiptDraft(draft); setShowReceiptImport(false); }}
         />
       )}
       {openPayment && (

@@ -15,7 +15,7 @@ import { clientMeta, fmtMonto, todayISO, uid } from "../../utils/helpers";
 
 const METODOS_ESTANDAR = METODOS_PAGO.filter((m) => m !== "Otro");
 
-export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient, canSeeMontos = false, duplicateFrom }) {
+export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient, canSeeMontos = false, duplicateFrom, duplicateLabel }) {
   const d = duplicateFrom || null;
   const dMetodoEsPersonalizado = d && d.metodoPago && !METODOS_ESTANDAR.includes(d.metodoPago);
   const [empresa, setEmpresa] = useState(d ? d.empresa : (lockedClient || defaultClient));
@@ -65,11 +65,12 @@ export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient
     <Overlay onClose={onClose}>
       <div className="modal small" style={{ "--primary": clientMeta(empresa).color }}>
         <div className="modal-head">
-          <h3>{d ? "Duplicar pago" : "Nuevo pago"}</h3>
+          <h3>{d ? (duplicateLabel?.title || "Duplicar pago") : "Nuevo pago"}</h3>
           <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>
         </div>
 
         {error && <div className="form-error"><AlertTriangle size={13} /> {error}</div>}
+        {d && duplicateLabel?.hint && <p className="hint" style={{ marginTop: 0 }}>{duplicateLabel.hint}</p>}
 
         <EmpresaField locked={!!lockedClient} value={empresa} onChange={setEmpresa} />
 
@@ -131,7 +132,7 @@ export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient
 
         <CoberturaEditor cobertura={cobertura} onChange={setCobertura} montoTotal={montoFinal} canSeeMontos={canSeeMontos} />
 
-        <button className="btn-primary full" type="button" onClick={submit}>{d ? "Crear pago duplicado" : "Registrar pago"}</button>
+        <button className="btn-primary full" type="button" onClick={submit}>{d ? (duplicateLabel?.submit || "Crear pago duplicado") : "Registrar pago"}</button>
       </div>
     </Overlay>
   );

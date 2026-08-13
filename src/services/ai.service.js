@@ -486,3 +486,86 @@ export async function extractInversionesFromText(apiKey, texto) {
   }
   return parsed.inversiones;
 }
+
+/* ---------------- Importar pago desde recibo PDF de Meta (IA) -----------
+ * A propósito NO extrae desglose ni cobertura — el recibo de Meta desglosa
+ * por CAMPAÑA, y el desglose que ya existe en la app (Inversión) es por
+ * ANUNCIO — son conceptos distintos, mezclarlos sería un dato incorrecto,
+ * no una ayuda. Alcance reducido a propósito: empresa, fecha, método,
+ * monto — nada más. Diego completa el resto a mano si hace falta.
+ * ---------------------------------------------------------------------- */
+
+function buildReceiptPrompt(clientesDisponibles, metodosDisponibles) {
+  return `Sos un asistente que lee el texto extraído de un recibo/factura de Meta Ads (Facebook/Instagram Ads) y devuelve SOLO 4 datos en JSON — nada de desglose por campaña, eso no se usa acá.
+
+Extraé:
+- "empresa": el recibo suele decir "Recibo para [Cliente]" — comparalo contra esta lista EXACTA de clientes y devolvé el nombre tal cual aparece en la lista si hay una coincidencia clara (ignorando mayúsculas/espacios/acentos): ${clientesDisponibles.join(", ")}. Si no hay ninguna coincidencia razonable, devolvé un string vacío — no inventes ni adivines un cliente que no está en la lista.
+- "fecha": la fecha de la factura/del pago, en formato ISO (YYYY-MM-DD).
+- "metodoPago": el método de pago tal como aparece en el recibo (ej. "Cuenta de PayPal Rey_aq94@hotmail.com"), tal cual, sin resumir ni recortar.
+- "monto": el monto total pagado (el número, sin el símbolo de moneda), el que dice "Pagado" o el total final del recibo — no un monto parcial de una sola campaña.
+
+Para referencia, estos son los métodos de pago que la app ya tiene predefinidos (no cambia cómo extraés "metodoPago" — siempre devolvé el texto real del recibo tal cual, esto es solo contexto): ${metodosDisponibles.join(", ")}.
+
+Devolvé SOLO este JSON, sin texto antes ni después, sin bloques de código markdown:
+{"empresa":"","fecha":null,"metodoPago":"","monto":0}`;
+}
+
+export async function extractPaymentFromReceiptText(apiKey, texto, clientesDisponibles, metodosDisponibles) {
+  const systemInstruction = { parts: [{ text: buildReceiptPrompt(clientesDisponibles, metodosDisponibles) }] };
+  const contents = [{ role: "user", parts: [{ text: texto }] }];
+  const savedOverride = await loadGeminiModelOverride();
+  const primaryModel = savedOverride || GEMINI_MODEL_DEFAULT;
+
+  async function call(model) {
+    return fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ systemInstruction, contents, generationConfig: { maxOutputTokens: 1024, temperature: 0.1 } }),
+      }
+    );
+  }
+
+  let res = await call(primaryModel);
+  if (res.status === 404) {
+    const available = await listGeminiModels(apiKey);
+    const candidate =
+      available.find((m) => /flash-lite/i.test(m) && !/preview|exp/i.test(m)) ||
+      available.find((m) => /flash/i.test(m) && !/preview|exp|image|tts|audio/i.test(m)) ||
+      available.find((m) => /flash/i.test(m)) ||
+      available[0];
+    if (candidate) {
+      const retryRes = await call(candidate);
+      persistGeminiModelOverride(candidate);
+      res = retryRes;
+    } else if (available.length === 0) {
+      throw new Error("Tu clave de Gemini no tiene ningún modelo disponible en este momento (revísala en Google AI Studio).");
+    }
+  }
+
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new Error(`Gemini respondió ${res.status}: ${errBody.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const rawText = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
+  if (!rawText) throw new Error("Gemini no devolvió nada — probá de nuevo.");
+
+  const cleaned = rawText.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    throw new Error("La IA no devolvió un JSON válido esta vez. Probá de nuevo.");
+  }
+  if (!parsed || typeof parsed.monto === "undefined") {
+    throw new Error("La respuesta de la IA no tuvo la forma esperada. Probá de nuevo.");
+  }
+  return {
+    empresa: parsed.empresa || "",
+    fecha: parsed.fecha || "",
+    metodoPago: parsed.metodoPago || "",
+    monto: Number(parsed.monto || 0),
+  };
+}
