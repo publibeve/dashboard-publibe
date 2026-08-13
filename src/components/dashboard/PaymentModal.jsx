@@ -13,6 +13,7 @@ import { CustomDatePicker } from "../common/CustomDatePicker";
 import { CustomSelect } from "../common/CustomSelect";
 import { LockGate } from "../common/LockGate";
 import { Overlay } from "../common/Overlay";
+import { CoberturaEditor } from "./PagosView";
 import { CLIENTES, METODOS_PAGO } from "../../utils/constants";
 import { clientMeta, fmtMonto } from "../../utils/helpers";
 
@@ -113,6 +114,14 @@ export function PaymentModal({ payment, onClose, onPatch, onDelete, unlocked, on
           <span>Nota (opcional)</span>
           <textarea rows={2} value={draft.nota || ""} onChange={(e) => setDraft({ ...draft, nota: e.target.value })} disabled={!unlocked} />
         </label>
+
+        <CoberturaEditor
+          cobertura={draft.cobertura}
+          onChange={(c) => setDraft({ ...draft, cobertura: c })}
+          montoTotal={draft.monto}
+          canSeeMontos={canSeeMontos}
+          disabled={!unlocked}
+        />
 
         <AttachmentsBlock
           title="Comprobante / factura"

@@ -9,6 +9,7 @@ import { CustomDatePicker } from "../common/CustomDatePicker";
 import { CustomSelect } from "../common/CustomSelect";
 import { EmpresaField } from "../common/EmpresaField";
 import { Overlay } from "../common/Overlay";
+import { CoberturaEditor } from "./PagosView";
 import { METODOS_PAGO } from "../../utils/constants";
 import { clientMeta, fmtMonto, todayISO, uid } from "../../utils/helpers";
 
@@ -22,6 +23,7 @@ export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient
   const [refBancaria, setRefBancaria] = useState("");
   const [metodoPago, setMetodoPago] = useState("");
   const [nota, setNota] = useState("");
+  const [cobertura, setCobertura] = useState([]);
   const [error, setError] = useState("");
 
   const montoCalculado = moneda === "Bs" && montoBs && tasaCambio ? (Number(montoBs) / Number(tasaCambio)) : null;
@@ -40,7 +42,7 @@ export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient
     try {
       const payload = {
         id: uid(), empresa, fecha, monto: Math.round(montoFinal * 100) / 100, metodoPago,
-        moneda, nota: nota.trim(), cobertura: [],
+        moneda, nota: nota.trim(), cobertura,
       };
       if (moneda === "Bs") {
         payload.montoBs = Number(montoBs);
@@ -114,6 +116,8 @@ export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient
           <span>Nota (opcional)</span>
           <textarea rows={2} value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Ej: abono temporal mientras pasaba la tarjeta" />
         </label>
+
+        <CoberturaEditor cobertura={cobertura} onChange={setCobertura} montoTotal={montoFinal} />
 
         <button className="btn-primary full" type="button" onClick={submit}>Registrar pago</button>
       </div>

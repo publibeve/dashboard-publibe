@@ -506,6 +506,58 @@ export function DesgloseEditor({ desglose, onChange, montoTotal, canSeeMontos = 
   );
 }
 
+/**
+ * Mismo patrón exacto que DesgloseEditor, a pedido explícito de Diego
+ * ("igual que el de Inversión") — reusa las mismas clases CSS que ya
+ * estaban armadas para esto (.cov-list/.cov-row/.add-cov/.cov-sum), nunca
+ * conectadas hasta ahora a ningún formulario real.
+ */
+export function CoberturaEditor({ cobertura, onChange, montoTotal, canSeeMontos = false, disabled = false }) {
+  const [semana, setSemana] = useState("");
+  const [monto, setMonto] = useState("");
+  const list = cobertura || [];
+  const sum = list.reduce((s, c) => s + Number(c.monto || 0), 0);
+  const restante = Number(montoTotal || 0) - sum;
+  const mMonto = (v) => (canSeeMontos ? fmtMonto(v) : "•••");
+
+  function add() {
+    const n = Number(monto);
+    if (!semana.trim() || !monto || isNaN(n) || n <= 0) return;
+    onChange([...list, { id: uid(), semana: semana.trim(), monto: n }]);
+    setSemana(""); setMonto("");
+  }
+  function remove(id) {
+    onChange(list.filter((c) => c.id !== id));
+  }
+
+  return (
+    <div className="field">
+      <span><Megaphone size={12} /> ¿A qué semana(s) de inversión corresponde este pago? (opcional)</span>
+      <div className="cov-list">
+        {list.length === 0 && <div className="hint">Sin semana asignada todavía — puedes dejarlo así o detallarlo.</div>}
+        {list.map((c) => (
+          <div className="cov-row" key={c.id}>
+            <span className="cov-row-semana">{c.semana}</span>
+            <span className="cov-row-monto">{mMonto(c.monto)}</span>
+            <button type="button" className="icon-btn subtle" onClick={() => remove(c.id)} disabled={disabled}><Trash2 size={13} /></button>
+          </div>
+        ))}
+      </div>
+      <div className="add-cov">
+        <input placeholder='Ej: "1 al 7 junio" o "Extra Ferias"' value={semana} onChange={(e) => setSemana(e.target.value)} disabled={disabled} />
+        <input type="number" step="0.01" min="0" placeholder="Monto" value={monto} onChange={(e) => setMonto(e.target.value)} disabled={disabled} />
+        <button type="button" className="btn-secondary" onClick={add} disabled={disabled}><Plus size={13} /> Agregar</button>
+      </div>
+      {list.length > 0 && (
+        <div className="cov-sum">
+          Cubierto: <b>{mMonto(sum)}</b>
+          {Math.abs(restante) > 0.01 && <> · {restante > 0 ? "Falta cubrir" : "Excede el monto del pago en"} <b>{mMonto(Math.abs(restante))}</b></>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SaldoFavorSection({ saldosFavor, showClient, onAdd, onRemove, canSeeMontos = false }) {
   const mMonto = (v) => (canSeeMontos ? fmtMonto(v) : "•••"); // mismo motivo que en DesgloseEditor — componente aparte, no hereda el de PagosView
   return (
