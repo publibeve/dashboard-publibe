@@ -650,20 +650,29 @@
 .report-picker-row{ display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
 .report-picker-row .field{ margin-bottom:0; }
 .report-modal{ max-width:420px; }
-/* "Hoja carta": ensancha el MODAL (en pantalla y al imprimir) para que el contenido se acomode
-   como una página tipo Word, en vez del ancho angosto de siempre. */
-.format-carta-outer{ max-width:min(820px, 96vw) !important; }
-/* Oculta el modal (opacity, no display/visibility — no se quiere
-   desmontar ni perder el layout ya calculado) durante la ventana entre
-   pasar a formato carta (que agranda el modal en pantalla) y que el
-   diálogo de impresión del navegador cubra la pantalla — sin esto, ese
-   salto de tamaño se ve como un glitch justo antes de imprimir. */
+/* "Hoja carta": el contenido (.report-printable) se acomoda como una
+   página tipo Word — pero SOLO importa cómo se ve en el PAPEL, no en el
+   modal en pantalla. El .report-printable usa position:absolute al
+   imprimir (ver @media print más abajo), así que ya se posiciona contra
+   el ancho REAL de la página, sin importar qué tan angosto siga el modal
+   en pantalla — nunca hizo falta agrandar el modal en sí para que la hoja
+   salga bien. Antes esto SÍ agrandaba el modal en pantalla (460px ->
+   ~820px) apenas se tocaba "Imprimir", y ese salto de tamaño era
+   exactamente el glitch que se veía antes de que apareciera el diálogo de
+   impresión — depender de esconder eso con opacity + timing resultó
+   frágil entre navegadores. Sacar el efecto de pantalla del todo es más
+   robusto que tratar de cronometrarlo bien: sin cambio de ancho en
+   pantalla, no hay nada que se vea saltar. */
+@media print{
+  .format-carta-outer{ max-width:min(820px, 96vw) !important; }
+}
+/* Resguardo — ya no hace falta para el salto de ancho (eso se sacó de
+   pantalla arriba), pero el contenido SÍ cambia de padding entre
+   "recibo" y "carta" antes de imprimir (eso sí necesita pasar antes de
+   window.print()), así que se mantiene como red de seguridad para ese
+   cambio más chico. */
 .print-pending-hide{ opacity:0 !important; pointer-events:none; }
 @media print{
-  /* Resguardo explícito: si por lo que sea esta clase sigue puesta en el
-     instante real de imprimir (no debería, pero mejor no arriesgar una
-     hoja en blanco por un timing raro), que NUNCA afecte el papel — el
-     ocultamiento es solo un efecto de pantalla. */
   .print-pending-hide{ opacity:1 !important; }
 }
 .note-print-tags{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:14px; }
@@ -681,7 +690,7 @@
 
 /* Plantilla — igual siempre, tabla formal alineada a la izquierda. */
 .report-header{ position:relative; text-align:left; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border); }
-.report-client-logo{ position:absolute; top:0; right:0; max-width:140px; }
+.report-client-logo{ position:absolute; top:0; right:0; width:140px; height:44px; }
 .report-client-logo .client-logo{ width:100%; height:44px; }
 .report-brand-logo{ margin-bottom:8px; }
 .report-brand-logo svg{ display:block; width:130px; height:auto; }
