@@ -18,6 +18,7 @@ export function NewInversionModal({ onClose, onCreate, defaultClient, lockedClie
   const [fecha, setFecha] = useState("");
   const [monto, setMonto] = useState("");
   const [desglose, setDesglose] = useState([]);
+  const [nota, setNota] = useState("");
   const [error, setError] = useState("");
 
   function submit() {
@@ -26,7 +27,7 @@ export function NewInversionModal({ onClose, onCreate, defaultClient, lockedClie
     if (!semana.trim()) { setError("Falta indicar de qué semana a qué semana."); return; }
     if (!fecha) { setError("Falta la fecha de esa semana."); return; }
     if (!monto || isNaN(n) || n <= 0) { setError("El monto debe ser mayor a 0."); return; }
-    onCreate({ id: uid(), empresa, semana: semana.trim(), fecha, monto: n, desglose, createdAt: new Date().toISOString() });
+    onCreate({ id: uid(), empresa, semana: semana.trim(), fecha, monto: n, desglose, nota: nota.trim(), createdAt: new Date().toISOString() });
   }
 
   return (
@@ -63,6 +64,11 @@ export function NewInversionModal({ onClose, onCreate, defaultClient, lockedClie
           <input value={semana} onChange={(e) => setSemana(e.target.value)} placeholder="Ej: 6 al 12 de abril" />
         </label>
 
+        <label className="field">
+          <span>Nota (opcional)</span>
+          <textarea rows={2} value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Ej: 5 elementos — Gasolina conjuntos, amortiguadores KYB… — 555 Japón" />
+        </label>
+
         <DesgloseEditor desglose={desglose} onChange={setDesglose} montoTotal={monto} canSeeMontos={canSeeMontos} />
 
         <button className="btn-primary full" type="button" onClick={submit}>Registrar inversión</button>
@@ -75,7 +81,7 @@ export function InversionModal({ inversion, onClose, onPatch, onDelete, canSeeMo
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [draft, setDraft] = useState({
     empresa: inversion.empresa, semana: inversion.semana, fecha: inversion.fecha, monto: inversion.monto,
-    desglose: inversion.desglose || [],
+    desglose: inversion.desglose || [], nota: inversion.nota || "",
   });
   const dirty = Object.keys(draft).some((k) => JSON.stringify(draft[k]) !== JSON.stringify(inversion[k]));
   function saveDraft() { onPatch(draft); }
@@ -108,6 +114,11 @@ export function InversionModal({ inversion, onClose, onPatch, onDelete, canSeeMo
         <label className="field">
           <span>¿De qué semana a qué semana?</span>
           <input value={draft.semana} onChange={(e) => setDraft({ ...draft, semana: e.target.value })} />
+        </label>
+
+        <label className="field">
+          <span>Nota (opcional)</span>
+          <textarea rows={2} value={draft.nota} onChange={(e) => setDraft({ ...draft, nota: e.target.value })} placeholder="Ej: 5 elementos — Gasolina conjuntos, amortiguadores KYB… — 555 Japón" />
         </label>
 
         <DesgloseEditor desglose={draft.desglose} onChange={(d) => setDraft({ ...draft, desglose: d })} montoTotal={draft.monto} canSeeMontos={canSeeMontos} />

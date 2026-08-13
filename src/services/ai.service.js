@@ -406,3 +406,83 @@ export async function generateTaskIdea(apiKey, empresa, descripcionBreve) {
   }
   return { titulo: parsed.titulo || "", notasHtml: parsed.notasHtml || "" };
 }
+
+/* ---------------- Importar inversión desde texto libre (IA) ------------
+ * Para mensajes escritos a mano (WhatsApp, notas) que no tienen un formato
+ * fijo como el export de Meta — acá SÍ hace falta IA, porque el texto
+ * puede variar de mensaje a mensaje. A diferencia de Meta, estos mensajes
+ * muchas veces NO traen un monto por elemento (una lista de 5 cosas con un
+ * solo total) — la IA nunca debe inventar cómo se reparte esa plata; si no
+ * hay un número por ítem en el texto, el desglose queda vacío y la lista
+ * se preserva como nota, no como un desglose con montos falsos.
+ * ---------------------------------------------------------------------- */
+
+function buildInversionTextPrompt(anioReferencia) {
+  return `Sos un asistente que convierte mensajes de texto libre (escritos a mano, tipo WhatsApp — sin formato fijo) sobre inversión publicitaria semanal, en JSON estructurado.
+
+El texto describe una o varias semanas de inversión. Para cada semana/período que encuentres, extraé:
+- "semana": el texto que describe el período, tal como está escrito (ej: "Semana del 6 al 14 de junio"). Si el mismo período aparece más de una vez en el texto con montos distintos, tratalo como una entrada SEPARADA cada vez — nunca los sumes ni los mezcles en uno solo.
+- "fecha": la fecha de inicio de esa semana en formato ISO (YYYY-MM-DD). El texto puede no traer el año — si no lo dice, asumí el año ${anioReferencia}. Si de verdad no se puede determinar ninguna fecha, usá null.
+- "monto": el monto TOTAL de esa semana (el número principal, el que no es de un ítem individual).
+- "desglose": lista de ítems, cada uno con "concepto" y "monto" — PERO SOLO si el texto da un monto en dólares explícito para CADA ítem individual. Si el texto lista varios elementos con un solo monto total para todos juntos (sin desglosar cuánto costó cada uno), NO inventes cómo repartir esa plata — dejá "desglose" como una lista vacía.
+- "nota": cuando el texto lista elementos SIN monto individual (el caso de arriba), poné esa lista acá como texto (ej: "5 elementos: Gasolina conjuntos, Amortiguadores KYB y bases, ..."), para no perder la información aunque no tenga precio por ítem. También va acá cualquier etiqueta o nombre de producto/campaña que aparezca suelto, fuera de la lista numerada (ej: "555 Japón" — es el nombre del producto o de la campaña de Meta, no un ítem más del desglose). Si no hay nada de esto, dejalo vacío.
+
+Devolvé SOLO este JSON, sin texto antes ni después, sin bloques de código markdown:
+{"inversiones":[{"semana":"","fecha":null,"monto":0,"desglose":[{"concepto":"","monto":0}],"nota":""}]}`;
+}
+
+export async function extractInversionesFromText(apiKey, texto) {
+  const anioReferencia = new Date().getFullYear();
+  const systemInstruction = { parts: [{ text: buildInversionTextPrompt(anioReferencia) }] };
+  const contents = [{ role: "user", parts: [{ text: texto }] }];
+  const savedOverride = await loadGeminiModelOverride();
+  const primaryModel = savedOverride || GEMINI_MODEL_DEFAULT;
+
+  async function call(model) {
+    return fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ systemInstruction, contents, generationConfig: { maxOutputTokens: 8192, temperature: 0.2 } }),
+      }
+    );
+  }
+
+  let res = await call(primaryModel);
+  if (res.status === 404) {
+    const available = await listGeminiModels(apiKey);
+    const candidate =
+      available.find((m) => /flash-lite/i.test(m) && !/preview|exp/i.test(m)) ||
+      available.find((m) => /flash/i.test(m) && !/preview|exp|image|tts|audio/i.test(m)) ||
+      available.find((m) => /flash/i.test(m)) ||
+      available[0];
+    if (candidate) {
+      const retryRes = await call(candidate);
+      persistGeminiModelOverride(candidate);
+      res = retryRes;
+    } else if (available.length === 0) {
+      throw new Error("Tu clave de Gemini no tiene ningún modelo disponible en este momento (revísala en Google AI Studio).");
+    }
+  }
+
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new Error(`Gemini respondió ${res.status}: ${errBody.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const rawText = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
+  if (!rawText) throw new Error("Gemini no devolvió nada — probá de nuevo.");
+
+  const cleaned = rawText.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    throw new Error("La IA no devolvió un JSON válido esta vez. Probá de nuevo, o con el texto dividido en partes más chicas.");
+  }
+  if (!parsed || !Array.isArray(parsed.inversiones)) {
+    throw new Error("La respuesta de la IA no tuvo la forma esperada. Probá de nuevo.");
+  }
+  return parsed.inversiones;
+}

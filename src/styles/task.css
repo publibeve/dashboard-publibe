@@ -286,3 +286,5 @@
 .select-wrap-plain{ padding:5px 8px; }
 .select-wrap-plain select{ font-size:12px; }
 
+
+.invest-row-nota{ font-size:11px; color:var(--ink-soft); font-style:italic; margin-top:4px; white-space:pre-line; }

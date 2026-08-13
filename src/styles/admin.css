@@ -1326,3 +1326,11 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
   border:1px dashed rgba(0,0,0,0.15); border-radius:14px; padding:12px; margin-bottom:14px; background:rgba(255,255,255,0.35);
 }
 .ai-task-idea-actions{ display:flex; justify-content:flex-end; gap:8px; }
+
+/* ---- Importar desde Meta (Inversión por semana) ---- */
+.meta-import-dropzone{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  border:2px dashed var(--border); border-radius:14px; padding:32px 20px; margin-top:4px;
+  color:var(--ink-soft); font-size:12.5px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s;
+}
+.meta-import-dropzone:hover{ border-color:var(--primary); background:rgba(29,53,87,0.03); }

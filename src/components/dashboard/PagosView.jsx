@@ -14,6 +14,8 @@ import {
   History,
   Tag,
   Printer,
+  FileSpreadsheet,
+  Sparkles,
 } from "lucide-react";
 import { CustomDatePicker } from "../common/CustomDatePicker";
 import { EmpresaField } from "../common/EmpresaField";
@@ -21,7 +23,7 @@ import { Overlay } from "../common/Overlay";
 import { ReportModal } from "../common/ReportModal";
 import { clientMeta, dateSearchBlob, fmtBs, fmtDate, fmtMonto, monthLabelEs, todayISO, uid, weekLabel, weekStart } from "../../utils/helpers";
 
-export function PagosView({ payments = [], trashedPayments = [], debts = [], saldosFavor = [], inversiones = [], showClient, defaultClient, onOpen, onAddDebt, onResolveDebt, onAddSaldoFavor, onRemoveSaldoFavor, onNewInversion, onOpenInversion, onRestorePayment, onPurgePayment, showTrash, mesFiltro, search, showReportPicker, onCloseReportPicker, canSeeMontos = false }) {
+export function PagosView({ payments = [], trashedPayments = [], debts = [], saldosFavor = [], inversiones = [], showClient, defaultClient, onOpen, onAddDebt, onResolveDebt, onAddSaldoFavor, onRemoveSaldoFavor, onNewInversion, onImportMeta, onImportTexto, onOpenInversion, onRestorePayment, onPurgePayment, showTrash, mesFiltro, search, showReportPicker, onCloseReportPicker, canSeeMontos = false }) {
   // Sin el permiso "Ver montos de inversión y facturación", todas las cifras
   // de esta pantalla (Pagos publicitarios e Inversión por semana) se muestran
   // enmascaradas — el resto de la información (cliente, fecha, concepto,
@@ -293,7 +295,11 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
         <section className="overview-section">
           <div className="overview-section-head admin-section-head">
             <span className="overview-section-title"><TrendingUp size={15} /> Inversión por semana</span>
-            <button className="btn-primary" onClick={onNewInversion}><Plus size={14} /> Nueva inversión</button>
+            <div className="users-head-actions">
+              <button className="btn-secondary" onClick={onImportMeta}><FileSpreadsheet size={14} /> Importar desde Meta</button>
+              <button className="btn-secondary" onClick={onImportTexto}><Sparkles size={14} /> Importar desde texto</button>
+              <button className="btn-primary" onClick={onNewInversion}><Plus size={14} /> Nueva inversión</button>
+            </div>
           </div>
           {investMonths.length === 0 && (
             <div className="empty-pane">
@@ -319,13 +325,15 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
                           <span className="invest-row-semana">{i.semana}</span>
                           <span className="pay-monto">{mMonto(i.monto)}</span>
                         </div>
-                        {(i.desglose || []).length > 0 && (
+                        {(i.desglose || []).length > 0 ? (
                           <div className="pay-cobertura">
                             {i.desglose.map((d) => (
                               <span className="cov-chip" key={d.id}>{d.concepto} <b>{mMonto(d.monto)}</b></span>
                             ))}
                           </div>
-                        )}
+                        ) : i.nota ? (
+                          <div className="invest-row-nota">{i.nota}</div>
+                        ) : null}
                       </button>
                     );
                   })}

@@ -34,6 +34,8 @@ import { PermissionDeniedModal } from "./components/common/PermissionDeniedModal
 import { AddClientModal, EditClientModal } from "./components/dashboard/AddEditClientModal";
 import { CalendarioView } from "./components/dashboard/CalendarioView";
 import { InversionModal, NewInversionModal } from "./components/dashboard/InversionesModal";
+import { MetaImportModal } from "./components/dashboard/MetaImportModal";
+import { TextImportModal } from "./components/dashboard/TextImportModal";
 import { NewPaymentModal } from "./components/dashboard/NewPaymentModal";
 import { NewPostModal } from "./components/dashboard/NewPostModal";
 import { OverviewView } from "./components/dashboard/OverviewView";
@@ -131,7 +133,7 @@ function App() {
     accesos, updateAccesos, addAcceso, patchAcceso, deleteAcceso, openAccesoId, setOpenAccesoId,
   } = useAccesos(logActivity, setAppError);
   const {
-    inversiones, updateInversiones, addInversion, patchInversion, deleteInversion,
+    inversiones, updateInversiones, addInversion, addInversiones, patchInversion, deleteInversion,
     openInversionId, setOpenInversionId,
   } = useInversiones(logActivity, setAppError);
   const {
@@ -267,6 +269,8 @@ function App() {
   const [openNoteId, setOpenNoteId] = useState(null);
   const [showNewTareaGeneral, setShowNewTareaGeneral] = useState(false);
   const [showNewInversion, setShowNewInversion] = useState(false);
+  const [showMetaImport, setShowMetaImport] = useState(false);
+  const [showTextImport, setShowTextImport] = useState(false);
   const [showNewAcceso, setShowNewAcceso] = useState(false);
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [showNewExpense, setShowNewExpense] = useState(false);
@@ -1180,6 +1184,8 @@ function App() {
             onAddSaldoFavor={() => setShowNewSaldoFavor(true)}
             onRemoveSaldoFavor={removeSaldoFavor}
             onNewInversion={() => setShowNewInversion(true)}
+            onImportMeta={() => setShowMetaImport(true)}
+            onImportTexto={() => setShowTextImport(true)}
             onOpenInversion={(id) => setOpenInversionId(id)}
             onRestorePayment={restorePayment}
             onPurgePayment={purgePayment}
@@ -1488,6 +1494,25 @@ function App() {
           canSeeMontos={can("verMontos")}
           onClose={() => setShowNewInversion(false)}
           onCreate={(inv) => { addInversion(inv); setShowNewInversion(false); }}
+        />
+      )}
+
+      {showMetaImport && (
+        <MetaImportModal
+          empresa={selectedClient !== "__ALL__" ? selectedClient : null}
+          defaultClient={defaultClientForNew}
+          onClose={() => setShowMetaImport(false)}
+          onImport={addInversiones}
+        />
+      )}
+
+      {showTextImport && (
+        <TextImportModal
+          empresa={selectedClient !== "__ALL__" ? selectedClient : null}
+          defaultClient={defaultClientForNew}
+          geminiKey={geminiKey}
+          onClose={() => setShowTextImport(false)}
+          onImport={addInversiones}
         />
       )}
       {openInversionId && inversiones && (
