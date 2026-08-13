@@ -653,6 +653,19 @@
 /* "Hoja carta": ensancha el MODAL (en pantalla y al imprimir) para que el contenido se acomode
    como una página tipo Word, en vez del ancho angosto de siempre. */
 .format-carta-outer{ max-width:min(820px, 96vw) !important; }
+/* Oculta el modal (opacity, no display/visibility — no se quiere
+   desmontar ni perder el layout ya calculado) durante la ventana entre
+   pasar a formato carta (que agranda el modal en pantalla) y que el
+   diálogo de impresión del navegador cubra la pantalla — sin esto, ese
+   salto de tamaño se ve como un glitch justo antes de imprimir. */
+.print-pending-hide{ opacity:0 !important; pointer-events:none; }
+@media print{
+  /* Resguardo explícito: si por lo que sea esta clase sigue puesta en el
+     instante real de imprimir (no debería, pero mejor no arriesgar una
+     hoja en blanco por un timing raro), que NUNCA afecte el papel — el
+     ocultamiento es solo un efecto de pantalla. */
+  .print-pending-hide{ opacity:1 !important; }
+}
 .note-print-tags{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:14px; }
 .note-print-body.note-preview-html{ max-height:none; overflow:visible; pointer-events:auto; font-size:11pt; line-height:1.45; }
 .note-print-body p{ margin:0 0 8px; }
@@ -1334,3 +1347,11 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
   color:var(--ink-soft); font-size:12.5px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s;
 }
 .meta-import-dropzone:hover{ border-color:var(--primary); background:rgba(29,53,87,0.03); }
+
+/* ---- Líneas opcionales del reporte de Inversión publicitaria ---- */
+.report-optional-lines{ display:flex; flex-direction:column; gap:6px; margin-top:2px; }
+.checkbox-row{
+  display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink);
+  cursor:pointer; user-select:none;
+}
+.checkbox-row input[type="checkbox"]{ width:15px; height:15px; accent-color:var(--primary); cursor:pointer; }

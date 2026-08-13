@@ -20,6 +20,13 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
   // instante de imprimir.
   const [printFormat, setPrintFormat] = useState("recibo");
   const [pendingPrint, setPendingPrint] = useState(false);
+  // Mientras esto es true, el modal queda invisible (opacity, no
+  // display:none/unmount — no se quiere perder el estado ni re-disparar
+  // animaciones) — cubre justo la ventana entre pasar a formato carta
+  // (que en pantalla agranda el modal de 460px a ~820px) y que el diálogo
+  // de impresión del navegador termine de cubrir la pantalla. Sin esto,
+  // ese salto de tamaño se ve como un glitch antes de imprimir.
+  const [printHidden, setPrintHidden] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
   const printableRef = useRef(null);
@@ -31,7 +38,8 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
   // imprimir todavía con el formato anterior). Además espera a que las
   // fuentes web hayan terminado de cargar de verdad — si no, en móvil el
   // motor de impresión puede caer a una serif del sistema en vez de
-  // Space Grotesk/Inter.
+  // Space Grotesk/Inter. Todo ese tiempo de espera (frame + fuentes) es
+  // exactamente la ventana donde printHidden mantiene el modal invisible.
   useEffect(() => {
     if (pendingPrint && printFormat === "carta") {
       let cancelled = false;
@@ -42,6 +50,18 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
       return () => { cancelled = true; cancelAnimationFrame(raf); };
     }
   }, [pendingPrint, printFormat]);
+
+  // window.print() bloquea la ejecución en la mayoría de los navegadores,
+  // pero no en todos los casos (varía según SO/navegador) — en vez de
+  // confiar en eso para saber cuándo el diálogo se cerró, se usa el evento
+  // estándar 'afterprint', que dispara siempre que el diálogo se cierra
+  // (imprima o cancele la persona), sin importar el comportamiento de
+  // bloqueo puntual del navegador.
+  useEffect(() => {
+    function handleAfterPrint() { setPrintHidden(false); }
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => window.removeEventListener("afterprint", handleAfterPrint);
+  }, []);
 
   function buildText() {
     let text = `publiBe — ${title}\n`;
@@ -102,11 +122,15 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
   function goImprimir() {
     setPrintFormat("carta");
     setPendingPrint(true);
+    setPrintHidden(true);
+    // Resguardo: si por lo que sea 'afterprint' no dispara (pasa en algún
+    // navegador raro), no dejar el modal invisible para siempre.
+    setTimeout(() => setPrintHidden(false), 4000);
   }
 
   return (
     <Overlay onClose={onClose}>
-      <div className={"modal small report-modal" + (printFormat === "carta" ? " format-carta-outer" : "")}>
+      <div className={"modal small report-modal" + (printFormat === "carta" ? " format-carta-outer" : "") + (printHidden ? " print-pending-hide" : "")}>
         <div className="modal-head no-print">
           <h3>{title}</h3>
           <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>

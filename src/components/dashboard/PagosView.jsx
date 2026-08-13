@@ -41,6 +41,9 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
   const [usdExpanded, setUsdExpanded] = useState(false);
   const [reportFrom, setReportFrom] = useState("");
   const [reportTo, setReportTo] = useState("");
+  const [reportIncluirPendiente, setReportIncluirPendiente] = useState(false);
+  const [reportIncluirFavor, setReportIncluirFavor] = useState(false);
+  const [reportIncluirInvertido, setReportIncluirInvertido] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const q = search.trim().toLowerCase();
 
@@ -478,6 +481,23 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
                 <CustomDatePicker value={reportTo} onChange={setReportTo} />
               </label>
             </div>
+            <div className="field">
+              <span>Líneas opcionales para incluir</span>
+              <div className="report-optional-lines">
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={reportIncluirPendiente} onChange={(e) => setReportIncluirPendiente(e.target.checked)} />
+                  Saldo pendiente
+                </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={reportIncluirFavor} onChange={(e) => setReportIncluirFavor(e.target.checked)} />
+                  Saldo a favor
+                </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={reportIncluirInvertido} onChange={(e) => setReportIncluirInvertido(e.target.checked)} />
+                  Invertido en este rango
+                </label>
+              </div>
+            </div>
             <button
               className="btn-primary full" type="button" disabled={!reportFrom || !reportTo}
               onClick={() => { onCloseReportPicker(); setShowReport(true); }}
@@ -495,11 +515,26 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
           empresaLabel={showClient ? "Dashboard general" : defaultClient}
           dateRangeLabel={reportFrom && reportTo ? `Del ${fmtDate(reportFrom)} al ${fmtDate(reportTo)}` : ""}
           emptyText="No hay inversión registrada en ese rango de fechas."
-          groups={reportInversiones.map((i) => ({
-            label: i.semana,
-            value: mMonto(i.monto),
-            items: (i.desglose || []).map((d) => ({ label: d.concepto, value: mMonto(d.monto) })),
-          }))}
+          groups={[
+            ...reportInversiones.map((i) => ({
+              label: i.semana,
+              value: mMonto(i.monto),
+              items: (i.desglose || []).map((d) => ({ label: d.concepto, value: mMonto(d.monto) })),
+            })),
+            ...(reportIncluirPendiente ? [
+              (debts || []).length === 0
+                ? { label: "Saldo pendiente", value: "No hay saldo pendiente registrado." }
+                : { label: "Saldo pendiente", value: mMonto(saldoPendiente), items: debts.map((d) => ({ label: d.concepto, value: mMonto(d.monto) })) },
+            ] : []),
+            ...(reportIncluirFavor ? [
+              (saldosFavor || []).length === 0
+                ? { label: "Saldo a favor", value: "No hay saldo a favor registrado." }
+                : { label: "Saldo a favor", value: mMonto(saldoFavor), items: saldosFavor.map((s) => ({ label: s.nota || "Saldo a favor", value: mMonto(s.monto) })) },
+            ] : []),
+            ...(reportIncluirInvertido ? [
+              { label: "Invertido en este rango", value: mMonto(reportTotalInvertido) },
+            ] : []),
+          ]}
           totalLabel="Total invertido en el rango"
           total={mMonto(reportTotalInvertido)}
           onClose={() => setShowReport(false)}
