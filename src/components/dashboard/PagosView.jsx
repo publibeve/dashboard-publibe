@@ -25,7 +25,56 @@ import { Overlay } from "../common/Overlay";
 import { ReportModal } from "../common/ReportModal";
 import { clientMeta, dateSearchBlob, fmtBs, fmtDate, fmtMonto, monthLabelEs, todayISO, uid, weekLabel, weekStart } from "../../utils/helpers";
 
-export function PagosView({ payments = [], trashedPayments = [], debts = [], saldosFavor = [], inversiones = [], trashedInversiones = [], showInversionesTrash, onToggleInversionesTrash, onRestoreInversion, onPurgeInversion, showClient, defaultClient, onOpen, onAddDebt, onResolveDebt, onAddSaldoFavor, onRemoveSaldoFavor, onNewInversion, onImportMeta, onImportTexto, onOpenInversion, onRestorePayment, onPurgePayment, showTrash, mesFiltro, search, showReportPicker, onCloseReportPicker, canSeeMontos = false }) {
+/**
+ * Fila editable en el lugar, compartida por "Por pagar / pendiente" y
+ * "Saldo a favor" — mismo patrón exacto que ya tienen los ítems del
+ * desglose (lápiz -> texto+monto editables -> Guardar/Cancelar), para no
+ * inventar una interacción nueva donde ya hay una que Diego conoce.
+ */
+function EditableDebtRow({ item, labelField, showClient, canSeeMontos = false, onPatch, onAction, actionLabel, ActionIcon }) {
+  const [editing, setEditing] = useState(false);
+  const [editLabel, setEditLabel] = useState(item[labelField] || "");
+  const [editMonto, setEditMonto] = useState(String(item.monto));
+  const mMonto = (v) => (canSeeMontos ? fmtMonto(v) : "•••");
+  const cm = clientMeta(item.empresa);
+  const CmIcon = cm.icon;
+
+  function startEdit() {
+    setEditLabel(item[labelField] || "");
+    setEditMonto(String(item.monto));
+    setEditing(true);
+  }
+  function saveEdit() {
+    const n = Number(editMonto);
+    if (!editMonto || isNaN(n) || n <= 0) return;
+    onPatch(item.id, { [labelField]: editLabel.trim(), monto: n });
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="debt-row cov-row-editing">
+        <input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} autoFocus onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditing(false); }} />
+        <input type="number" step="0.01" min="0" value={editMonto} onChange={(e) => setEditMonto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditing(false); }} />
+        <div className="cov-edit-actions">
+          <button type="button" className="btn-secondary cov-edit-save" onClick={saveEdit}><Check size={12} /> Guardar</button>
+          <button type="button" className="btn-secondary cov-edit-cancel" onClick={() => setEditing(false)}><X size={12} /></button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="debt-row">
+      <span className="debt-concepto">{item[labelField] || (labelField === "nota" ? "Saldo a favor" : "")}</span>
+      {showClient && <span className="debt-empresa" style={{ color: cm.color }}><CmIcon size={11} />{item.empresa}</span>}
+      <span className="debt-monto">{mMonto(item.monto)}</span>
+      <button type="button" className="icon-btn subtle" onClick={startEdit} title="Editar"><PenTool size={12} /></button>
+      <button className="btn-secondary debt-resolve" onClick={() => onAction(item.id)}><ActionIcon size={12} /> {actionLabel}</button>
+    </div>
+  );
+}
+
+export function PagosView({ payments = [], trashedPayments = [], debts = [], saldosFavor = [], inversiones = [], trashedInversiones = [], showInversionesTrash, onToggleInversionesTrash, onRestoreInversion, onPurgeInversion, showClient, defaultClient, onOpen, onAddDebt, onPatchDebt, onResolveDebt, onAddSaldoFavor, onPatchSaldoFavor, onRemoveSaldoFavor, onNewInversion, onImportMeta, onImportTexto, onOpenInversion, onRestorePayment, onPurgePayment, showTrash, mesFiltro, search, showReportPicker, onCloseReportPicker, canSeeMontos = false }) {
   // Sin el permiso "Ver montos de inversión y facturación", todas las cifras
   // de esta pantalla (Pagos publicitarios e Inversión por semana) se muestran
   // enmascaradas — el resto de la información (cliente, fecha, concepto,
@@ -44,6 +93,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
   const [reportIncluirPendiente, setReportIncluirPendiente] = useState(false);
   const [reportIncluirFavor, setReportIncluirFavor] = useState(false);
   const [reportIncluirInvertido, setReportIncluirInvertido] = useState(false);
+  const [reportIncluirPagos, setReportIncluirPagos] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const q = search.trim().toLowerCase();
 
@@ -120,6 +170,12 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
       .filter((i) => i.fecha >= reportFrom && i.fecha <= reportTo)
       .sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
   }, [inversiones, reportFrom, reportTo]);
+  const reportPayments = useMemo(() => {
+    if (!reportFrom || !reportTo) return [];
+    return (payments || [])
+      .filter((p) => !p.deletedAt && p.fecha >= reportFrom && p.fecha <= reportTo)
+      .sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+  }, [payments, reportFrom, reportTo]);
   const reportTotalInvertido = reportInversiones.reduce((s, i) => s + Number(i.monto || 0), 0);
   const paymentWeeksBs = useMemo(() => groupByWeek(searchedPayments.filter((p) => p.moneda === "Bs")), [searchedPayments]);
 
@@ -264,18 +320,12 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
         </div>
         {(debts || []).length === 0 && <div className="hint">No hay saldo pendiente registrado. Todo al día 🎉</div>}
         <div className="debt-list">
-          {(debts || []).map((d) => {
-            const cm = clientMeta(d.empresa);
-            const CmIcon = cm.icon;
-            return (
-              <div className="debt-row" key={d.id}>
-                <span className="debt-concepto">{d.concepto}</span>
-                {showClient && <span className="debt-empresa" style={{ color: cm.color }}><CmIcon size={11} />{d.empresa}</span>}
-                <span className="debt-monto">{mMonto(d.monto)}</span>
-                <button className="btn-secondary debt-resolve" onClick={() => onResolveDebt(d.id)}><CheckCircle2 size={12} /> Marcar pagado</button>
-              </div>
-            );
-          })}
+          {(debts || []).map((d) => (
+            <EditableDebtRow
+              key={d.id} item={d} labelField="concepto" showClient={showClient} canSeeMontos={canSeeMontos}
+              onPatch={onPatchDebt} onAction={onResolveDebt} actionLabel="Marcar pagado" ActionIcon={CheckCircle2}
+            />
+          ))}
         </div>
       </div>
 
@@ -283,6 +333,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
         saldosFavor={saldosFavor}
         showClient={showClient}
         onAdd={onAddSaldoFavor}
+        onPatch={onPatchSaldoFavor}
         onRemove={onRemoveSaldoFavor}
         canSeeMontos={canSeeMontos}
       />
@@ -496,6 +547,10 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
                   <input type="checkbox" checked={reportIncluirInvertido} onChange={(e) => setReportIncluirInvertido(e.target.checked)} />
                   Invertido en este rango
                 </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={reportIncluirPagos} onChange={(e) => setReportIncluirPagos(e.target.checked)} />
+                  Pagos registrados en este rango
+                </label>
               </div>
             </div>
             <button
@@ -521,22 +576,37 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
               value: mMonto(i.monto),
               items: (i.desglose || []).map((d) => ({ label: d.concepto, value: mMonto(d.monto) })),
             })),
-            ...(reportIncluirPendiente ? [
-              (debts || []).length === 0
-                ? { label: "Saldo pendiente", value: "No hay saldo pendiente registrado." }
-                : { label: "Saldo pendiente", value: mMonto(saldoPendiente), items: debts.map((d) => ({ label: d.concepto, value: mMonto(d.monto) })) },
-            ] : []),
-            ...(reportIncluirFavor ? [
-              (saldosFavor || []).length === 0
-                ? { label: "Saldo a favor", value: "No hay saldo a favor registrado." }
-                : { label: "Saldo a favor", value: mMonto(saldoFavor), items: saldosFavor.map((s) => ({ label: s.nota || "Saldo a favor", value: mMonto(s.monto) })) },
-            ] : []),
             ...(reportIncluirInvertido ? [
               { label: "Invertido en este rango", value: mMonto(reportTotalInvertido) },
             ] : []),
           ]}
           totalLabel="Total invertido en el rango"
           total={mMonto(reportTotalInvertido)}
+          extraCardsTitle="Estado de cuenta"
+          secondaryTitle="Pagos registrados"
+          secondaryGroups={reportIncluirPagos ? (
+            reportPayments.length === 0
+              ? [{ label: "No hay pagos registrados en este rango.", value: "" }]
+              : reportPayments.map((p) => ({
+                  label: `${fmtDate(p.fecha)} · ${p.metodoPago}${p.moneda === "Bs" ? " (Bs)" : ""}`,
+                  value: mMonto(p.monto),
+                  items: (p.cobertura || []).length === 0
+                    ? [{ label: "Sin semana asignada", value: "" }]
+                    : p.cobertura.map((c) => ({ label: c.semana, value: mMonto(c.monto) })),
+                }))
+          ) : []}
+          extraCards={[
+            ...(reportIncluirPendiente ? [
+              (debts || []).length === 0
+                ? { label: "Saldo pendiente", value: "No hay saldo pendiente registrado.", tone: "teal" }
+                : { label: "Saldo pendiente", value: mMonto(saldoPendiente), items: debts.map((d) => ({ label: d.concepto, value: mMonto(d.monto) })), tone: "red" },
+            ] : []),
+            ...(reportIncluirFavor ? [
+              (saldosFavor || []).length === 0
+                ? { label: "Saldo a favor", value: "No hay saldo a favor registrado.", tone: "gold" }
+                : { label: "Saldo a favor", value: mMonto(saldoFavor), items: saldosFavor.map((s) => ({ label: s.nota || "Saldo a favor", value: mMonto(s.monto) })), tone: "gold" },
+            ] : []),
+          ]}
           onClose={() => setShowReport(false)}
         />
       )}
@@ -697,8 +767,7 @@ export function CoberturaEditor({ cobertura, onChange, montoTotal, canSeeMontos 
   );
 }
 
-export function SaldoFavorSection({ saldosFavor, showClient, onAdd, onRemove, canSeeMontos = false }) {
-  const mMonto = (v) => (canSeeMontos ? fmtMonto(v) : "•••"); // mismo motivo que en DesgloseEditor — componente aparte, no hereda el de PagosView
+export function SaldoFavorSection({ saldosFavor, showClient, onAdd, onPatch, onRemove, canSeeMontos = false }) {
   return (
     <div className="debt-section saldo-favor-section">
       <div className="debt-head">
@@ -711,18 +780,12 @@ export function SaldoFavorSection({ saldosFavor, showClient, onAdd, onRemove, ca
       </div>
       {(saldosFavor || []).length === 0 && <div className="hint">No hay saldo a favor registrado.</div>}
       <div className="debt-list">
-        {(saldosFavor || []).map((s) => {
-          const cm = clientMeta(s.empresa);
-          const CmIcon = cm.icon;
-          return (
-            <div className="debt-row" key={s.id}>
-              <span className="debt-concepto">{s.nota || "Saldo a favor"}</span>
-              {showClient && <span className="debt-empresa" style={{ color: cm.color }}><CmIcon size={11} />{s.empresa}</span>}
-              <span className="debt-monto">{mMonto(s.monto)}</span>
-              <button className="btn-secondary debt-resolve" onClick={() => onRemove(s.id)}><Trash2 size={12} /> Ya lo usé / quitar</button>
-            </div>
-          );
-        })}
+        {(saldosFavor || []).map((s) => (
+          <EditableDebtRow
+            key={s.id} item={s} labelField="nota" showClient={showClient} canSeeMontos={canSeeMontos}
+            onPatch={onPatch} onAction={onRemove} actionLabel="Ya lo usé / quitar" ActionIcon={Trash2}
+          />
+        ))}
       </div>
     </div>
   );

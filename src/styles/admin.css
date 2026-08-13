@@ -697,6 +697,43 @@
 }
 .report-total b{ font-family:'JetBrains Mono',monospace; color:var(--primary); font-size:13pt; }
 
+/* ---- Bloque de Saldos — separado a propósito del bloque de Inversión de
+   arriba, con su propio título y tarjetas individuales (no líneas de
+   lista) para que quede claro de un vistazo que no son sumandos del total
+   invertido. Estética neutra (bordes finos, sin color de fondo fuerte)
+   para que combine con el resto del reporte impreso, no las tarjetas de
+   color vivo que se usan en pantalla — esas están pensadas para pantalla,
+   no para ahorrar tinta en una hoja impresa. */
+.report-extra-section{ margin-top:22px; padding-top:16px; border-top:1px dashed var(--border); }
+.report-extra-title{
+  font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:10.5pt; color:var(--ink-soft);
+  text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px;
+}
+.report-extra-cards{ display:flex; flex-wrap:wrap; gap:10px; }
+.report-extra-card{
+  flex:1 1 200px; min-width:180px; border:1px solid var(--border); border-radius:10px; padding:10px 12px;
+  display:flex; flex-direction:column; gap:2px;
+  /* Los navegadores muchas veces no imprimen fondos de color por
+     defecto (la opción "gráficos de fondo" del diálogo de impresión) —
+     esto fuerza que SÍ se impriman, sin depender de que esa casilla
+     esté tildada. Mismo motivo por el que el logo pasó a SVG real en
+     vez de depender de que el navegador imprima fondos. */
+  print-color-adjust:exact; -webkit-print-color-adjust:exact;
+}
+/* Pasteles bien suaves a propósito — dan la pista visual de color sin
+   gastar tinta real si Diego imprime en papel, y sin competir con el
+   contraste del texto. Mismos tonos que ya se usan en las tarjetas de
+   resumen en pantalla, pero aclarados para que funcionen como fondo de
+   una tarjeta con texto encima, no como bloque sólido. */
+.report-extra-card.tone-red{ background:#FBEAE7; border-color:#EBC7C0; }
+.report-extra-card.tone-teal{ background:#E7F7F2; border-color:#BFE6DA; }
+.report-extra-card.tone-gold{ background:#FBF3E1; border-color:#EDD9A8; }
+.report-extra-card-label{ font-size:9.5pt; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; }
+.report-extra-card-value{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12pt; color:var(--ink); }
+.report-extra-card-items{ margin-top:6px; padding-top:6px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:3px; }
+.report-extra-card-item{ display:flex; justify-content:space-between; gap:8px; font-size:9pt; color:var(--ink-soft); }
+.report-extra-card-item b{ color:var(--ink); font-family:'JetBrains Mono',monospace; font-weight:600; }
+
 @media print{
   @page{ size: letter; margin: 0.6in; }
   /* visibility:hidden (como estaba antes) NO saca los elementos del flujo

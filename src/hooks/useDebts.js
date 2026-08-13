@@ -27,6 +27,10 @@ export function useDebts(logActivity, setAppError) {
     try { updateDebts([...(debts || []), d]); logActivity(`Se registró pendiente: ${d.concepto} (${fmtMonto(d.monto)})`); }
     catch (e) { setAppError("No se pudo registrar el pendiente: " + (e && e.message ? e.message : e)); }
   }
+  function patchDebt(id, patch) {
+    try { updateDebts((debts || []).map((x) => (x.id === id ? { ...x, ...patch } : x))); logActivity("Se editó un pendiente"); }
+    catch (e) { setAppError("No se pudo editar el pendiente: " + (e && e.message ? e.message : e)); }
+  }
   function resolveDebt(id) {
     try {
       const d = (debts || []).find((x) => x.id === id);
@@ -39,6 +43,10 @@ export function useDebts(logActivity, setAppError) {
     try { updateSaldosFavor([...(saldosFavor || []), s]); logActivity(`Se registró saldo a favor: ${fmtMonto(s.monto)} (${s.empresa})`); }
     catch (e) { setAppError("No se pudo registrar el saldo a favor: " + (e && e.message ? e.message : e)); }
   }
+  function patchSaldoFavor(id, patch) {
+    try { updateSaldosFavor((saldosFavor || []).map((x) => (x.id === id ? { ...x, ...patch } : x))); logActivity("Se editó un saldo a favor"); }
+    catch (e) { setAppError("No se pudo editar el saldo a favor: " + (e && e.message ? e.message : e)); }
+  }
   function removeSaldoFavor(id) {
     try {
       const s = (saldosFavor || []).find((x) => x.id === id);
@@ -48,7 +56,7 @@ export function useDebts(logActivity, setAppError) {
   }
 
   return {
-    debts, setDebts, updateDebts, addDebt, resolveDebt,
-    saldosFavor, setSaldosFavor, updateSaldosFavor, addSaldoFavor, removeSaldoFavor,
+    debts, setDebts, updateDebts, addDebt, patchDebt, resolveDebt,
+    saldosFavor, setSaldosFavor, updateSaldosFavor, addSaldoFavor, patchSaldoFavor, removeSaldoFavor,
   };
 }

@@ -12,7 +12,7 @@ import { PrintBrandLogo } from "./PrintBrandLogo";
 import { waitForFontsReady } from "../../utils/printReady";
 import { exportReciboPdf } from "../../utils/pdfExport";
 
-export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, totalLabel, total, emptyText, onClose, showDigital = true }) {
+export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, totalLabel, total, emptyText, onClose, showDigital = true, extraCards, extraCardsTitle = "Estado de cuenta", secondaryGroups, secondaryTitle }) {
   const [copied, setCopied] = useState(false);
   // "recibo" (digital) es el default: es el formato pensado para leerse en
   // pantalla / mandarse por WhatsApp, y no requiere ninguna acción extra
@@ -73,6 +73,20 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
       (g.items || []).forEach((it) => { text += `   • ${it.label}${it.value ? ": " + it.value : ""}\n`; });
     });
     text += `\n${totalLabel}: ${total}`;
+    if (secondaryGroups && secondaryGroups.length > 0) {
+      text += `\n\n${secondaryTitle}\n`;
+      secondaryGroups.forEach((g) => {
+        text += `${g.label}: ${g.value}\n`;
+        (g.items || []).forEach((it) => { text += `   • ${it.label}${it.value ? ": " + it.value : ""}\n`; });
+      });
+    }
+    if (extraCards && extraCards.length > 0) {
+      text += `\n\n${extraCardsTitle}\n`;
+      extraCards.forEach((c) => {
+        text += `${c.label}: ${c.value}\n`;
+        (c.items || []).forEach((it) => { text += `   • ${it.label}${it.value ? ": " + it.value : ""}\n`; });
+      });
+    }
     return text;
   }
 
@@ -173,6 +187,70 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
             <span>{totalLabel}</span>
             <b>{total}</b>
           </div>
+
+          {/* Sección de Pagos — separada del bloque de Inversión de arriba
+              (sobre lo invertido/gastado en pauta) por la misma razón que
+              el bloque de Saldos más abajo: son conceptos distintos y no
+              deben leerse como si sumaran a "Total invertido en el rango".
+              Usa el mismo estilo de lista que Inversión (no tarjetas como
+              Saldos) porque cada pago trae más datos por línea — fecha,
+              método, y la semana de inversión que cubre si tiene una
+              asignada — que se leen mejor como filas que como recuadros. */}
+          {secondaryGroups && secondaryGroups.length > 0 && (
+            <div className="report-extra-section">
+              <div className="report-extra-title">{secondaryTitle}</div>
+              <div className="report-groups">
+                {secondaryGroups.map((g, i) => (
+                  <div className="report-group" key={i}>
+                    <div className="report-group-head">
+                      <span>{g.label}</span>
+                      {g.value && <b>{g.value}</b>}
+                    </div>
+                    {(g.items || []).length > 0 && (
+                      <div className="report-group-items">
+                        {g.items.map((it, j) => (
+                          <div className="report-item" key={j}>
+                            <span>{it.label}</span>
+                            {it.value && <b>{it.value}</b>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Bloque separado a propósito, fuera de report-groups/report-total —
+              Saldo pendiente y Saldo a favor son conceptos de cuenta corriente,
+              sin relación con la suma de inversión de arriba. Mezclarlos en la
+              misma lista (como pasaba antes) hacía pensar que se sumaban al
+              total invertido. Se usan tarjetas individuales, no líneas de
+              lista, para que la diferencia se note de un vistazo. */}
+          {extraCards && extraCards.length > 0 && (
+            <div className="report-extra-section">
+              <div className="report-extra-title">{extraCardsTitle}</div>
+              <div className="report-extra-cards">
+                {extraCards.map((c, i) => (
+                  <div className={"report-extra-card" + (c.tone ? ` tone-${c.tone}` : "")} key={i}>
+                    <span className="report-extra-card-label">{c.label}</span>
+                    <span className="report-extra-card-value">{c.value}</span>
+                    {(c.items || []).length > 0 && (
+                      <div className="report-extra-card-items">
+                        {c.items.map((it, j) => (
+                          <div className="report-extra-card-item" key={j}>
+                            <span>{it.label}</span>
+                            {it.value && <b>{it.value}</b>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {downloadError && <div className="form-error no-print"><AlertTriangle size={13} /> {downloadError}</div>}

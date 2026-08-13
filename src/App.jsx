@@ -105,8 +105,8 @@ function App() {
     posts, updatePosts, addPost, patchPost, deletePost, restorePost, purgePost, openPostId, setOpenPostId,
   } = usePosts(logActivity, setAppError);
   const {
-    debts, updateDebts, addDebt, resolveDebt,
-    saldosFavor, updateSaldosFavor, addSaldoFavor, removeSaldoFavor,
+    debts, updateDebts, addDebt, patchDebt, resolveDebt,
+    saldosFavor, updateSaldosFavor, addSaldoFavor, patchSaldoFavor, removeSaldoFavor,
   } = useDebts(logActivity, setAppError);
   const { notes, updateNotes, addNote, patchNote, trashNote, restoreNote, purgeNote } = useNotes(logActivity, setAppError);
   const { guiones, updateGuiones, addGuion, addGuiones, patchGuion, trashGuion, restoreGuion, purgeGuion, syncStatus: guionesSyncStatus } = useGuiones(logActivity, setAppError);
@@ -1198,8 +1198,10 @@ function App() {
             defaultClient={defaultClientForNew}
             onOpen={(id) => setOpenPaymentId(id)}
             onAddDebt={() => setShowNewDebt(true)}
+            onPatchDebt={patchDebt}
             onResolveDebt={resolveDebt}
             onAddSaldoFavor={() => setShowNewSaldoFavor(true)}
+            onPatchSaldoFavor={patchSaldoFavor}
             onRemoveSaldoFavor={removeSaldoFavor}
             onNewInversion={() => setShowNewInversion(true)}
             onImportMeta={() => setShowMetaImport(true)}
