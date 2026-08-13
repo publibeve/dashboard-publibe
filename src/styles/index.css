@@ -49,8 +49,14 @@ button, .card, .nav-item, .tab{ -webkit-tap-highlight-color:transparent; }
     backdrop-filter:none !important;
   }
 }
+/* Tipografía y color de texto base — a propósito en body, NO en .app: con
+   el Portal de Overlay (todos los modales cuelgan de document.body, no de
+   .app), cualquier cosa acá adentro dejaba de heredar la fuente/color de
+   marca y caía a la fuente genérica del sistema. body sí es un ancestro
+   real de TODO, esté o no dentro de .app. */
+body{ font-family:'Inter',sans-serif; color:var(--ink); }
 .app{
-  font-family:'Inter',sans-serif; color:var(--ink); min-height:100vh; display:flex;
+  min-height:100vh; display:flex;
   background:
     radial-gradient(1100px 700px at 8% -6%, rgba(29,53,87,0.055), transparent 55%),
     radial-gradient(900px 650px at 96% 8%, rgba(193,68,60,0.045), transparent 55%),
