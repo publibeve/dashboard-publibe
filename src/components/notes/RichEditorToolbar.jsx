@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Link as LinkIcon,
   Trash2,
@@ -31,11 +32,12 @@ export function ImageActionMenu({ menu, onClose, onExpand, onDelete }) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [onClose]);
   if (!menu) return null;
-  return (
+  return createPortal(
     <div className="note-img-menu" ref={ref} style={{ left: menu.x, top: menu.y }}>
       <button type="button" onClick={onExpand}><Maximize2 size={13} /> Ampliar</button>
       <button type="button" className="note-img-menu-del" onClick={onDelete}><Trash2 size={13} /> Eliminar</button>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -530,7 +532,14 @@ export function FloatingSelectionToolbar({ targetRef, onAfterCommand }) {
     : Math.min(rect.bottom + GAP, window.innerHeight - size.height - GAP);
   const left = Math.min(Math.max(8, rect.left), window.innerWidth - size.width - 8);
 
-  return (
+  // Mismo motivo que ColorPickerPopover/TaskChatPanel: dentro de un modal
+  // (que tiene backdrop-filter permanente + transform durante su entrada),
+  // este position:fixed quedaba contenido y mal ubicado en vez de flotar
+  // sobre toda la pantalla. Portal a document.body lo saca de esa
+  // jerarquía — y de paso resuelve lo mismo para cualquier popover anidado
+  // que abra RichToolbar (link, color de resaltado, etc.), ya que ahora
+  // cuelgan de acá, no del modal.
+  return createPortal(
     <div className="rt-floating-toolbar" ref={boxRef} style={{ top, left }}>
       <RichToolbar
         targetRef={targetRef}
@@ -542,6 +551,7 @@ export function FloatingSelectionToolbar({ targetRef, onAfterCommand }) {
           </button>
         }
       />
-    </div>
+    </div>,
+    document.body
   );
 }

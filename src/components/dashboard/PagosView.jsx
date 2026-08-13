@@ -277,6 +277,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
         showClient={showClient}
         onAdd={onAddSaldoFavor}
         onRemove={onRemoveSaldoFavor}
+        canSeeMontos={canSeeMontos}
       />
 
       <div className="tabbar pagos-subtabbar">
@@ -453,12 +454,18 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
   );
 }
 
-export function DesgloseEditor({ desglose, onChange, montoTotal }) {
+export function DesgloseEditor({ desglose, onChange, montoTotal, canSeeMontos = false }) {
   const [concepto, setConcepto] = useState("");
   const [monto, setMonto] = useState("");
   const list = desglose || [];
   const sum = list.reduce((s, d) => s + Number(d.monto || 0), 0);
   const restante = Number(montoTotal || 0) - sum;
+  // Mismo criterio que PagosView — se define localmente acá porque este es
+  // un componente aparte (no vive dentro de PagosView), así que no hereda
+  // el mMonto de ahí. Este era justo el bug: se usaba sin estar definido
+  // en este scope, y tiraba abajo TODO el render de la app (no solo el
+  // modal) apenas se agregaba el primer ítem al desglose.
+  const mMonto = (v) => (canSeeMontos ? fmtMonto(v) : "•••");
 
   function add() {
     const n = Number(monto);
@@ -498,7 +505,8 @@ export function DesgloseEditor({ desglose, onChange, montoTotal }) {
   );
 }
 
-export function SaldoFavorSection({ saldosFavor, showClient, onAdd, onRemove }) {
+export function SaldoFavorSection({ saldosFavor, showClient, onAdd, onRemove, canSeeMontos = false }) {
+  const mMonto = (v) => (canSeeMontos ? fmtMonto(v) : "•••"); // mismo motivo que en DesgloseEditor — componente aparte, no hereda el de PagosView
   return (
     <div className="debt-section saldo-favor-section">
       <div className="debt-head">

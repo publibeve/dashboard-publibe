@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   MessageSquare,
@@ -75,7 +76,12 @@ export function TaskChatPanel({
     onSaveEdit(el.innerHTML);
   }
 
-  return (
+  // Mismo motivo que ColorPickerPopover: .modal tiene transform (durante su
+  // animación) y backdrop-filter (permanente, para el vidrio) — cualquiera
+  // de las dos convierte a .modal en el "contenedor" de un position:fixed
+  // adentro suyo. Portal a document.body para que esto quede afuera de esa
+  // jerarquía sin importar qué CSS tenga el modal.
+  return createPortal(
     <div
       className="task-chat-floating"
       style={panelPos ? { top: panelPos.top, left: panelPos.left, width: panelPos.width, height: panelPos.height, right: "auto", bottom: "auto" } : { opacity: 0 }}
@@ -183,6 +189,7 @@ export function TaskChatPanel({
       {previewImgUrl && (
         <ImagePreviewModal file={{ url: previewImgUrl, nombre: "Imagen del comentario" }} onClose={() => setPreviewImgUrl(null)} />
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

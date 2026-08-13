@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { hexToHsv, hsvToHex } from "../../utils/helpers";
 
 export function ColorPickerPopover({ color, onChange, onClose, anchorRef }) {
@@ -25,10 +26,14 @@ export function ColorPickerPopover({ color, onChange, onClose, anchorRef }) {
     commit({ ...hsv, h: (x / rect.width) * 360 });
   }
 
-  // El modal recorta cualquier contenido que se salga de sus bordes (para que su propio scroll
-  // funcione bien), así que este selector — que es más alto que el espacio que suele quedar
-  // libre — se mide desde el botón que lo abre y se vuelve a dibujar "flotando" por encima de
-  // todo, en vez de quedar atrapado y cortado dentro del recuadro del modal.
+  // El modal tiene propiedades (transform durante su animación, y
+  // backdrop-filter de forma permanente para el efecto vidrio) que, cada
+  // una por separado, convierten a .modal en el "contenedor" de cualquier
+  // position:fixed adentro suyo — en vez de perseguir cada propiedad nueva
+  // que cause esto, el popover se monta directo en document.body via
+  // Portal, así queda estructuralmente afuera de esa jerarquía y sus
+  // coordenadas de pantalla (medidas acá) siempre valen tal cual, sin
+  // importar qué CSS tenga cualquier ancestro.
   useLayoutEffect(() => {
     if (!anchorRef?.current) return;
     const rect = anchorRef.current.getBoundingClientRect();
@@ -62,7 +67,7 @@ export function ColorPickerPopover({ color, onChange, onClose, anchorRef }) {
 
   const pureHue = hsvToHex(hsv.h, 100, 100);
 
-  return (
+  return createPortal(
     <div className="color-picker-pop" ref={popRef} style={fixedPos ? { position: "fixed", top: fixedPos.top, left: fixedPos.left } : { visibility: "hidden" }}>
       <div
         className="color-picker-square"
@@ -81,6 +86,7 @@ export function ColorPickerPopover({ color, onChange, onClose, anchorRef }) {
       >
         <span className="color-picker-hue-cursor" style={{ left: `${(hsv.h / 360) * 100}%` }} />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

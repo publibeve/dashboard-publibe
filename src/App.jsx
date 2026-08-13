@@ -1485,6 +1485,7 @@ function App() {
         <NewInversionModal
           defaultClient={defaultClientForNew}
           lockedClient={selectedClient !== "__ALL__" ? selectedClient : null}
+          canSeeMontos={can("verMontos")}
           onClose={() => setShowNewInversion(false)}
           onCreate={(inv) => { addInversion(inv); setShowNewInversion(false); }}
         />
@@ -1495,6 +1496,7 @@ function App() {
           return inv ? (
             <InversionModal
               inversion={inv}
+              canSeeMontos={can("verMontos")}
               onClose={() => setOpenInversionId(null)}
               onPatch={(patch) => patchInversion(inv.id, patch)}
               onDelete={() => deleteInversion(inv.id)}

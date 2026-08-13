@@ -12,7 +12,7 @@ import { DesgloseEditor } from "./PagosView";
 import { CLIENTES } from "../../utils/constants";
 import { uid } from "../../utils/helpers";
 
-export function NewInversionModal({ onClose, onCreate, defaultClient, lockedClient }) {
+export function NewInversionModal({ onClose, onCreate, defaultClient, lockedClient, canSeeMontos = false }) {
   const [empresa, setEmpresa] = useState(lockedClient || defaultClient);
   const [semana, setSemana] = useState("");
   const [fecha, setFecha] = useState("");
@@ -63,7 +63,7 @@ export function NewInversionModal({ onClose, onCreate, defaultClient, lockedClie
           <input value={semana} onChange={(e) => setSemana(e.target.value)} placeholder="Ej: 6 al 12 de abril" />
         </label>
 
-        <DesgloseEditor desglose={desglose} onChange={setDesglose} montoTotal={monto} />
+        <DesgloseEditor desglose={desglose} onChange={setDesglose} montoTotal={monto} canSeeMontos={canSeeMontos} />
 
         <button className="btn-primary full" type="button" onClick={submit}>Registrar inversión</button>
       </div>
@@ -71,7 +71,7 @@ export function NewInversionModal({ onClose, onCreate, defaultClient, lockedClie
   );
 }
 
-export function InversionModal({ inversion, onClose, onPatch, onDelete }) {
+export function InversionModal({ inversion, onClose, onPatch, onDelete, canSeeMontos = false }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [draft, setDraft] = useState({
     empresa: inversion.empresa, semana: inversion.semana, fecha: inversion.fecha, monto: inversion.monto,
@@ -110,7 +110,7 @@ export function InversionModal({ inversion, onClose, onPatch, onDelete }) {
           <input value={draft.semana} onChange={(e) => setDraft({ ...draft, semana: e.target.value })} />
         </label>
 
-        <DesgloseEditor desglose={draft.desglose} onChange={(d) => setDraft({ ...draft, desglose: d })} montoTotal={draft.monto} />
+        <DesgloseEditor desglose={draft.desglose} onChange={(d) => setDraft({ ...draft, desglose: d })} montoTotal={draft.monto} canSeeMontos={canSeeMontos} />
 
         <div className="modal-footer modal-footer-row">
           {!confirmDelete ? (
