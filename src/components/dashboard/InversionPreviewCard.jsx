@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp, X, LockKeyhole } from "lucide-react";
 import { CustomDatePicker } from "../common/CustomDatePicker";
 import { DesgloseEditor } from "./PagosView";
-import { weekLabel } from "../../utils/helpers";
+import { weekLabel, fmtMonto } from "../../utils/helpers";
 
 /**
  * Tarjeta de revisión para UNA inversión semanal detectada — la usan tanto
@@ -11,7 +11,7 @@ import { weekLabel } from "../../utils/helpers";
  * desglose, nota}) antes de guardar nada. `origenLabel` es opcional — el
  * texto chico de contexto ("De la campaña...", "Del mensaje pegado", etc.).
  */
-export function InversionPreviewCard({ inv, onChange, onRemove, origenLabel }) {
+export function InversionPreviewCard({ inv, onChange, onRemove, origenLabel, canSeeMontos = false }) {
   const [expanded, setExpanded] = useState(false);
   function patch(p) { onChange({ ...inv, ...p }); }
   const tieneDesglose = (inv.desglose || []).length > 0;
@@ -36,7 +36,7 @@ export function InversionPreviewCard({ inv, onChange, onRemove, origenLabel }) {
         ) : inv.nota ? (
           <span className="import-tema-summary">Sin desglose por monto — queda como nota</span>
         ) : null}
-        <span className="import-tema-summary"><b>${Number(inv.monto || 0).toFixed(2)}</b></span>
+        <span className="import-tema-summary"><b>{canSeeMontos ? fmtMonto(inv.monto) : "•••"}</b></span>
       </div>
 
       {expanded && (
@@ -47,15 +47,19 @@ export function InversionPreviewCard({ inv, onChange, onRemove, origenLabel }) {
               <CustomDatePicker value={inv.fecha} onChange={(v) => patch({ fecha: v, semana: v ? weekLabel(v) : inv.semana })} />
             </label>
             <label className="field">
-              <span>Monto total</span>
-              <input type="number" step="0.01" min="0" value={inv.monto} onChange={(e) => patch({ monto: Number(e.target.value) })} />
+              <span>Monto total{!canSeeMontos && <LockKeyhole size={11} />}</span>
+              {canSeeMontos ? (
+                <input type="number" step="0.01" min="0" value={inv.monto} onChange={(e) => patch({ monto: Number(e.target.value) })} />
+              ) : (
+                <input type="text" value="•••" disabled readOnly title="No tenés permiso para ver ni editar montos" />
+              )}
             </label>
           </div>
           <label className="field">
             <span>Nota (opcional)</span>
             <textarea rows={2} value={inv.nota || ""} onChange={(e) => patch({ nota: e.target.value })} placeholder="Ej: 5 elementos sin monto individual, etiqueta de producto/campaña…" />
           </label>
-          <DesgloseEditor desglose={inv.desglose} onChange={(d) => patch({ desglose: d })} montoTotal={inv.monto} canSeeMontos />
+          <DesgloseEditor desglose={inv.desglose} onChange={(d) => patch({ desglose: d })} montoTotal={inv.monto} canSeeMontos={canSeeMontos} />
         </div>
       )}
     </div>

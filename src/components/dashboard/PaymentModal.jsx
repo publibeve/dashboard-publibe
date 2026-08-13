@@ -7,6 +7,7 @@ import {
   CreditCard,
   Banknote,
   LockKeyhole,
+  Copy,
 } from "lucide-react";
 import { AttachmentsBlock } from "../common/AttachmentsBlock";
 import { CustomDatePicker } from "../common/CustomDatePicker";
@@ -17,13 +18,30 @@ import { CoberturaEditor } from "./PagosView";
 import { CLIENTES, METODOS_PAGO } from "../../utils/constants";
 import { clientMeta, fmtMonto } from "../../utils/helpers";
 
-export function PaymentModal({ payment, onClose, onPatch, onDelete, unlocked, onRequestUnlock, driveConnected, canSeeMontos = false }) {
+const METODOS_ESTANDAR = METODOS_PAGO.filter((m) => m !== "Otro");
+
+export function PaymentModal({ payment, onClose, onPatch, onDelete, onDuplicate, unlocked, onRequestUnlock, driveConnected, canSeeMontos = false }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [draft, setDraft] = useState({
     empresa: payment.empresa, fecha: payment.fecha, moneda: payment.moneda || "USD", monto: payment.monto,
     montoBs: payment.montoBs, tasaCambio: payment.tasaCambio, refBancaria: payment.refBancaria,
     metodoPago: payment.metodoPago, nota: payment.nota, cobertura: payment.cobertura || [],
   });
+  // El método guardado puede ser uno de los estándar, o texto libre de una
+  // vez anterior que usó "Otro" (ej. "Cheque") — en ese caso el desplegable
+  // debe mostrar "Otro" seleccionado, con el texto real en el campo de al
+  // lado, no perderlo ni mostrarlo como si no calzara con nada.
+  const metodoEsPersonalizado = draft.metodoPago && !METODOS_ESTANDAR.includes(draft.metodoPago);
+  const [metodoModo, setMetodoModo] = useState(metodoEsPersonalizado ? "Otro" : (draft.metodoPago || ""));
+  const [metodoOtro, setMetodoOtro] = useState(metodoEsPersonalizado ? draft.metodoPago : "");
+  function handleMetodoChange(v) {
+    setMetodoModo(v);
+    setDraft({ ...draft, metodoPago: v === "Otro" ? metodoOtro : v });
+  }
+  function handleMetodoOtroChange(v) {
+    setMetodoOtro(v);
+    setDraft({ ...draft, metodoPago: v });
+  }
   const accent = clientMeta(draft.empresa).color;
   const dirty = Object.keys(draft).some((k) => JSON.stringify(draft[k]) !== JSON.stringify(payment[k]));
 
@@ -107,8 +125,14 @@ export function PaymentModal({ payment, onClose, onPatch, onDelete, unlocked, on
 
         <label className="field">
           <span><CreditCard size={12} /> Método de pago</span>
-          <CustomSelect value={draft.metodoPago} onChange={(v) => setDraft({ ...draft, metodoPago: v })} disabled={!unlocked} options={METODOS_PAGO} />
+          <CustomSelect value={metodoModo} onChange={handleMetodoChange} disabled={!unlocked} options={METODOS_PAGO} />
         </label>
+        {metodoModo === "Otro" && (
+          <label className="field">
+            <span>Especificar método</span>
+            <input value={metodoOtro} onChange={(e) => handleMetodoOtroChange(e.target.value)} placeholder="Ej: Cheque, Binance…" disabled={!unlocked} />
+          </label>
+        )}
 
         <label className="field">
           <span>Nota (opcional)</span>
@@ -137,6 +161,7 @@ export function PaymentModal({ payment, onClose, onPatch, onDelete, unlocked, on
         {unlocked && (
         <div className="modal-footer modal-footer-row">
           <button className="btn-danger-ghost" onClick={() => setConfirmDelete(true)}><Trash2 size={13} /> Eliminar pago</button>
+          <button className="btn-secondary" type="button" onClick={() => onDuplicate(payment)}><Copy size={13} /> Duplicar</button>
           <button className="btn-primary save-draft-btn" type="button" onClick={saveDraft} disabled={!dirty}>
             <CheckCircle2 size={14} /> Guardar cambios
           </button>

@@ -32,7 +32,7 @@ function grupoToInversion(g, empresa) {
 
 
 
-export function MetaImportModal({ empresa: empresaInicial, defaultClient, onClose, onImport }) {
+export function MetaImportModal({ empresa: empresaInicial, defaultClient, onClose, onImport, canSeeMontos = false }) {
   const [empresa, setEmpresa] = useState(empresaInicial || defaultClient);
   const [step, setStep] = useState("subir"); // "subir" | "revisar"
   const [cargando, setCargando] = useState(false);
@@ -129,6 +129,7 @@ export function MetaImportModal({ empresa: empresaInicial, defaultClient, onClos
                 <InversionPreviewCard
                   key={inv.id} inv={inv} onChange={(next) => updateInv(i, next)} onRemove={() => removeInv(i)}
                   origenLabel={`De la campaña "${inv.campanaOrigen}"`}
+                  canSeeMontos={canSeeMontos}
                 />
               ))}
             </div>

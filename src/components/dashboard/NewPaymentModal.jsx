@@ -13,17 +13,22 @@ import { CoberturaEditor } from "./PagosView";
 import { METODOS_PAGO } from "../../utils/constants";
 import { clientMeta, fmtMonto, todayISO, uid } from "../../utils/helpers";
 
-export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient }) {
-  const [empresa, setEmpresa] = useState(lockedClient || defaultClient);
-  const [fecha, setFecha] = useState(todayISO());
-  const [moneda, setMoneda] = useState("USD");
-  const [monto, setMonto] = useState("");
-  const [montoBs, setMontoBs] = useState("");
-  const [tasaCambio, setTasaCambio] = useState("");
-  const [refBancaria, setRefBancaria] = useState("");
-  const [metodoPago, setMetodoPago] = useState("");
-  const [nota, setNota] = useState("");
-  const [cobertura, setCobertura] = useState([]);
+const METODOS_ESTANDAR = METODOS_PAGO.filter((m) => m !== "Otro");
+
+export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient, canSeeMontos = false, duplicateFrom }) {
+  const d = duplicateFrom || null;
+  const dMetodoEsPersonalizado = d && d.metodoPago && !METODOS_ESTANDAR.includes(d.metodoPago);
+  const [empresa, setEmpresa] = useState(d ? d.empresa : (lockedClient || defaultClient));
+  const [fecha, setFecha] = useState(d ? d.fecha : todayISO());
+  const [moneda, setMoneda] = useState(d ? (d.moneda || "USD") : "USD");
+  const [monto, setMonto] = useState(d && d.moneda !== "Bs" ? String(d.monto ?? "") : "");
+  const [montoBs, setMontoBs] = useState(d && d.moneda === "Bs" ? String(d.montoBs ?? "") : "");
+  const [tasaCambio, setTasaCambio] = useState(d && d.moneda === "Bs" ? String(d.tasaCambio ?? "") : "");
+  const [refBancaria, setRefBancaria] = useState(d ? (d.refBancaria || "") : "");
+  const [metodoPago, setMetodoPago] = useState(d ? (dMetodoEsPersonalizado ? "Otro" : (d.metodoPago || "")) : "");
+  const [metodoOtro, setMetodoOtro] = useState(d && dMetodoEsPersonalizado ? d.metodoPago : "");
+  const [nota, setNota] = useState(d ? (d.nota || "") : "");
+  const [cobertura, setCobertura] = useState(d ? (d.cobertura || []).map((c) => ({ ...c, id: uid() })) : []);
   const [error, setError] = useState("");
 
   const montoCalculado = moneda === "Bs" && montoBs && tasaCambio ? (Number(montoBs) / Number(tasaCambio)) : null;
@@ -33,6 +38,7 @@ export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient
     if (!empresa) { setError("Falta elegir la empresa."); return; }
     if (!fecha) { setError("Falta la fecha."); return; }
     if (!metodoPago) { setError("Falta elegir el método de pago."); return; }
+    if (metodoPago === "Otro" && !metodoOtro.trim()) { setError("Especificá cuál es el método de pago."); return; }
     if (moneda === "Bs") {
       if (!montoBs || Number(montoBs) <= 0) { setError("Falta el monto en bolívares."); return; }
       if (!tasaCambio || Number(tasaCambio) <= 0) { setError("Falta la tasa de cambio."); return; }
@@ -41,7 +47,7 @@ export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient
     }
     try {
       const payload = {
-        id: uid(), empresa, fecha, monto: Math.round(montoFinal * 100) / 100, metodoPago,
+        id: uid(), empresa, fecha, monto: Math.round(montoFinal * 100) / 100, metodoPago: metodoPago === "Otro" ? metodoOtro.trim() : metodoPago,
         moneda, nota: nota.trim(), cobertura,
       };
       if (moneda === "Bs") {
@@ -59,7 +65,7 @@ export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient
     <Overlay onClose={onClose}>
       <div className="modal small" style={{ "--primary": clientMeta(empresa).color }}>
         <div className="modal-head">
-          <h3>Nuevo pago</h3>
+          <h3>{d ? "Duplicar pago" : "Nuevo pago"}</h3>
           <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>
         </div>
 
@@ -111,15 +117,21 @@ export function NewPaymentModal({ onClose, onCreate, defaultClient, lockedClient
           <span><CreditCard size={12} /> Método de pago</span>
           <CustomSelect value={metodoPago} onChange={setMetodoPago} options={METODOS_PAGO} placeholder="Seleccionar…" />
         </label>
+        {metodoPago === "Otro" && (
+          <label className="field">
+            <span>Especificar método</span>
+            <input value={metodoOtro} onChange={(e) => setMetodoOtro(e.target.value)} placeholder="Ej: Cheque, Binance…" autoFocus />
+          </label>
+        )}
 
         <label className="field">
           <span>Nota (opcional)</span>
           <textarea rows={2} value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Ej: abono temporal mientras pasaba la tarjeta" />
         </label>
 
-        <CoberturaEditor cobertura={cobertura} onChange={setCobertura} montoTotal={montoFinal} />
+        <CoberturaEditor cobertura={cobertura} onChange={setCobertura} montoTotal={montoFinal} canSeeMontos={canSeeMontos} />
 
-        <button className="btn-primary full" type="button" onClick={submit}>Registrar pago</button>
+        <button className="btn-primary full" type="button" onClick={submit}>{d ? "Crear pago duplicado" : "Registrar pago"}</button>
       </div>
     </Overlay>
   );

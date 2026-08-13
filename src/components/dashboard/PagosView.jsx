@@ -16,6 +16,8 @@ import {
   Printer,
   FileSpreadsheet,
   Sparkles,
+  PenTool,
+  Check,
 } from "lucide-react";
 import { CustomDatePicker } from "../common/CustomDatePicker";
 import { EmpresaField } from "../common/EmpresaField";
@@ -466,6 +468,9 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
 export function DesgloseEditor({ desglose, onChange, montoTotal, canSeeMontos = false }) {
   const [concepto, setConcepto] = useState("");
   const [monto, setMonto] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editConcepto, setEditConcepto] = useState("");
+  const [editMonto, setEditMonto] = useState("");
   const list = desglose || [];
   const sum = list.reduce((s, d) => s + Number(d.monto || 0), 0);
   const restante = Number(montoTotal || 0) - sum;
@@ -484,6 +489,16 @@ export function DesgloseEditor({ desglose, onChange, montoTotal, canSeeMontos = 
   }
   function remove(id) {
     onChange(list.filter((d) => d.id !== id));
+    if (editingId === id) setEditingId(null);
+  }
+  function startEdit(d) {
+    setEditingId(d.id); setEditConcepto(d.concepto); setEditMonto(String(d.monto));
+  }
+  function saveEdit() {
+    const n = Number(editMonto);
+    if (!editConcepto.trim() || !editMonto || isNaN(n) || n <= 0) return;
+    onChange(list.map((d) => (d.id === editingId ? { ...d, concepto: editConcepto.trim(), monto: n } : d)));
+    setEditingId(null);
   }
 
   return (
@@ -492,11 +507,23 @@ export function DesgloseEditor({ desglose, onChange, montoTotal, canSeeMontos = 
       <div className="cov-list">
         {list.length === 0 && <div className="hint">Sin desglose todavía — puedes dejarlo así o detallarlo.</div>}
         {list.map((d) => (
-          <div className="cov-row" key={d.id}>
-            <span className="cov-row-semana">{d.concepto}</span>
-            <span className="cov-row-monto">{mMonto(d.monto)}</span>
-            <button type="button" className="icon-btn subtle" onClick={() => remove(d.id)}><Trash2 size={13} /></button>
-          </div>
+          editingId === d.id ? (
+            <div className="cov-row cov-row-editing" key={d.id}>
+              <input value={editConcepto} onChange={(e) => setEditConcepto(e.target.value)} autoFocus onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingId(null); }} />
+              <input type="number" step="0.01" min="0" value={editMonto} onChange={(e) => setEditMonto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingId(null); }} />
+              <div className="cov-edit-actions">
+                <button type="button" className="btn-secondary cov-edit-save" onClick={saveEdit}><Check size={12} /> Guardar</button>
+                <button type="button" className="btn-secondary cov-edit-cancel" onClick={() => setEditingId(null)}><X size={12} /></button>
+              </div>
+            </div>
+          ) : (
+            <div className="cov-row" key={d.id}>
+              <span className="cov-row-semana">{d.concepto}</span>
+              <span className="cov-row-monto">{mMonto(d.monto)}</span>
+              <button type="button" className="icon-btn subtle" onClick={() => startEdit(d)} title="Editar"><PenTool size={12} /></button>
+              <button type="button" className="icon-btn subtle" onClick={() => remove(d.id)} title="Eliminar"><Trash2 size={13} /></button>
+            </div>
+          )
         ))}
       </div>
       <div className="add-cov">
@@ -523,6 +550,9 @@ export function DesgloseEditor({ desglose, onChange, montoTotal, canSeeMontos = 
 export function CoberturaEditor({ cobertura, onChange, montoTotal, canSeeMontos = false, disabled = false }) {
   const [semana, setSemana] = useState("");
   const [monto, setMonto] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editSemana, setEditSemana] = useState("");
+  const [editMonto, setEditMonto] = useState("");
   const list = cobertura || [];
   const sum = list.reduce((s, c) => s + Number(c.monto || 0), 0);
   const restante = Number(montoTotal || 0) - sum;
@@ -536,6 +566,16 @@ export function CoberturaEditor({ cobertura, onChange, montoTotal, canSeeMontos 
   }
   function remove(id) {
     onChange(list.filter((c) => c.id !== id));
+    if (editingId === id) setEditingId(null);
+  }
+  function startEdit(c) {
+    setEditingId(c.id); setEditSemana(c.semana); setEditMonto(String(c.monto));
+  }
+  function saveEdit() {
+    const n = Number(editMonto);
+    if (!editSemana.trim() || !editMonto || isNaN(n) || n <= 0) return;
+    onChange(list.map((c) => (c.id === editingId ? { ...c, semana: editSemana.trim(), monto: n } : c)));
+    setEditingId(null);
   }
 
   return (
@@ -544,11 +584,23 @@ export function CoberturaEditor({ cobertura, onChange, montoTotal, canSeeMontos 
       <div className="cov-list">
         {list.length === 0 && <div className="hint">Sin semana asignada todavía — puedes dejarlo así o detallarlo.</div>}
         {list.map((c) => (
-          <div className="cov-row" key={c.id}>
-            <span className="cov-row-semana">{c.semana}</span>
-            <span className="cov-row-monto">{mMonto(c.monto)}</span>
-            <button type="button" className="icon-btn subtle" onClick={() => remove(c.id)} disabled={disabled}><Trash2 size={13} /></button>
-          </div>
+          editingId === c.id ? (
+            <div className="cov-row cov-row-editing" key={c.id}>
+              <input value={editSemana} onChange={(e) => setEditSemana(e.target.value)} autoFocus onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingId(null); }} />
+              <input type="number" step="0.01" min="0" value={editMonto} onChange={(e) => setEditMonto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingId(null); }} />
+              <div className="cov-edit-actions">
+                <button type="button" className="btn-secondary cov-edit-save" onClick={saveEdit}><Check size={12} /> Guardar</button>
+                <button type="button" className="btn-secondary cov-edit-cancel" onClick={() => setEditingId(null)}><X size={12} /></button>
+              </div>
+            </div>
+          ) : (
+            <div className="cov-row" key={c.id}>
+              <span className="cov-row-semana">{c.semana}</span>
+              <span className="cov-row-monto">{mMonto(c.monto)}</span>
+              <button type="button" className="icon-btn subtle" onClick={() => startEdit(c)} disabled={disabled} title="Editar"><PenTool size={12} /></button>
+              <button type="button" className="icon-btn subtle" onClick={() => remove(c.id)} disabled={disabled} title="Eliminar"><Trash2 size={13} /></button>
+            </div>
+          )
         ))}
       </div>
       <div className="add-cov">

@@ -253,6 +253,7 @@ function App() {
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
   const [showNewPayment, setShowNewPayment] = useState(false);
+  const [duplicatePayment, setDuplicatePayment] = useState(null);
   const [showNewPost, setShowNewPost] = useState(false);
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [selectedDay, setSelectedDay] = useState(null);
@@ -269,6 +270,7 @@ function App() {
   const [openNoteId, setOpenNoteId] = useState(null);
   const [showNewTareaGeneral, setShowNewTareaGeneral] = useState(false);
   const [showNewInversion, setShowNewInversion] = useState(false);
+  const [duplicateInversion, setDuplicateInversion] = useState(null);
   const [showMetaImport, setShowMetaImport] = useState(false);
   const [showTextImport, setShowTextImport] = useState(false);
   const [showNewAcceso, setShowNewAcceso] = useState(false);
@@ -1339,12 +1341,14 @@ function App() {
       )}
       {taskPreviewFile && <ImagePreviewModal file={taskPreviewFile} onClose={() => setTaskPreviewFile(null)} />}
 
-      {showNewPayment && (
+      {(showNewPayment || duplicatePayment) && (
         <NewPaymentModal
           defaultClient={defaultClientForNew}
           lockedClient={selectedClient !== "__ALL__" ? selectedClient : null}
-          onClose={() => setShowNewPayment(false)}
-          onCreate={(p) => { addPayment(p); setShowNewPayment(false); }}
+          canSeeMontos={can("verMontos")}
+          duplicateFrom={duplicatePayment}
+          onClose={() => { setShowNewPayment(false); setDuplicatePayment(null); }}
+          onCreate={(p) => { addPayment(p); setShowNewPayment(false); setDuplicatePayment(null); }}
         />
       )}
       {openPayment && (
@@ -1356,6 +1360,7 @@ function App() {
           onClose={() => setOpenPaymentId(null)}
           onPatch={(patch) => patchPayment(openPayment.id, patch)}
           onDelete={() => deletePayment(openPayment.id)}
+          onDuplicate={(p) => { setDuplicatePayment(p); setOpenPaymentId(null); }}
           driveConnected={driveConnected}
         />
       )}
@@ -1487,13 +1492,14 @@ function App() {
         })()
       )}
 
-      {showNewInversion && (
+      {(showNewInversion || duplicateInversion) && (
         <NewInversionModal
           defaultClient={defaultClientForNew}
           lockedClient={selectedClient !== "__ALL__" ? selectedClient : null}
           canSeeMontos={can("verMontos")}
-          onClose={() => setShowNewInversion(false)}
-          onCreate={(inv) => { addInversion(inv); setShowNewInversion(false); }}
+          duplicateFrom={duplicateInversion}
+          onClose={() => { setShowNewInversion(false); setDuplicateInversion(null); }}
+          onCreate={(inv) => { addInversion(inv); setShowNewInversion(false); setDuplicateInversion(null); }}
         />
       )}
 
@@ -1501,6 +1507,7 @@ function App() {
         <MetaImportModal
           empresa={selectedClient !== "__ALL__" ? selectedClient : null}
           defaultClient={defaultClientForNew}
+          canSeeMontos={can("verMontos")}
           onClose={() => setShowMetaImport(false)}
           onImport={addInversiones}
         />
@@ -1511,6 +1518,7 @@ function App() {
           empresa={selectedClient !== "__ALL__" ? selectedClient : null}
           defaultClient={defaultClientForNew}
           geminiKey={geminiKey}
+          canSeeMontos={can("verMontos")}
           onClose={() => setShowTextImport(false)}
           onImport={addInversiones}
         />
@@ -1525,6 +1533,7 @@ function App() {
               onClose={() => setOpenInversionId(null)}
               onPatch={(patch) => patchInversion(inv.id, patch)}
               onDelete={() => deleteInversion(inv.id)}
+              onDuplicate={(i) => { setDuplicateInversion(i); setOpenInversionId(null); }}
             />
           ) : null;
         })()

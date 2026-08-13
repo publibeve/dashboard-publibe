@@ -28,7 +28,7 @@ function extraidaToInversion(ex, empresa) {
   };
 }
 
-export function TextImportModal({ empresa: empresaInicial, defaultClient, geminiKey, onClose, onImport }) {
+export function TextImportModal({ empresa: empresaInicial, defaultClient, geminiKey, onClose, onImport, canSeeMontos = false }) {
   const [empresa, setEmpresa] = useState(empresaInicial || defaultClient);
   const [texto, setTexto] = useState("");
   const [step, setStep] = useState("pegar"); // "pegar" | "revisar"
@@ -125,6 +125,7 @@ export function TextImportModal({ empresa: empresaInicial, defaultClient, gemini
                 <InversionPreviewCard
                   key={inv.id} inv={inv} onChange={(next) => updateInv(i, next)} onRemove={() => removeInv(i)}
                   origenLabel="Del texto pegado"
+                  canSeeMontos={canSeeMontos}
                 />
               ))}
             </div>

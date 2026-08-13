@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Trash2,
   AlertTriangle,
+  Copy,
 } from "lucide-react";
 import { CustomDatePicker } from "../common/CustomDatePicker";
 import { CustomSelect } from "../common/CustomSelect";
@@ -12,13 +13,14 @@ import { DesgloseEditor } from "./PagosView";
 import { CLIENTES } from "../../utils/constants";
 import { uid } from "../../utils/helpers";
 
-export function NewInversionModal({ onClose, onCreate, defaultClient, lockedClient, canSeeMontos = false }) {
-  const [empresa, setEmpresa] = useState(lockedClient || defaultClient);
-  const [semana, setSemana] = useState("");
-  const [fecha, setFecha] = useState("");
-  const [monto, setMonto] = useState("");
-  const [desglose, setDesglose] = useState([]);
-  const [nota, setNota] = useState("");
+export function NewInversionModal({ onClose, onCreate, defaultClient, lockedClient, canSeeMontos = false, duplicateFrom }) {
+  const d = duplicateFrom || null;
+  const [empresa, setEmpresa] = useState(d ? d.empresa : (lockedClient || defaultClient));
+  const [semana, setSemana] = useState(d ? (d.semana || "") : "");
+  const [fecha, setFecha] = useState(d ? (d.fecha || "") : "");
+  const [monto, setMonto] = useState(d ? String(d.monto ?? "") : "");
+  const [desglose, setDesglose] = useState(d ? (d.desglose || []).map((it) => ({ ...it, id: uid() })) : []);
+  const [nota, setNota] = useState(d ? (d.nota || "") : "");
   const [error, setError] = useState("");
 
   function submit() {
@@ -34,7 +36,7 @@ export function NewInversionModal({ onClose, onCreate, defaultClient, lockedClie
     <Overlay onClose={onClose}>
       <div className="modal small">
         <div className="modal-head">
-          <h3>Nueva inversión semanal</h3>
+          <h3>{d ? "Duplicar inversión semanal" : "Nueva inversión semanal"}</h3>
           <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>
         </div>
         {error && <div className="form-error"><AlertTriangle size={13} /> {error}</div>}
@@ -71,13 +73,13 @@ export function NewInversionModal({ onClose, onCreate, defaultClient, lockedClie
 
         <DesgloseEditor desglose={desglose} onChange={setDesglose} montoTotal={monto} canSeeMontos={canSeeMontos} />
 
-        <button className="btn-primary full" type="button" onClick={submit}>Registrar inversión</button>
+        <button className="btn-primary full" type="button" onClick={submit}>{d ? "Crear inversión duplicada" : "Registrar inversión"}</button>
       </div>
     </Overlay>
   );
 }
 
-export function InversionModal({ inversion, onClose, onPatch, onDelete, canSeeMontos = false }) {
+export function InversionModal({ inversion, onClose, onPatch, onDelete, onDuplicate, canSeeMontos = false }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [draft, setDraft] = useState({
     empresa: inversion.empresa, semana: inversion.semana, fecha: inversion.fecha, monto: inversion.monto,
@@ -127,6 +129,7 @@ export function InversionModal({ inversion, onClose, onPatch, onDelete, canSeeMo
           {!confirmDelete ? (
             <>
               <button className="btn-danger-ghost" onClick={() => setConfirmDelete(true)}><Trash2 size={13} /> Eliminar</button>
+              <button className="btn-secondary" type="button" onClick={() => onDuplicate(inversion)}><Copy size={13} /> Duplicar</button>
               <button className="btn-primary save-draft-btn" type="button" onClick={saveDraft} disabled={!dirty}>
                 <CheckCircle2 size={14} /> Guardar cambios
               </button>
