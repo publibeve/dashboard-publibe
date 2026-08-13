@@ -5,6 +5,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Overlay } from "../common/Overlay";
+import { PrintBrandLogo } from "../common/PrintBrandLogo";
 import { waitForFontsReady } from "../../utils/printReady";
 import { bloqueLabelTipo, bloqueLabelCompleto, stripHtmlToPlainText } from "../../utils/helpers";
 
@@ -42,8 +43,7 @@ export function GuionPrintModal({ guion, onClose }) {
 
         <div ref={printableRef} className="report-printable guion-printable format-carta">
           <div className="report-header">
-            <div className="report-brand">publi<span className="brand-b">B</span>e</div>
-            <div className="report-brand-sub">agencia gráfica</div>
+            <PrintBrandLogo />
             <h2>{guion.titulo || "Guion sin título"}</h2>
             {guion.empresa && <div className="report-meta">{guion.empresa}</div>}
             {guion.duracionEstimada && <div className="report-meta">Duración estimada: {guion.duracionEstimada}</div>}

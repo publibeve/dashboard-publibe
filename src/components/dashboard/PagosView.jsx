@@ -437,6 +437,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
       {showReport && (
         <ReportModal
           title="Inversión publicitaria"
+          showDigital={false}
           empresaLabel={showClient ? "Dashboard general" : defaultClient}
           dateRangeLabel={reportFrom && reportTo ? `Del ${fmtDate(reportFrom)} al ${fmtDate(reportTo)}` : ""}
           emptyText="No hay inversión registrada en ese rango de fechas."

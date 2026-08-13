@@ -8,10 +8,11 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Overlay } from "./Overlay";
+import { PrintBrandLogo } from "./PrintBrandLogo";
 import { waitForFontsReady } from "../../utils/printReady";
 import { exportReciboPdf } from "../../utils/pdfExport";
 
-export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, totalLabel, total, emptyText, onClose }) {
+export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, totalLabel, total, emptyText, onClose, showDigital = true }) {
   const [copied, setCopied] = useState(false);
   // "recibo" (digital) es el default: es el formato pensado para leerse en
   // pantalla / mandarse por WhatsApp, y no requiere ninguna acción extra
@@ -113,8 +114,7 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
 
         <div ref={printableRef} className={"report-printable" + (printFormat === "carta" ? " format-carta" : " format-recibo")}>
           <div className="report-header">
-            <div className="report-brand">publi<span className="brand-b">B</span>e</div>
-            <div className="report-brand-sub">agencia gráfica</div>
+            <PrintBrandLogo />
             <h2>{title}</h2>
             {empresaLabel && <div className="report-meta">{empresaLabel}</div>}
             {dateRangeLabel && <div className="report-meta">{dateRangeLabel}</div>}
@@ -157,9 +157,11 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
           <button type="button" className="btn-secondary" onClick={handleCopy}>
             {copied ? <><Check size={14} /> ¡Copiado!</> : <><Copy size={14} /> Copiar resumen</>}
           </button>
-          <button type="button" className="btn-secondary" onClick={goDigital} disabled={downloading}>
-            <Smartphone size={14} /> {downloading ? "Generando…" : "Digital"}
-          </button>
+          {showDigital && (
+            <button type="button" className="btn-secondary" onClick={goDigital} disabled={downloading}>
+              <Smartphone size={14} /> {downloading ? "Generando…" : "Digital"}
+            </button>
+          )}
           <button type="button" className="btn-primary" onClick={goImprimir}>
             <Printer size={14} /> Imprimir
           </button>

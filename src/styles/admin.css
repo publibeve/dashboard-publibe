@@ -668,8 +668,8 @@
 
 /* Plantilla — igual siempre, tabla formal alineada a la izquierda. */
 .report-header{ text-align:left; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border); }
-.report-brand{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14pt; color:var(--ink); margin-bottom:1px; }
-.report-brand-sub{ font-size:8.5pt; color:var(--ink-soft); letter-spacing:.03em; margin-bottom:8px; }
+.report-brand-logo{ margin-bottom:8px; }
+.report-brand-logo svg{ display:block; width:130px; height:auto; }
 .report-header h2{ font-family:'Space Grotesk',sans-serif; font-size:15pt; margin:0 0 4px; }
 .report-meta{ font-size:9pt; color:var(--ink-soft); }
 .report-empty{ text-align:center; color:var(--ink-soft); font-size:13px; padding:16px 0; font-style:italic; }
@@ -686,6 +686,14 @@
 
 @media print{
   @page{ size: letter; margin: 0.6in; }
+  /* visibility:hidden (como estaba antes) NO saca los elementos del flujo
+     del documento — el dashboard completo (sidebar + contenido, a veces
+     bastante alto) seguía ocupando su espacio real aunque invisible, y esa
+     altura fantasma se sumaba a la paginación: el reporte terminaba
+     empezando varias páginas después del principio, con hojas en blanco
+     de por medio. display:none sí lo saca del flujo del todo — ya no cuenta
+     para nada al paginar. */
+  .app{ display:none !important; }
   body *{ visibility:hidden; }
   .report-printable, .report-printable *{ visibility:visible; }
   .report-printable{ position:absolute; top:0; left:0; width:100%; padding:20px; }
@@ -697,11 +705,9 @@
   /* No asumir que la fuente se hereda bien del CSS de pantalla normal — en
      móvil, algunos motores de impresión aplican su propio reset al imprimir
      que pisa la tipografía heredada, y caía a una serif del sistema en vez
-     de la marca. Se declara acá explícito, igual que ya se hizo para la B
-     del logo (print-color-adjust) — mismo patrón de bug, mismo criterio de
-     fix: no confiar en la herencia dentro de @media print. */
+     de la marca. El logo ya no depende de esto (es un SVG con texto
+     convertido a paths, no fuente real), pero el título del reporte sí. */
   .report-printable{ font-family:'Inter',sans-serif; }
-  .report-printable .report-brand,
   .report-printable .report-header h2{ font-family:'Space Grotesk',sans-serif; }
   .report-printable .report-item b,
   .report-printable .report-total b{ font-family:'JetBrains Mono',monospace; }
