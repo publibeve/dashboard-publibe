@@ -6,7 +6,7 @@ export async function loadCustomClients() {
   // de la app, antes de que exista sesión.
   await waitForSession();
   try {
-    const { data, error } = await supabase.from("clients").select("name, color, iconKey");
+    const { data, error } = await supabase.from("clients").select("name, color, iconKey, logoSvg, baseKey");
     if (error) throw error;
     return data || [];
   } catch (e) {

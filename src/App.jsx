@@ -33,6 +33,7 @@ import { ImagePreviewModal } from "./components/common/ImagePreviewModal";
 import { NotificationsPanel } from "./components/common/NotificationsPanel";
 import { PermissionDeniedModal } from "./components/common/PermissionDeniedModal";
 import { AddClientModal, EditClientModal } from "./components/dashboard/AddEditClientModal";
+import { ClientLogo } from "./components/common/ClientLogo";
 import { CalendarioView } from "./components/dashboard/CalendarioView";
 import { InversionModal, NewInversionModal } from "./components/dashboard/InversionesModal";
 import { MetaImportModal } from "./components/dashboard/MetaImportModal";
@@ -154,8 +155,9 @@ function App() {
   const {
     clientsBump, addClient, editClient, deleteClientCompletely,
   } = useClients({
-    tasks, payments, posts, notes, debts, invoices, accesos,
+    tasks, payments, posts, notes, debts, invoices, accesos, saldosFavor, inversiones, guiones, expenses, tareasGenerales, pautas,
     updateTasks, updatePayments, updatePosts, updateNotes, updateDebts, updateInvoices, updateAccesos,
+    updateSaldosFavor, updateInversiones, updateGuiones, updateExpenses, updateTareasGenerales, patchPauta,
     selectedClient, setSelectedClient, logActivity, setAppError,
   });
 
@@ -853,6 +855,9 @@ function App() {
             <span className="topbar-watermark-clip"><span className="topbar-watermark" style={{ color: watermarkColor }}><TopIcon size={110} strokeWidth={1.4} /></span></span>
           )}
           <div className="topbar-title">
+            {selectedClient !== "__ALL__" && clientMeta(selectedClient).logoSvg && (
+              <ClientLogo client={clientMeta(selectedClient)} dark maxHeight={34} className="topbar-client-logo" />
+            )}
             <div>
               <h1>{selectedClient === "__ALL__" ? "Dashboard general" : selectedClient}</h1>
               <span className="topbar-sub">
@@ -1449,6 +1454,7 @@ function App() {
 
       {showEditClient && editClientTarget && (
         <EditClientModal
+          key={editClientTarget + "|" + clientsBump}
           client={clientMeta(editClientTarget)}
           onClose={() => setShowEditClient(false)}
           onSave={(patch) => editClient(editClientTarget, patch)}

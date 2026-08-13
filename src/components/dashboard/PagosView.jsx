@@ -568,6 +568,7 @@ export function PagosView({ payments = [], trashedPayments = [], debts = [], sal
           title="Inversión publicitaria"
           showDigital={false}
           empresaLabel={showClient ? "Dashboard general" : defaultClient}
+          clientLogo={!showClient ? clientMeta(defaultClient) : null}
           dateRangeLabel={reportFrom && reportTo ? `Del ${fmtDate(reportFrom)} al ${fmtDate(reportTo)}` : ""}
           emptyText="No hay inversión registrada en ese rango de fechas."
           groups={[

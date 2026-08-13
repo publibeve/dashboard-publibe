@@ -9,10 +9,11 @@ import {
 } from "lucide-react";
 import { Overlay } from "./Overlay";
 import { PrintBrandLogo } from "./PrintBrandLogo";
+import { ClientLogo } from "./ClientLogo";
 import { waitForFontsReady } from "../../utils/printReady";
 import { exportReciboPdf } from "../../utils/pdfExport";
 
-export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, totalLabel, total, emptyText, onClose, showDigital = true, extraCards, extraCardsTitle = "Estado de cuenta", secondaryGroups, secondaryTitle }) {
+export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, totalLabel, total, emptyText, onClose, showDigital = true, extraCards, extraCardsTitle = "Estado de cuenta", secondaryGroups, secondaryTitle, clientLogo }) {
   const [copied, setCopied] = useState(false);
   // "recibo" (digital) es el default: es el formato pensado para leerse en
   // pantalla / mandarse por WhatsApp, y no requiere ninguna acción extra
@@ -153,6 +154,7 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
         <div ref={printableRef} className={"report-printable" + (printFormat === "carta" ? " format-carta" : " format-recibo")}>
           <div className="report-header">
             <PrintBrandLogo />
+            {clientLogo && <div className="report-client-logo"><ClientLogo client={clientLogo} maxHeight={44} /></div>}
             <h2>{title}</h2>
             {empresaLabel && <div className="report-meta">{empresaLabel}</div>}
             {dateRangeLabel && <div className="report-meta">{dateRangeLabel}</div>}

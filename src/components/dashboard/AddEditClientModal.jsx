@@ -4,6 +4,9 @@ import {
   AlertTriangle,
   Palette,
   Pipette,
+  Image as ImageIcon,
+  Upload,
+  Trash2,
 } from "lucide-react";
 import { ColorPickerPopover } from "../common/ColorPickerPopover";
 import { Overlay } from "../common/Overlay";
@@ -63,11 +66,16 @@ export function AddClientModal({ onClose, onCreate }) {
 }
 
 export function EditClientModal({ client, onClose, onSave }) {
+  const [name, setName] = useState(client.name);
   const [color, setColor] = useState(client.color);
   const [iconKey, setIconKey] = useState(client.iconKey || "building");
+  const [logoSvg, setLogoSvg] = useState(client.logoSvg || "");
   const [showPicker, setShowPicker] = useState(false);
   const [eyedropperError, setEyedropperError] = useState("");
+  const [logoError, setLogoError] = useState("");
+  const [error, setError] = useState("");
   const eyedropperRef = useRef(null);
+  const logoInputRef = useRef(null);
 
   // El cuentagotas real (tomar un color de cualquier parte de la pantalla,
   // no solo de adentro de este selector) usa la API nativa EyeDropper del
@@ -90,8 +98,37 @@ export function EditClientModal({ client, onClose, onSave }) {
     }
   }
 
+  function handleLogoFile(file) {
+    setLogoError("");
+    if (!file) return;
+    if (!/\.svg$/i.test(file.name) && file.type !== "image/svg+xml") {
+      setLogoError("Solo se acepta un archivo .svg — es el único formato que se puede recolorear automáticamente para fondos oscuros sin un segundo archivo.");
+      return;
+    }
+    if (file.size > 500 * 1024) {
+      setLogoError("El archivo es demasiado grande (más de 500 KB) — revisá que sea el SVG del logo y no otra cosa.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      if (!/<svg[\s>]/i.test(text)) {
+        setLogoError("El archivo no parece ser un SVG válido (no se encontró la etiqueta <svg>).");
+        return;
+      }
+      setLogoSvg(text);
+    };
+    reader.onerror = () => setLogoError("No se pudo leer el archivo — probá de nuevo.");
+    reader.readAsText(file);
+  }
+
   function submit() {
-    onSave({ color, iconKey });
+    setError("");
+    if (!name.trim()) { setError("Falta el nombre de la empresa."); return; }
+    if (name.trim() !== client.name && CLIENTES.some((c) => c.name.toLowerCase() === name.trim().toLowerCase())) {
+      setError("Ya existe otro cliente con ese nombre."); return;
+    }
+    onSave({ name: name.trim(), color, iconKey, logoSvg: logoSvg || null });
     onClose();
   }
 
@@ -99,9 +136,21 @@ export function EditClientModal({ client, onClose, onSave }) {
     <Overlay onClose={onClose}>
       <div className="modal small" style={{ "--primary": color }}>
         <div className="modal-head">
-          <h3>Apariencia de {client.name}</h3>
+          <h3>Configuración de {client.name}</h3>
           <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>
         </div>
+        {error && <div className="form-error"><AlertTriangle size={13} /> {error}</div>}
+
+        <label className="field">
+          <span>Nombre de la empresa</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: ToyoReyna" />
+        </label>
+        {name.trim() !== client.name && name.trim() && (
+          <div className="hint" style={{ marginTop: -6, marginBottom: 10 }}>
+            Al renombrar, se actualiza automáticamente en todas las tareas, pagos, notas, guiones y demás — no
+            queda nada bajo el nombre viejo.
+          </div>
+        )}
 
         <label className="field">
           <span>Color de la marca</span>
@@ -158,7 +207,36 @@ export function EditClientModal({ client, onClose, onSave }) {
           </div>
         </label>
 
-        <button className="btn-primary full" type="button" onClick={submit}>Guardar apariencia</button>
+        <label className="field">
+          <span><ImageIcon size={12} /> Logo (SVG, opcional)</span>
+          {logoSvg ? (
+            <div className="logo-upload-preview">
+              <div className="logo-upload-preview-light" dangerouslySetInnerHTML={{ __html: logoSvg }} />
+              <div className="logo-upload-preview-dark" dangerouslySetInnerHTML={{ __html: logoSvg }} />
+              <button type="button" className="btn-secondary" onClick={() => setLogoSvg("")}><Trash2 size={12} /> Quitar logo</button>
+            </div>
+          ) : (
+            <label
+              className="meta-import-dropzone" style={{ padding: "18px 16px" }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => { e.preventDefault(); handleLogoFile(e.dataTransfer.files?.[0]); }}
+            >
+              <Upload size={18} />
+              <span>Arrastrá el .svg del logo acá, o hacé clic para elegirlo</span>
+              <input
+                ref={logoInputRef} type="file" accept=".svg,image/svg+xml" style={{ display: "none" }}
+                onChange={(e) => handleLogoFile(e.target.files?.[0])}
+              />
+            </label>
+          )}
+          <div className="hint" style={{ marginTop: 6 }}>
+            Con un solo archivo alcanza — en fondos oscuros se convierte automáticamente a blanco, no hace falta
+            subir una segunda versión.
+          </div>
+          {logoError && <div className="form-error" style={{ marginTop: 6 }}><AlertTriangle size={13} /> {logoError}</div>}
+        </label>
+
+        <button className="btn-primary full" type="button" onClick={submit}>Guardar cambios</button>
       </div>
     </Overlay>
   );

@@ -680,7 +680,9 @@
 .report-printable.format-carta{ max-width:100%; }
 
 /* Plantilla — igual siempre, tabla formal alineada a la izquierda. */
-.report-header{ text-align:left; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+.report-header{ position:relative; text-align:left; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+.report-client-logo{ position:absolute; top:0; right:0; max-width:140px; }
+.report-client-logo .client-logo{ width:100%; height:44px; }
 .report-brand-logo{ margin-bottom:8px; }
 .report-brand-logo svg{ display:block; width:130px; height:auto; }
 .report-header h2{ font-family:'Space Grotesk',sans-serif; font-size:15pt; margin:0 0 4px; }
@@ -1392,3 +1394,19 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
   cursor:pointer; user-select:none;
 }
 .checkbox-row input[type="checkbox"]{ width:15px; height:15px; accent-color:var(--primary); cursor:pointer; }
+
+/* ---- Logo de empresa (Configuración de empresas) ---- */
+.logo-upload-preview{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:2px; }
+.logo-upload-preview-light, .logo-upload-preview-dark{
+  flex:1 1 120px; min-width:100px; height:64px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  padding:10px; border:1px solid var(--border);
+}
+.logo-upload-preview-light{ background:#fff; }
+.logo-upload-preview-dark{ background:#232323; }
+.logo-upload-preview-light svg, .logo-upload-preview-dark svg{ max-width:100%; max-height:100%; width:auto; height:auto; }
+.logo-upload-preview-dark svg{ filter:brightness(0) invert(1); }
+
+/* ---- ClientLogo — componente compartido (reportes, cabecera del panel) ---- */
+.client-logo{ display:inline-flex; align-items:center; justify-content:center; }
+.client-logo svg{ display:block; max-width:100%; max-height:100%; width:auto; height:auto; }
+.client-logo-dark svg{ filter:brightness(0) invert(1); }
