@@ -153,8 +153,10 @@ export function ReportModal({ title, empresaLabel, dateRangeLabel, groups, total
 
         <div ref={printableRef} className={"report-printable" + (printFormat === "carta" ? " format-carta" : " format-recibo")}>
           <div className="report-header">
-            <PrintBrandLogo />
-            {clientLogo && <div className="report-client-logo"><ClientLogo client={clientLogo} maxHeight={44} /></div>}
+            <div className="report-header-logos">
+              <PrintBrandLogo />
+              {clientLogo && <ClientLogo client={clientLogo} maxHeight={44} className="report-client-logo" />}
+            </div>
             <h2>{title}</h2>
             {empresaLabel && <div className="report-meta">{empresaLabel}</div>}
             {dateRangeLabel && <div className="report-meta">{dateRangeLabel}</div>}
