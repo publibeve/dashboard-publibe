@@ -25,6 +25,8 @@ import { AccesoModal, NewAccesoModal } from "./components/admin/AccesosTab";
 import { AdminModule } from "./components/admin/AdminModule";
 import { ExpenseModal, NewExpenseModal } from "./components/admin/ExpensesTab";
 import { InvoiceModal, NewInvoiceModal } from "./components/admin/InvoicesTab";
+import { InvoiceDocumentModal } from "./components/common/InvoiceDocumentModal";
+import { loadPaymentInfo } from "./services/billing.service";
 import { AIChatButton, AIChatPanel } from "./components/ai/AIChatPanel";
 import { CustomSelect } from "./components/common/CustomSelect";
 import { GlobalSearchModal, SidebarSearchBox } from "./components/common/GlobalSearch";
@@ -283,6 +285,10 @@ function App() {
   const [showTextImport, setShowTextImport] = useState(false);
   const [showNewAcceso, setShowNewAcceso] = useState(false);
   const [showNewInvoice, setShowNewInvoice] = useState(false);
+  const [showInvoiceDocument, setShowInvoiceDocument] = useState(null);
+  const [showNominaDocument, setShowNominaDocument] = useState(null);
+  const [paymentInfo, setPaymentInfo] = useState([]);
+  useEffect(() => { loadPaymentInfo().then((list) => setPaymentInfo(list || [])); }, []);
   const [showNewExpense, setShowNewExpense] = useState(false);
 
   // ---------------------------------------------------------------------
@@ -802,6 +808,7 @@ function App() {
           <AdminModule
             invoices={invoices || []}
             expenses={expenses || []}
+            setAppError={setAppError}
             subTab={adminSubTab}
             onSubTabChange={setAdminSubTab}
             onOpenInvoice={(id) => setOpenInvoiceId(id)}
@@ -1482,11 +1489,69 @@ function App() {
               onClose={() => setOpenInvoiceId(null)}
               onPatch={(patch) => patchInvoice(inv.id, patch)}
               onDelete={() => deleteInvoice(inv.id)}
+              onPrint={(i) => { setShowInvoiceDocument(i); setOpenInvoiceId(null); }}
               driveConnected={driveConnected}
             />
           ) : null;
         })()
       )}
+
+      {showInvoiceDocument && (() => {
+        const inv = showInvoiceDocument;
+        const cli = clientMeta(inv.empresa);
+        // Facturas viejas (de antes de esta función) no tienen `items` —
+        // se arma un ítem único a partir de concepto+monto para que el
+        // documento siga mostrando algo sensato, sin perder esas facturas.
+        const items = (inv.items && inv.items.length > 0)
+          ? inv.items
+          : [{ id: "legacy", descripcion: inv.concepto || "Servicio", monto: inv.monto }];
+        return (
+          <InvoiceDocumentModal
+            variant="factura"
+            titulo="Recibo"
+            numero={inv.numeroFactura}
+            fechaDesde={inv.fechaEmision}
+            fechaHasta={inv.fechaVencimiento}
+            destinatarioNombre={cli.razonSocial || inv.empresa}
+            destinatarioSub={cli.direccionFiscal}
+            accentColor={cli.color}
+            clientLogo={cli}
+            items={items}
+            total={inv.monto}
+            paymentInfo={paymentInfo}
+            notaAlPie={inv.notaAlPie}
+            onClose={() => setShowInvoiceDocument(null)}
+          />
+        );
+      })()}
+
+      {showNominaDocument && (() => {
+        const ex = showNominaDocument;
+        const items = (ex.items && ex.items.length > 0)
+          ? ex.items
+          : [{ id: "legacy", descripcion: ex.concepto || "Pago", monto: ex.monto }];
+        const totalItems = items.reduce((s, it) => s + Number(it.monto || 0), 0);
+        const totalFinal = totalItems + Number(ex.extraMonto || 0);
+        return (
+          <InvoiceDocumentModal
+            variant="nomina"
+            titulo="Recibo de nómina"
+            numero={ex.numeroRecibo}
+            fechaDesde={ex.periodoDesde}
+            fechaHasta={ex.periodoHasta}
+            destinatarioNombre={ex.nombreCompleto || ex.concepto}
+            destinatarioSub={ex.rol}
+            items={items}
+            total={totalFinal}
+            extraLinea={ex.extraMonto > 0 ? { label: ex.extraLabel || "Extra/Abono", monto: ex.extraMonto } : null}
+            bsInfo={ex.tasaBcv > 0 ? { tasa: ex.tasaBcv } : null}
+            referencia={ex.referencia}
+            fechaPago={ex.fechaPago}
+            paymentInfo={paymentInfo}
+            onClose={() => setShowNominaDocument(null)}
+          />
+        );
+      })()}
 
       {showNewExpense && (
         <NewExpenseModal
@@ -1506,6 +1571,7 @@ function App() {
               onClose={() => setOpenExpenseId(null)}
               onPatch={(patch) => patchExpense(ex.id, patch)}
               onDelete={() => deleteExpense(ex.id)}
+              onPrintNomina={(e) => { setShowNominaDocument(e); setOpenExpenseId(null); }}
               driveConnected={driveConnected}
             />
           ) : null;

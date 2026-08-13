@@ -69,7 +69,7 @@ export function useClients(deps) {
         // renombre terminaba creando una fila nueva en vez de reemplazar
         // la existente — dos filas persistidas para el mismo cliente.
         return ov
-          ? { ...c, name: ov.name, color: ov.color, iconKey: ov.iconKey, icon: iconFor(ov.iconKey), logoSvg: ov.logoSvg ?? null, baseKey: c.name }
+          ? { ...c, name: ov.name, color: ov.color, iconKey: ov.iconKey, icon: iconFor(ov.iconKey), logoSvg: ov.logoSvg ?? null, razonSocial: ov.razonSocial ?? null, direccionFiscal: ov.direccionFiscal ?? null, baseKey: c.name }
           : { ...c, baseKey: c.name };
       }),
       ...extra.map((c) => ({ ...c, icon: iconFor(c.iconKey) })),
@@ -92,9 +92,9 @@ export function useClients(deps) {
     try {
       // baseKey: null — un cliente agregado a mano nunca corresponde a
       // ninguno de los 8 originales, así que no necesita esa clave.
-      const entry = { name: c.name, color: c.color, iconKey: c.iconKey, icon: iconFor(c.iconKey), logoSvg: c.logoSvg ?? null, baseKey: null };
+      const entry = { name: c.name, color: c.color, iconKey: c.iconKey, icon: iconFor(c.iconKey), logoSvg: c.logoSvg ?? null, razonSocial: c.razonSocial ?? null, direccionFiscal: c.direccionFiscal ?? null, baseKey: null };
       CLIENTES.splice(0, CLIENTES.length, ...CLIENTES, entry);
-      loadCustomClients().then((list) => persistCustomClients([...list, { name: entry.name, color: entry.color, iconKey: entry.iconKey, logoSvg: entry.logoSvg, baseKey: null }]));
+      loadCustomClients().then((list) => persistCustomClients([...list, { name: entry.name, color: entry.color, iconKey: entry.iconKey, logoSvg: entry.logoSvg, razonSocial: entry.razonSocial, direccionFiscal: entry.direccionFiscal, baseKey: null }]));
       setClientsBump((x) => x + 1);
       setSelectedClient(entry.name);
       logActivity(`Se agregó el cliente ${entry.name}`);
@@ -155,7 +155,7 @@ export function useClients(deps) {
         const rest = list.filter((c) => (matchKey ? (c.baseKey || c.name) !== matchKey : c.name !== name && c.name !== finalName));
         persistCustomClients([...rest, {
           name: updated.name, color: updated.color, iconKey: updated.iconKey,
-          logoSvg: updated.logoSvg ?? null, baseKey: isCustomClient ? null : baseKey,
+          logoSvg: updated.logoSvg ?? null, razonSocial: updated.razonSocial ?? null, direccionFiscal: updated.direccionFiscal ?? null, baseKey: isCustomClient ? null : baseKey,
         }]);
       });
       setClientsBump((x) => x + 1);

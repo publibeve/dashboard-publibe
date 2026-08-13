@@ -70,6 +70,8 @@ export function EditClientModal({ client, onClose, onSave }) {
   const [color, setColor] = useState(client.color);
   const [iconKey, setIconKey] = useState(client.iconKey || "building");
   const [logoSvg, setLogoSvg] = useState(client.logoSvg || "");
+  const [razonSocial, setRazonSocial] = useState(client.razonSocial || "");
+  const [direccionFiscal, setDireccionFiscal] = useState(client.direccionFiscal || "");
   const [showPicker, setShowPicker] = useState(false);
   const [eyedropperError, setEyedropperError] = useState("");
   const [logoError, setLogoError] = useState("");
@@ -128,7 +130,7 @@ export function EditClientModal({ client, onClose, onSave }) {
     if (name.trim() !== client.name && CLIENTES.some((c) => c.name.toLowerCase() === name.trim().toLowerCase())) {
       setError("Ya existe otro cliente con ese nombre."); return;
     }
-    onSave({ name: name.trim(), color, iconKey, logoSvg: logoSvg || null });
+    onSave({ name: name.trim(), color, iconKey, logoSvg: logoSvg || null, razonSocial: razonSocial.trim() || null, direccionFiscal: direccionFiscal.trim() || null });
     onClose();
   }
 
@@ -151,6 +153,15 @@ export function EditClientModal({ client, onClose, onSave }) {
             queda nada bajo el nombre viejo.
           </div>
         )}
+
+        <label className="field">
+          <span>Razón social (para facturas)</span>
+          <input value={razonSocial} onChange={(e) => setRazonSocial(e.target.value)} placeholder='Ej: "TRANSFERS MDA C.A." — distinto del nombre corto de arriba' />
+        </label>
+        <label className="field">
+          <span>Dirección fiscal (para facturas)</span>
+          <textarea rows={2} value={direccionFiscal} onChange={(e) => setDireccionFiscal(e.target.value)} placeholder="Ej: Av. Urdaneta, Aeropuerto Alberto Carnevali, Local 14. Mérida, Venezuela" />
+        </label>
 
         <label className="field">
           <span>Color de la marca</span>
