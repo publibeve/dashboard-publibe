@@ -649,7 +649,19 @@
    generar un PDF angosto para el celular. */
 .report-picker-row{ display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
 .report-picker-row .field{ margin-bottom:0; }
-.report-modal{ max-width:420px; }
+/* 560px, no 420px — con la tabla de ítems de Facturas/Nómina (flechita +
+   descripción + monto + borrar, los cuatro peleando espacio en la misma
+   fila), 420px se sentía apretado incluso después de arreglar el padding
+   de más. Esto es un ancho FIJO desde el principio, nunca cambia con
+   ningún estado — por eso no puede reintroducir el salto de tamaño al
+   imprimir que ya se resolvió (ese bug era sobre un CAMBIO de ancho en
+   el momento de tocar "Imprimir", no sobre qué tan ancho es de por sí).
+   Selector compuesto (.modal.small.report-modal) a propósito — un
+   .report-modal solo tiene MENOS especificidad que .modal.small (una
+   clase contra dos), así que un cambio anterior a esta regla nunca se
+   llegó a aplicar de verdad, por más que el valor en el archivo fuera
+   correcto. */
+.modal.small.report-modal{ max-width:560px; }
 /* "Hoja carta": el contenido (.report-printable) se acomoda como una
    página tipo Word — pero SOLO importa cómo se ve en el PAPEL, no en el
    modal en pantalla. El .report-printable usa position:absolute al
@@ -1589,3 +1601,52 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 .invoice-doc-ref-editable input{ border:1px solid var(--border); border-radius:6px; padding:6px 9px; font-size:12px; font-family:inherit; }
 
 .invoice-doc-footnote-input{ margin-top:16px; padding-top:10px; border-top:1px dashed var(--border); font-size:8.5pt; color:var(--ink-soft); font-style:italic; min-height:20px; }
+
+/* ---- Información de pago — rediseño en tarjetas (antes eran filas de texto plano) ---- */
+.payment-info-empty{
+  display:flex; flex-direction:column; align-items:center; gap:8px; padding:28px 16px; color:var(--ink-soft);
+  font-size:13px; text-align:center;
+}
+.payment-info-empty svg{ opacity:0.4; }
+.payment-info-grid{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; margin-bottom:16px;
+}
+.payment-info-card{
+  position:relative; display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:16px;
+  background:#fff; border:1px solid rgba(28,28,30,0.07); box-shadow:0 4px 14px rgba(20,20,25,0.06);
+  transition:transform .18s var(--ease-spring), box-shadow .18s var(--ease-spring);
+}
+.payment-info-card:not(.payment-info-card-new):not(.payment-info-card-editing):hover{
+  transform:translateY(-2px); box-shadow:0 10px 24px rgba(20,20,25,0.12);
+}
+.payment-info-card-icon{
+  width:36px; height:36px; border-radius:11px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, var(--primary, #1D3557), color-mix(in srgb, var(--primary, #1D3557) 70%, #000));
+  color:#fff; box-shadow:0 3px 8px rgba(20,20,25,0.18);
+}
+.payment-info-card-body{ display:flex; flex-direction:column; gap:3px; min-width:0; flex:1; }
+.payment-info-card-label{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--ink); }
+.payment-info-card-valor{ font-size:12px; color:var(--ink-soft); white-space:pre-line; line-height:1.5; }
+.payment-info-card-hover-actions{
+  position:absolute; top:10px; right:10px; display:flex; gap:4px; opacity:0; transition:opacity .15s;
+}
+.payment-info-card:hover .payment-info-card-hover-actions{ opacity:1; }
+
+.payment-info-card-editing{ flex-direction:column; align-items:stretch; gap:8px; }
+.payment-info-card-editing input, .payment-info-card-editing textarea{
+  border:1px solid rgba(28,28,30,0.12); border-radius:10px; padding:8px 11px; font-size:12.5px; font-family:inherit;
+}
+.payment-info-card-actions{ display:flex; gap:6px; justify-content:flex-end; }
+
+.payment-info-card-new{
+  flex-direction:column; align-items:stretch; gap:8px; background:var(--bg); border:1.5px dashed rgba(28,28,30,0.16); box-shadow:none;
+}
+.payment-info-card-new .payment-info-card-icon{ align-self:flex-start; }
+.payment-info-card-icon-new{ background:transparent; border:1.5px dashed rgba(28,28,30,0.2); color:var(--ink-soft); box-shadow:none; }
+.payment-info-card-new .payment-info-card-body{ gap:6px; }
+.payment-info-card-new input, .payment-info-card-new textarea{
+  border:1px solid rgba(28,28,30,0.1); border-radius:10px; padding:8px 11px; font-size:12.5px; font-family:inherit; background:#fff;
+}
+.payment-info-add-btn{ align-self:flex-end; font-size:11.5px; padding:7px 12px; }
+
+.payment-info-save-btn{ display:inline-flex; }

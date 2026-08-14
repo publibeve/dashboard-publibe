@@ -176,7 +176,6 @@ export function AdminModule({ invoices = [], expenses = [], onOpenInvoice, onNew
       <main className="pane">
         {subTab === "finanzas" && (
           <>
-          <PaymentInfoPanel setAppError={setAppError} />
           <section className="overview-section">
             <div className="overview-section-head admin-section-head">
               <span className="overview-section-title"><Receipt size={15} /> Facturación a clientes</span>
@@ -322,6 +321,8 @@ export function AdminModule({ invoices = [], expenses = [], onOpenInvoice, onNew
               </button>
             )}
           </section>
+
+          <PaymentInfoPanel setAppError={setAppError} />
           </>
         )}
 
