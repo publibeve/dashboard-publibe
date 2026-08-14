@@ -24,7 +24,6 @@ import "./styles/index.css";
 import { AccesoModal, NewAccesoModal } from "./components/admin/AccesosTab";
 import { AdminModule } from "./components/admin/AdminModule";
 import { ExpenseModal, NewExpenseModal } from "./components/admin/ExpensesTab";
-import { InvoiceModal, NewInvoiceModal } from "./components/admin/InvoicesTab";
 import { InvoiceDocumentModal } from "./components/common/InvoiceDocumentModal";
 import { InvoiceLiveEditor } from "./components/common/InvoiceLiveEditor";
 import { loadPaymentInfo } from "./services/billing.service";
@@ -286,8 +285,6 @@ function App() {
   const [showTextImport, setShowTextImport] = useState(false);
   const [showNewAcceso, setShowNewAcceso] = useState(false);
   const [showNewInvoice, setShowNewInvoice] = useState(false);
-  const [showInvoiceDocument, setShowInvoiceDocument] = useState(null);
-  const [showNominaDocument, setShowNominaDocument] = useState(null);
   const [showNewNomina, setShowNewNomina] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState([]);
   useEffect(() => { loadPaymentInfo().then((list) => setPaymentInfo(list || [])); }, []);
@@ -1487,47 +1484,19 @@ function App() {
         (() => {
           const inv = invoices.find((i) => i.id === openInvoiceId);
           return inv ? (
-            <InvoiceModal
-              invoice={inv}
-              unlocked={can("editar")}
-              onRequestUnlock={() => requestPermission("editar", () => {})}
+            <InvoiceLiveEditor
+              variant="factura"
+              existing={inv}
+              paymentInfo={paymentInfo}
               onClose={() => setOpenInvoiceId(null)}
-              onPatch={(patch) => patchInvoice(inv.id, patch)}
-              onDelete={() => deleteInvoice(inv.id)}
-              onPrint={(i) => { setShowInvoiceDocument(i); setOpenInvoiceId(null); }}
+              onSave={async (doc, { imprimir }) => { patchInvoice(inv.id, doc); if (!imprimir) setOpenInvoiceId(null); }}
+              onDelete={(id) => { deleteInvoice(id); setOpenInvoiceId(null); }}
               driveConnected={driveConnected}
             />
           ) : null;
         })()
       )}
 
-      {showInvoiceDocument && (
-        <InvoiceLiveEditor
-          variant="factura"
-          existing={showInvoiceDocument}
-          paymentInfo={paymentInfo}
-          onClose={() => setShowInvoiceDocument(null)}
-          onSave={async (doc, { imprimir }) => { patchInvoice(doc.id, doc); if (!imprimir) setShowInvoiceDocument(null); }}
-        />
-      )}
-      {showNominaDocument && (
-        <InvoiceLiveEditor
-          variant="nomina"
-          existing={{
-            ...showNominaDocument,
-            // Compatibilidad — los recibos de nómina creados con el
-            // formulario viejo guardaban esto como extraLabel/extraMonto;
-            // el editor nuevo usa ajusteLabel/ajusteMonto (mismo campo que
-            // Facturas). Sin este mapeo, un recibo viejo se abriría con el
-            // descuento/extra en blanco, aunque el dato siga ahí guardado.
-            ajusteLabel: showNominaDocument.ajusteLabel ?? showNominaDocument.extraLabel ?? "",
-            ajusteMonto: showNominaDocument.ajusteMonto ?? showNominaDocument.extraMonto ?? "",
-          }}
-          paymentInfo={paymentInfo}
-          onClose={() => setShowNominaDocument(null)}
-          onSave={async (doc, { imprimir }) => { patchExpense(doc.id, doc); if (!imprimir) setShowNominaDocument(null); }}
-        />
-      )}
       {showNewNomina && (
         <InvoiceLiveEditor
           variant="nomina"
@@ -1547,7 +1516,30 @@ function App() {
       {openExpenseId && expenses && (
         (() => {
           const ex = expenses.find((x) => x.id === openExpenseId);
-          return ex ? (
+          if (!ex) return null;
+          if (ex.categoria === "Nómina") {
+            return (
+              <InvoiceLiveEditor
+                variant="nomina"
+                existing={{
+                  ...ex,
+                  // Compatibilidad — los recibos de nómina creados con el
+                  // formulario viejo guardaban esto como extraLabel/extraMonto;
+                  // el editor usa ajusteLabel/ajusteMonto (mismo campo que
+                  // Facturas). Sin este mapeo, un recibo viejo se abriría con
+                  // el descuento/extra en blanco, aunque el dato siga ahí.
+                  ajusteLabel: ex.ajusteLabel ?? ex.extraLabel ?? "",
+                  ajusteMonto: ex.ajusteMonto ?? ex.extraMonto ?? "",
+                }}
+                paymentInfo={paymentInfo}
+                onClose={() => setOpenExpenseId(null)}
+                onSave={async (doc, { imprimir }) => { patchExpense(ex.id, doc); if (!imprimir) setOpenExpenseId(null); }}
+                onDelete={(id) => { deleteExpense(id); setOpenExpenseId(null); }}
+                driveConnected={driveConnected}
+              />
+            );
+          }
+          return (
             <ExpenseModal
               expense={ex}
               unlocked={can("editar")}
@@ -1555,10 +1547,9 @@ function App() {
               onClose={() => setOpenExpenseId(null)}
               onPatch={(patch) => patchExpense(ex.id, patch)}
               onDelete={() => deleteExpense(ex.id)}
-              onPrintNomina={(e) => { setShowNominaDocument(e); setOpenExpenseId(null); }}
               driveConnected={driveConnected}
             />
-          ) : null;
+          );
         })()
       )}
 

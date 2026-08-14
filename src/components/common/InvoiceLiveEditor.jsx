@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { Overlay } from "./Overlay";
 import { PrintBrandLogo } from "./PrintBrandLogo";
@@ -51,6 +52,7 @@ export function InvoiceLiveEditor({
   paymentInfo = [],
   onClose,
   onSave, // (documento, { imprimir }) => Promise
+  onDelete, // (id) => void — solo aplica editando uno existente
 }) {
   const esNomina = variant === "nomina";
   const [empresa, setEmpresa] = useState(existing?.empresa || "");
@@ -61,6 +63,10 @@ export function InvoiceLiveEditor({
   const [numero, setNumero] = useState(existing?.numeroFactura || existing?.numeroRecibo || "");
   const [numeroEditadoAMano, setNumeroEditadoAMano] = useState(!!existing);
   const [numeroCargando, setNumeroCargando] = useState(!existing);
+  const [abonos, setAbonos] = useState(existing?.abonos || []);
+  const [abonoMonto, setAbonoMonto] = useState("");
+  const [archivos, setArchivos] = useState(existing?.archivos || []);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [fechaDesde, setFechaDesde] = useState(existing?.fechaEmision || existing?.periodoDesde || todayISO());
   const [fechaHasta, setFechaHasta] = useState(existing?.fechaVencimiento || existing?.periodoHasta || todayISO());
   const [fechaPago, setFechaPago] = useState(existing?.fechaPago || todayISO());
@@ -144,6 +150,18 @@ export function InvoiceLiveEditor({
   const ajusteNum = Number(ajusteMonto || 0);
   const totalFinal = totalItems + ajusteNum;
   const totalBs = tasaBcv > 0 ? totalFinal * Number(tasaBcv) : 0;
+  const abonado = abonos.reduce((s, a) => s + Number(a.monto || 0), 0);
+  const saldo = totalFinal - abonado;
+
+  function addAbono() {
+    const n = Number(abonoMonto);
+    if (!abonoMonto || isNaN(n) || n <= 0) return;
+    setAbonos((list) => [...list, { id: uid(), fecha: todayISO(), monto: n }]);
+    setAbonoMonto("");
+  }
+  function removeAbono(id) {
+    setAbonos((list) => list.filter((a) => a.id !== id));
+  }
 
   function validar() {
     if (esNomina) {
@@ -172,12 +190,13 @@ export function InvoiceLiveEditor({
         items: itemsLimpios, ajusteLabel: ajusteLabel.trim(), ajusteMonto: ajusteNum,
         referencia: referencia.trim(), tasaBcv: Number(tasaBcv || 0),
         concepto: nombreLibre.trim(), monto: totalFinal, categoria: "Nómina",
+        archivos,
       } : {
         empresa, numeroFactura: numeroFinal, fechaEmision: fechaDesde, fechaVencimiento: fechaHasta,
         items: itemsLimpios, ajusteLabel: ajusteLabel.trim(), ajusteMonto: ajusteNum,
         razonSocialUsada: razonSocialOverride.trim(), direccionUsada: direccionOverride.trim(),
         notaAlPie: notaAlPie.trim(), concepto: itemsLimpios.map((it) => it.descripcion).join(" · "), monto: totalFinal,
-        abonos: existing?.abonos || [],
+        abonos, archivos,
       };
       const documento = { id: existing?.id || uid(), ...base, notaAlPie: notaAlPie.trim(), createdAt: existing?.createdAt || new Date().toISOString() };
       await onSave(documento, { imprimir });
@@ -214,13 +233,15 @@ export function InvoiceLiveEditor({
               <PrintBrandLogo />
               {cli?.logoSvg && <ClientLogo client={cli} maxHeight={44} className="report-client-logo" />}
             </div>
-            <h2>{esNomina ? "Recibo de nómina" : "Recibo"}</h2>
-            <div className="invoice-doc-meta-row">
+            <div className="invoice-doc-title-row">
+              <h2>{esNomina ? "Recibo de nómina" : "Recibo"}</h2>
               <input
                 className="invoice-doc-input invoice-doc-input-numero"
                 value={numero} onChange={(e) => { setNumero(e.target.value); setNumeroEditadoAMano(true); }}
                 placeholder={numeroCargando ? "…" : "00000"}
               />
+            </div>
+            <div className="invoice-doc-meta-row">
               <span className="report-meta invoice-doc-fecha-editable">
                 Del <CustomDatePicker value={fechaDesde} onChange={setFechaDesde} /> al <CustomDatePicker value={fechaHasta} onChange={setFechaHasta} />
               </span>
@@ -365,6 +386,49 @@ export function InvoiceLiveEditor({
             placeholder='Nota al pie (opcional) — ej: "Desde el mes de marzo se implementó el uso de la IA…"'
           />
         </div>
+
+        {/* Gestión — abonos, adjuntos, eliminar. Fuera de .report-printable
+            a propósito: es información de seguimiento interno, no algo
+            que tenga que salir en el papel. Solo aparece editando algo
+            que ya existe — antes de guardarlo por primera vez no hay
+            nada que adjuntar, abonar, ni eliminar todavía. */}
+        {existing && (
+          <div className="invoice-doc-management no-print">
+            {!esNomina && (
+              <div className="field">
+                <span>Abonos recibidos (cobrado {fmtMonto(abonado)} · saldo {fmtMonto(saldo)})</span>
+                <div className="cov-list">
+                  {abonos.length === 0 && <div className="hint">Aún no hay abonos.</div>}
+                  {abonos.map((a) => (
+                    <div className="cov-row" key={a.id}>
+                      <span className="cov-row-semana">{fmtDate(a.fecha)}</span>
+                      <span className="cov-row-monto">{fmtMonto(a.monto)}</span>
+                      <button type="button" className="icon-btn subtle" onClick={() => removeAbono(a.id)}><Trash2 size={13} /></button>
+                    </div>
+                  ))}
+                </div>
+                <div className="add-cov">
+                  <input type="number" step="0.01" min="0" placeholder="Monto abonado" value={abonoMonto} onChange={(e) => setAbonoMonto(e.target.value)} />
+                  <button type="button" className="btn-secondary" onClick={addAbono}><Plus size={13} /> Agregar abono</button>
+                </div>
+              </div>
+            )}
+
+            {onDelete && (
+              !confirmDelete ? (
+                <button type="button" className="btn-danger-ghost invoice-doc-delete-btn" onClick={() => setConfirmDelete(true)}>
+                  <Trash2 size={13} /> Eliminar {esNomina ? "recibo" : "factura"}
+                </button>
+              ) : (
+                <div className="confirm-row">
+                  <span><AlertTriangle size={13} /> ¿Eliminar definitivamente?</span>
+                  <button className="btn-danger" onClick={() => onDelete(existing.id)}>Sí, eliminar</button>
+                  <button className="btn-secondary" onClick={() => setConfirmDelete(false)}>Cancelar</button>
+                </div>
+              )
+            )}
+          </div>
+        )}
 
         <div className="modal-footer modal-footer-row no-print">
           <button type="button" className="btn-secondary" onClick={() => guardar(false)} disabled={!!guardando}>

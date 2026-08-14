@@ -661,7 +661,7 @@
    clase contra dos), así que un cambio anterior a esta regla nunca se
    llegó a aplicar de verdad, por más que el valor en el archivo fuera
    correcto. */
-.modal.small.report-modal{ max-width:680px; }
+.modal.small.report-modal{ max-width:760px; }
 /* "Hoja carta": el contenido (.report-printable) se acomoda como una
    página tipo Word — pero SOLO importa cómo se ve en el PAPEL, no en el
    modal en pantalla. El .report-printable usa position:absolute al
@@ -724,6 +724,12 @@
    toca el ancho del modal en absoluto, solo cómo se acomodan los logos
    adentro de él). */
 .report-header-logos{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+/* Solo en Recibo/Nómina — acá los dos logos van en pareja, centrados,
+   no cada uno pegado a un borde como en el reporte de Inversión (que no
+   se tocó, porque no era parte de este pedido). */
+.invoice-doc .report-header-logos{ justify-content:center; margin-bottom:14px; }
+.invoice-doc-title-row{ display:flex; align-items:baseline; justify-content:center; gap:10px; flex-wrap:wrap; }
+.invoice-doc-title-row h2{ margin:0; }
 .report-header-logos .report-brand-logo{ margin-bottom:0; flex-shrink:0; }
 /* Tamaño FIJO y explícito a propósito (no "que se achique solo al
    contenido") — un contenedor sin ancho propio, con un hijo que pide
@@ -1474,7 +1480,7 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
    "muy plano" en negro sobre blanco; esto usa el color de marca del
    cliente (--primary, ya seteado en el wrapper) en vez de solo el logo. */
 .invoice-doc-topbar{ height:9px; background:var(--primary); border-radius:3px; margin-bottom:14px; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
-.invoice-doc-meta-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.invoice-doc-meta-row{ display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
 .invoice-doc-numero{
   font-family:'JetBrains Mono',monospace; font-weight:700; font-size:9.5pt; color:#fff; background:var(--primary);
   padding:2px 8px; border-radius:6px; print-color-adjust:exact; -webkit-print-color-adjust:exact;
@@ -1666,3 +1672,7 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 .payment-info-add-btn{ align-self:flex-end; font-size:11.5px; padding:7px 12px; }
 
 .payment-info-save-btn{ display:inline-flex; }
+
+/* ---- Sección de gestión (abonos/adjuntos/eliminar) dentro del editor en vivo ---- */
+.invoice-doc-management{ padding-top:18px; margin-top:4px; display:flex; flex-direction:column; gap:16px; border-top:1px solid var(--border); }
+.invoice-doc-delete-btn{ align-self:flex-start; }
