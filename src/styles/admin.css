@@ -661,7 +661,7 @@
    clase contra dos), así que un cambio anterior a esta regla nunca se
    llegó a aplicar de verdad, por más que el valor en el archivo fuera
    correcto. */
-.modal.small.report-modal{ max-width:560px; }
+.modal.small.report-modal{ max-width:680px; }
 /* "Hoja carta": el contenido (.report-printable) se acomoda como una
    página tipo Word — pero SOLO importa cómo se ve en el PAPEL, no en el
    modal en pantalla. El .report-printable usa position:absolute al
@@ -1553,14 +1553,20 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
      alrededor no se distinguía del resto del encabezado). */
   .invoice-doc-input-numero{
     border:none !important; color:#fff !important; background:var(--primary) !important;
-    padding:2px 8px !important; margin:0 !important; border-radius:6px !important;
+    padding:4px 10px !important; margin:0 !important; border-radius:6px !important;
     print-color-adjust:exact !important; -webkit-print-color-adjust:exact !important;
   }
 }
 
-.invoice-doc-input-numero{ width:auto; min-width:70px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:9.5pt; color:#fff; background:var(--primary); padding:2px 8px; border-radius:6px; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+.invoice-doc-input-numero{ width:auto; min-width:76px; font-family:'JetBrains Mono',monospace; font-weight:600; letter-spacing:.03em; font-size:11.5pt; color:#fff; background:var(--primary); padding:4px 10px; border-radius:6px; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
 .invoice-doc-input-numero:hover, .invoice-doc-input-numero:focus{ background:var(--primary); }
-.invoice-doc-fecha-editable{ display:inline-flex; align-items:center; gap:4px; }
+.invoice-doc-fecha-editable{ display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.invoice-doc-fecha-editable .cdate{ width:auto; }
+.invoice-doc-fecha-editable .cdate-trigger{
+  width:auto; border:1px solid transparent; background:transparent; padding:3px 6px; gap:4px; font-size:inherit; color:inherit;
+}
+.invoice-doc-fecha-editable .cdate-trigger:hover{ background:color-mix(in srgb, var(--primary) 6%, transparent); border-color:transparent; }
+.invoice-doc-fecha-editable .cdate-trigger svg{ width:12px; height:12px; opacity:.55; }
 .invoice-doc-fecha-editable .custom-datepicker{ display:inline-flex; }
 @media print{
   /* El selector de fecha normalmente se ve como un botón con borde e
@@ -1581,6 +1587,16 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 .invoice-doc-row-editable{ align-items:flex-start; gap:8px; }
 .invoice-doc-expand-btn{ flex-shrink:0; margin-top:2px; }
 .invoice-doc-row-desc-input{ flex:1; min-width:0; font-size:10.5pt; }
+/* Las flechitas nativas del navegador para type="number" no siguen
+   ningún estilo de la app — se ven como un control crudo del sistema
+   operativo, no como parte del documento. Se ocultan en TODOS los
+   campos de monto de una sola vez (ítem, sub-línea, ajuste, tasa BCV),
+   vía el selector de atributo — no hace falta repetirlo por cada clase. */
+.invoice-doc input[type="number"].invoice-doc-input{ -moz-appearance:textfield; appearance:textfield; }
+.invoice-doc input[type="number"].invoice-doc-input::-webkit-outer-spin-button,
+.invoice-doc input[type="number"].invoice-doc-input::-webkit-inner-spin-button{
+  -webkit-appearance:none; margin:0;
+}
 .invoice-doc-row-monto-input{ width:90px; flex-shrink:0; text-align:right; font-family:'JetBrains Mono',monospace; font-weight:600; }
 .invoice-doc-row-monto-input:disabled{ opacity:0.5; }
 
