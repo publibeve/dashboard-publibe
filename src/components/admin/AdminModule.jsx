@@ -268,7 +268,7 @@ export function AdminModule({ invoices = [], expenses = [], onOpenInvoice, onNew
                     options={[{ value: "Todos", label: "Todos los meses" }, ...nominaMesesDisponibles.map((m) => ({ value: m, label: monthLabelEs(m) }))]}
                   />
                 </div>
-                <button className="btn-primary" onClick={() => onNewExpense("Nómina")}><Plus size={14} /> Nuevo pago de nómina</button>
+                <button className="btn-primary" onClick={onNewNomina}><Plus size={14} /> Nuevo pago de nómina</button>
               </div>
             </div>
             <div className="summary-row-v2">
@@ -300,7 +300,6 @@ export function AdminModule({ invoices = [], expenses = [], onOpenInvoice, onNew
                     options={[{ value: "Todos", label: "Todos los meses" }, ...operativosMesesDisponibles.map((m) => ({ value: m, label: monthLabelEs(m) }))]}
                   />
                 </div>
-                <button className="btn-secondary" onClick={onNewNomina}><Plus size={14} /> Nuevo recibo de nómina</button>
                 <button className="btn-primary" onClick={() => onNewExpense("Herramienta / software")}><Plus size={14} /> Nuevo gasto</button>
               </div>
             </div>
