@@ -1449,14 +1449,14 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 /* ---- Rediseño con color del documento de Recibo/Nómina — Diego lo veía
    "muy plano" en negro sobre blanco; esto usa el color de marca del
    cliente (--primary, ya seteado en el wrapper) en vez de solo el logo. */
-.invoice-doc-topbar{ height:6px; background:var(--primary); border-radius:3px; margin-bottom:14px; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+.invoice-doc-topbar{ height:9px; background:var(--primary); border-radius:3px; margin-bottom:14px; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
 .invoice-doc-meta-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .invoice-doc-numero{
   font-family:'JetBrains Mono',monospace; font-weight:700; font-size:9.5pt; color:#fff; background:var(--primary);
   padding:2px 8px; border-radius:6px; print-color-adjust:exact; -webkit-print-color-adjust:exact;
 }
 .invoice-doc-to{
-  display:flex; flex-direction:column; gap:2px; margin-bottom:16px; padding:10px 12px; font-size:10.5pt;
+  display:flex; flex-direction:column; gap:4px; margin-bottom:22px; padding:16px 18px; font-size:12pt;
   background:color-mix(in srgb, var(--primary) 6%, transparent); border-left:3px solid var(--primary); border-radius:0 8px 8px 0;
   print-color-adjust:exact; -webkit-print-color-adjust:exact;
 }
@@ -1465,11 +1465,11 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 .invoice-doc-to-sub{ color:var(--ink-soft); font-size:9.5pt; white-space:pre-line; }
 .invoice-doc-table{ display:flex; flex-direction:column; gap:0; margin-bottom:8px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
 .invoice-doc-table-head{
-  display:flex; justify-content:space-between; gap:10px; font-size:9pt; font-weight:700; color:#fff;
-  text-transform:uppercase; letter-spacing:.03em; padding:8px 10px; background:var(--primary);
+  display:flex; justify-content:space-between; gap:10px; font-size:10pt; font-weight:700; color:#fff;
+  text-transform:uppercase; letter-spacing:.03em; padding:12px 16px; background:var(--primary);
   print-color-adjust:exact; -webkit-print-color-adjust:exact;
 }
-.invoice-doc-row{ display:flex; justify-content:space-between; gap:16px; padding:8px 10px; border-bottom:1px solid var(--border); font-size:10pt; }
+.invoice-doc-row{ display:flex; justify-content:space-between; gap:16px; padding:14px 16px; border-bottom:1px solid var(--border); font-size:11.5pt; line-height:1.45; }
 .invoice-doc-row:last-child{ border-bottom:none; }
 .invoice-doc-row-desc{ white-space:pre-line; color:var(--ink); flex:1; }
 .invoice-doc-row-monto{ font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--ink); white-space:nowrap; }
@@ -1477,16 +1477,16 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 .invoice-doc-subrow{ display:flex; justify-content:space-between; gap:12px; font-size:9pt; color:var(--ink-soft); }
 .invoice-doc-subrow span:last-child{ font-family:'JetBrains Mono',monospace; }
 .invoice-doc-total-box{
-  display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-top:4px; margin-bottom:4px;
-  background:var(--primary); border-radius:8px; font-size:11.5pt; font-weight:700; color:#fff;
+  display:flex; justify-content:space-between; align-items:center; padding:16px 18px; margin-top:8px; margin-bottom:8px;
+  background:var(--primary); border-radius:8px; font-size:13pt; font-weight:700; color:#fff;
   print-color-adjust:exact; -webkit-print-color-adjust:exact;
 }
-.invoice-doc-total-box b{ font-family:'JetBrains Mono',monospace; font-size:14pt; }
+.invoice-doc-total-box b{ font-family:'JetBrains Mono',monospace; font-size:17pt; }
 .invoice-doc-bs{ display:flex; justify-content:space-between; gap:10px; margin-top:6px; font-size:9.5pt; color:var(--ink-soft); }
 .invoice-doc-bs b{ font-family:'JetBrains Mono',monospace; color:var(--ink); }
 .invoice-doc-ref{ font-size:9pt; color:var(--ink-soft); margin-top:2px; }
 .invoice-doc-payment-box{
-  margin-top:18px; padding:12px 14px; border-radius:8px; background:color-mix(in srgb, var(--primary) 5%, transparent);
+  margin-top:24px; padding:16px 18px; border-radius:8px; background:color-mix(in srgb, var(--primary) 5%, transparent);
   border:1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
   print-color-adjust:exact; -webkit-print-color-adjust:exact;
 }
@@ -1494,3 +1494,86 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 .invoice-doc-payment-row{ font-size:9.5pt; color:var(--ink-soft); white-space:pre-line; }
 .invoice-doc-payment-row b{ color:var(--ink); }
 .invoice-doc-footnote{ margin-top:16px; padding-top:10px; border-top:1px dashed var(--border); font-size:8.5pt; color:var(--ink-soft); font-style:italic; }
+
+/* ---- InvoiceLiveEditor — el documento ES el formulario ---- */
+
+/* Utilidad — lo opuesto de .no-print: invisible en pantalla, visible SOLO
+   al imprimir. Se usa para mostrar como texto simple ("Ref. 8294") algo
+   que en pantalla es un campo de formulario con su etiqueta arriba (no
+   se vería bien impreso con esa pinta de formulario). */
+.only-print-value{ display:none; }
+@media print{ .only-print-value{ display:block !important; } }
+
+/* Inputs "invisibles" por defecto — se funden con el documento, y solo se
+   nota que son editables al pasar el mouse o enfocarlos. En impresión
+   pierden cualquier rastro de ser un campo de formulario (fondo, borde). */
+.invoice-doc-input{
+  border:1px solid transparent; background:transparent; border-radius:6px; padding:2px 6px; margin:-2px -6px;
+  font-family:inherit; color:inherit; width:100%; resize:none; overflow:hidden;
+}
+.invoice-doc-input:hover{ background:color-mix(in srgb, var(--primary) 6%, transparent); }
+.invoice-doc-input:focus{ outline:none; border-color:var(--primary); background:#fff; }
+@media print{
+  .invoice-doc-input:not(.invoice-doc-input-numero){ border:none !important; background:transparent !important; padding:0 !important; margin:0 !important; }
+  /* El texto de ejemplo (placeholder) de un campo vacío SÍ se imprime en
+     Chromium si no se lo oculta a propósito — confirmado con un PDF real,
+     una nota al pie vacía salía con el "Ej: ..." impreso, que se ve roto.
+     :placeholder-shown solo coincide cuando el campo está realmente vacío. */
+  .invoice-doc-input:placeholder-shown{ color:transparent !important; }
+  .invoice-doc-footnote-input:placeholder-shown{ display:none !important; border-top:none !important; }
+  .invoice-doc-bs-editable:has(.invoice-doc-row-monto-input:placeholder-shown){ display:none !important; }
+  .invoice-doc-ajuste:has(.invoice-doc-row-monto-input:placeholder-shown){ display:none !important; }
+  /* El número SÍ necesita conservar su insignia de color al imprimir — la
+     regla de arriba lo hubiera dejado sin fondo/padding, invisible como
+     insignia (aunque el texto en sí seguía ahí, sin el recuadro azul
+     alrededor no se distinguía del resto del encabezado). */
+  .invoice-doc-input-numero{
+    border:none !important; color:#fff !important; background:var(--primary) !important;
+    padding:2px 8px !important; margin:0 !important; border-radius:6px !important;
+    print-color-adjust:exact !important; -webkit-print-color-adjust:exact !important;
+  }
+}
+
+.invoice-doc-input-numero{ width:auto; min-width:70px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:9.5pt; color:#fff; background:var(--primary); padding:2px 8px; border-radius:6px; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+.invoice-doc-input-numero:hover, .invoice-doc-input-numero:focus{ background:var(--primary); }
+.invoice-doc-fecha-editable{ display:inline-flex; align-items:center; gap:4px; }
+.invoice-doc-fecha-editable .custom-datepicker{ display:inline-flex; }
+@media print{
+  /* El selector de fecha normalmente se ve como un botón con borde e
+     ícono — acá adentro tiene que leerse como texto plano dentro de la
+     oración "Del X al Y", no como un control de formulario. */
+  .invoice-doc-fecha-editable .cdate-trigger{
+    border:none !important; background:transparent !important; padding:0 !important;
+    color:inherit !important; font-size:inherit !important; gap:0 !important;
+  }
+  .invoice-doc-fecha-editable .cdate-trigger svg{ display:none !important; }
+}
+
+.invoice-doc-to-editable{ position:relative; }
+.invoice-doc-client-select{ margin-bottom:2px; }
+.invoice-doc-input-name{ font-weight:700; font-size:11pt; }
+.invoice-doc-input-sub{ font-size:9.5pt; color:var(--ink-soft); }
+
+.invoice-doc-row-editable{ align-items:flex-start; gap:8px; }
+.invoice-doc-expand-btn{ flex-shrink:0; margin-top:2px; }
+.invoice-doc-row-desc-input{ flex:1; font-size:10.5pt; }
+.invoice-doc-row-monto-input{ width:90px; flex-shrink:0; text-align:right; font-family:'JetBrains Mono',monospace; font-weight:600; }
+.invoice-doc-row-monto-input:disabled{ opacity:0.5; }
+
+.invoice-doc-subrow-editable{ display:flex; align-items:center; gap:6px; }
+.invoice-doc-subrow-editable .invoice-doc-input:first-child{ flex:1; }
+.invoice-doc-subrow-editable .invoice-doc-input:nth-child(2){ width:70px; text-align:right; }
+.invoice-doc-add-sub-btn{ font-size:10px; padding:3px 8px; margin-top:2px; align-self:flex-start; }
+
+.invoice-doc-add-item-btn{
+  width:100%; padding:10px; border:1px dashed var(--border); background:transparent; border-radius:6px;
+  color:var(--primary); font-weight:600; font-size:11px; cursor:pointer; display:flex; align-items:center;
+  justify-content:center; gap:6px; margin-top:2px;
+}
+.invoice-doc-add-item-btn:hover{ background:color-mix(in srgb, var(--primary) 6%, transparent); }
+
+.invoice-doc-bs-editable{ align-items:center; }
+.invoice-doc-ref-editable{ display:flex; flex-direction:column; gap:2px; font-size:11px; color:var(--ink-soft); margin-top:6px; }
+.invoice-doc-ref-editable input{ border:1px solid var(--border); border-radius:6px; padding:6px 9px; font-size:12px; font-family:inherit; }
+
+.invoice-doc-footnote-input{ margin-top:16px; padding-top:10px; border-top:1px dashed var(--border); font-size:8.5pt; color:var(--ink-soft); font-style:italic; min-height:20px; }

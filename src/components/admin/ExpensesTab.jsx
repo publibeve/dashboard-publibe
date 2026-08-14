@@ -13,7 +13,7 @@ import { LockGate } from "../common/LockGate";
 import { Overlay } from "../common/Overlay";
 import { EXPENSE_CATEGORIAS, EXPENSE_FRECUENCIAS } from "../../utils/constants";
 import { todayISO, uid } from "../../utils/helpers";
-import { nextNominaNumber } from "../../services/billing.service";
+import { nextNominaNumber, peekNominaNumber } from "../../services/billing.service";
 import { InvoiceItemsEditor } from "./InvoicesTab";
 
 /**
@@ -21,7 +21,7 @@ import { InvoiceItemsEditor } from "./InvoicesTab";
  * propósito: el resto de Gastos (herramientas, servicios) sigue tan
  * simple como siempre, sin campos que no le sirven.
  */
-function NominaFields({ draft, setDraft, numeroCargando }) {
+function NominaFields({ draft, setDraft, numeroCargando, onNumeroEdit }) {
   return (
     <>
       <div className="field-row">
@@ -37,7 +37,7 @@ function NominaFields({ draft, setDraft, numeroCargando }) {
       <div className="field-row">
         <label className="field">
           <span>N° de recibo</span>
-          <input value={draft.numeroRecibo || ""} onChange={(e) => setDraft({ ...draft, numeroRecibo: e.target.value })} placeholder={numeroCargando ? "Calculando…" : "Ej: 00005"} />
+          <input value={draft.numeroRecibo || ""} onChange={(e) => { setDraft({ ...draft, numeroRecibo: e.target.value }); if (onNumeroEdit) onNumeroEdit(); }} placeholder={numeroCargando ? "Calculando…" : "Ej: 00005"} />
         </label>
         <label className="field">
           <span>Fecha del pago</span>
@@ -94,25 +94,29 @@ export function NewExpenseModal({ onClose, onCreate, defaultCategoria }) {
   const [error, setError] = useState("");
   const [nomina, setNomina] = useState({});
   const [numeroCargando, setNumeroCargando] = useState(true);
+  const [numeroEditadoAMano, setNumeroEditadoAMano] = useState(false);
 
   useEffect(() => {
     if (categoria !== "Nómina" || nomina.numeroRecibo) return;
     let cancelled = false;
-    nextNominaNumber().then((n) => { if (!cancelled) { setNomina((d) => ({ ...d, numeroRecibo: n })); setNumeroCargando(false); } });
+    peekNominaNumber().then((n) => { if (!cancelled) { setNomina((d) => ({ ...d, numeroRecibo: n })); setNumeroCargando(false); } });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoria]);
 
-  function submit() {
+  async function submit() {
     const esNomina = categoria === "Nómina";
     const montoFinal = esNomina && nomina.items?.length ? nomina.monto : Number(monto);
     if (!concepto.trim()) { setError("Falta el concepto (a quién se le paga o qué servicio es)."); return; }
     if (!montoFinal || isNaN(montoFinal) || montoFinal <= 0) { setError("El monto debe ser mayor a 0."); return; }
+    // Mismo criterio que Facturas — el número real recién se pide (y se
+    // consume) acá, justo antes de crear, y solo si Diego no lo cambió a mano.
+    const numeroFinal = esNomina ? (numeroEditadoAMano ? (nomina.numeroRecibo || "").trim() : await nextNominaNumber()) : "";
     onCreate({
       id: uid(), concepto: concepto.trim(), categoria, monto: montoFinal, frecuencia, proximoPago, notas: notas.trim(),
       ...(esNomina ? {
         nombreCompleto: (nomina.nombreCompleto || concepto).trim(), rol: nomina.rol || "",
-        numeroRecibo: nomina.numeroRecibo || "", fechaPago: nomina.fechaPago || todayISO(),
+        numeroRecibo: numeroFinal, fechaPago: nomina.fechaPago || todayISO(),
         periodoDesde: nomina.periodoDesde || "", periodoHasta: nomina.periodoHasta || "",
         items: nomina.items || [], extraMonto: Number(nomina.extraMonto || 0), extraLabel: nomina.extraLabel || "",
         referencia: nomina.referencia || "", tasaBcv: Number(nomina.tasaBcv || 0),
@@ -144,7 +148,7 @@ export function NewExpenseModal({ onClose, onCreate, defaultCategoria }) {
         </div>
 
         {categoria === "Nómina" ? (
-          <NominaFields draft={nomina} setDraft={setNomina} numeroCargando={numeroCargando} />
+          <NominaFields draft={nomina} setDraft={setNomina} numeroCargando={numeroCargando} onNumeroEdit={() => setNumeroEditadoAMano(true)} />
         ) : (
           <div className="field-row">
             <label className="field">

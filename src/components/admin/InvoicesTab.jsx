@@ -21,7 +21,7 @@ import { LockGate } from "../common/LockGate";
 import { Overlay } from "../common/Overlay";
 import { CLIENTES } from "../../utils/constants";
 import { fmtDate, fmtMonto, sumAbonos, todayISO, uid } from "../../utils/helpers";
-import { nextInvoiceNumber } from "../../services/billing.service";
+import { nextInvoiceNumber, peekInvoiceNumber } from "../../services/billing.service";
 
 /**
  * Sub-líneas dentro de UN ítem — ej. "Gestión publicitaria ($60)" puede
@@ -166,6 +166,7 @@ export function NewInvoiceModal({ onClose, onCreate }) {
   const [empresa, setEmpresa] = useState("");
   const [numeroFactura, setNumeroFactura] = useState("");
   const [numeroCargando, setNumeroCargando] = useState(true);
+  const [numeroEditadoAMano, setNumeroEditadoAMano] = useState(false);
   const [fechaEmision, setFechaEmision] = useState(todayISO());
   const [fechaVencimiento, setFechaVencimiento] = useState(todayISO());
   const [items, setItems] = useState([]);
@@ -177,19 +178,27 @@ export function NewInvoiceModal({ onClose, onCreate }) {
   // Numeración automática — se pide apenas se abre el formulario, para que
   // ya esté lista cuando Diego llegue a esa parte. Sigue siendo un campo
   // editable por si hace falta corregirla a mano en algún caso puntual.
+  // Numeración automática — a propósito NO se pide/gasta el número real acá
+  // (eso fue justo el bug: abrir el formulario y cerrarlo sin guardar ya
+  // consumía un número). Esto solo ESPÍA cuál sería el próximo, para
+  // mostrarlo de entrada — el número real se pide recién en submit(), y
+  // solo si Diego no lo escribió a mano él mismo.
   useEffect(() => {
     let cancelled = false;
-    nextInvoiceNumber().then((n) => { if (!cancelled) { setNumeroFactura(n); setNumeroCargando(false); } });
+    peekInvoiceNumber().then((n) => { if (!cancelled) { setNumeroFactura(n); setNumeroCargando(false); } });
     return () => { cancelled = true; };
   }, []);
 
   const totalItems = items.reduce((s, it) => s + Number(it.monto || 0), 0);
 
-  function submit() {
+  async function submit() {
     if (!empresa) { setError("Falta elegir el cliente."); return; }
     if (items.length === 0) { setError("Agregá al menos un ítem a la factura."); return; }
+    // Si Diego no tocó el número sugerido, se pide el real (y RECIÉN ahí se
+    // consume el contador) justo antes de crear la factura — nunca antes.
+    const numeroFinal = numeroEditadoAMano ? numeroFactura.trim() : await nextInvoiceNumber();
     onCreate({
-      id: uid(), empresa, numeroFactura: numeroFactura.trim(),
+      id: uid(), empresa, numeroFactura: numeroFinal,
       concepto: items.map((it) => it.descripcion).join(" · "), monto: totalItems,
       items, notaAlPie: notaAlPie.trim(),
       fechaEmision, fechaVencimiento, pdfUrl: pdfUrl.trim(), nota: nota.trim(), abonos: [],
@@ -216,7 +225,7 @@ export function NewInvoiceModal({ onClose, onCreate }) {
         <div className="field-row">
           <label className="field">
             <span>Número de factura</span>
-            <input value={numeroFactura} onChange={(e) => setNumeroFactura(e.target.value)} placeholder={numeroCargando ? "Calculando…" : "Ej: 00008"} />
+            <input value={numeroFactura} onChange={(e) => { setNumeroFactura(e.target.value); setNumeroEditadoAMano(true); }} placeholder={numeroCargando ? "Calculando…" : "Ej: 00008"} />
           </label>
         </div>
         <div className="field-row">

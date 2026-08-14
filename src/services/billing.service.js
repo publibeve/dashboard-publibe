@@ -29,6 +29,22 @@ export async function persistPaymentInfo(list) {
  * nulo, y evita necesitar una función de base de datos aparte solo para
  * esto — mismo criterio de simplicidad que ya se usa en el resto de la app.
  */
+/**
+ * `peekXNumber` — SOLO lee, nunca incrementa. Se usa para mostrar "esta va
+ * a ser la próxima" en el formulario apenas se abre, sin gastar el número
+ * si Diego termina cerrando sin registrar nada. El número real se pide
+ * recién con `nextXNumber` en el momento de guardar de verdad — ese
+ * bug (se gastaba un número cada vez que se abría "Nueva factura", aunque
+ * no se guardara nada) fue justo lo que reportó Diego.
+ */
+export async function peekInvoiceNumber() {
+  const current = await readJSON(INVOICE_COUNTER_KEY, true, 0);
+  return String(Number(current || 0) + 1).padStart(5, "0");
+}
+export async function peekNominaNumber() {
+  const current = await readJSON(NOMINA_COUNTER_KEY, true, 0);
+  return String(Number(current || 0) + 1).padStart(5, "0");
+}
 async function nextNumber(key) {
   const current = await readJSON(key, true, 0);
   const next = Number(current || 0) + 1;

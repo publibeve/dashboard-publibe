@@ -35,6 +35,7 @@ export function InvoiceDocumentModal({
   items = [],
   total,
   extraLinea, // { label, monto } — ej. "Extra/Abono" en nómina
+  ajuste, // { label, monto } — descuento (monto negativo) o IVA/recargo (positivo), opcional
   bsInfo, // { montoBs, tasa } — conversión a bolívares, solo nómina
   referencia, // "REF. 8294", opcional
   fechaPago, // campo "FECHA" aparte del rango, opcional (nómina)
@@ -72,7 +73,7 @@ export function InvoiceDocumentModal({
   }
 
   const totalItems = items.reduce((s, it) => s + Number(it.monto || 0), 0);
-  const totalFinal = total ?? (totalItems + Number(extraLinea?.monto || 0));
+  const totalFinal = total ?? (totalItems + Number(extraLinea?.monto || 0) + Number(ajuste?.monto || 0));
 
   return (
     <Overlay onClose={onClose}>
@@ -137,6 +138,13 @@ export function InvoiceDocumentModal({
               </div>
             )}
           </div>
+
+          {ajuste && Number(ajuste.monto) !== 0 && (
+            <div className="invoice-doc-row invoice-doc-ajuste">
+              <span className="invoice-doc-row-desc">{ajuste.label || (Number(ajuste.monto) < 0 ? "Descuento" : "IVA / recargo")}</span>
+              <span className="invoice-doc-row-monto">{Number(ajuste.monto) > 0 ? "+" : "−"}{fmtMonto(Math.abs(ajuste.monto))}</span>
+            </div>
+          )}
 
           <div className="invoice-doc-total-box">
             <span>Total</span>

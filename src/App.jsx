@@ -26,6 +26,7 @@ import { AdminModule } from "./components/admin/AdminModule";
 import { ExpenseModal, NewExpenseModal } from "./components/admin/ExpensesTab";
 import { InvoiceModal, NewInvoiceModal } from "./components/admin/InvoicesTab";
 import { InvoiceDocumentModal } from "./components/common/InvoiceDocumentModal";
+import { InvoiceLiveEditor } from "./components/common/InvoiceLiveEditor";
 import { loadPaymentInfo } from "./services/billing.service";
 import { AIChatButton, AIChatPanel } from "./components/ai/AIChatPanel";
 import { CustomSelect } from "./components/common/CustomSelect";
@@ -287,6 +288,7 @@ function App() {
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [showInvoiceDocument, setShowInvoiceDocument] = useState(null);
   const [showNominaDocument, setShowNominaDocument] = useState(null);
+  const [showNewNomina, setShowNewNomina] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState([]);
   useEffect(() => { loadPaymentInfo().then((list) => setPaymentInfo(list || [])); }, []);
   const [showNewExpense, setShowNewExpense] = useState(false);
@@ -815,6 +817,7 @@ function App() {
             onNewInvoice={() => setShowNewInvoice(true)}
             onOpenExpense={(id) => setOpenExpenseId(id)}
             onNewExpense={(cat) => { setNewExpenseCategoria(cat || EXPENSE_CATEGORIAS[0]); setShowNewExpense(true); }}
+            onNewNomina={() => setShowNewNomina(true)}
             accesos={accesos || []}
             onOpenAcceso={(id) => setOpenAccesoId(id)}
             onNewAcceso={() => setShowNewAcceso(true)}
@@ -1473,9 +1476,11 @@ function App() {
       )}
 
       {showNewInvoice && (
-        <NewInvoiceModal
+        <InvoiceLiveEditor
+          variant="factura"
+          paymentInfo={paymentInfo}
           onClose={() => setShowNewInvoice(false)}
-          onCreate={(inv) => { addInvoice(inv); setShowNewInvoice(false); }}
+          onSave={async (doc, { imprimir }) => { addInvoice(doc); if (!imprimir) setShowNewInvoice(false); }}
         />
       )}
       {openInvoiceId && invoices && (
@@ -1496,62 +1501,41 @@ function App() {
         })()
       )}
 
-      {showInvoiceDocument && (() => {
-        const inv = showInvoiceDocument;
-        const cli = clientMeta(inv.empresa);
-        // Facturas viejas (de antes de esta función) no tienen `items` —
-        // se arma un ítem único a partir de concepto+monto para que el
-        // documento siga mostrando algo sensato, sin perder esas facturas.
-        const items = (inv.items && inv.items.length > 0)
-          ? inv.items
-          : [{ id: "legacy", descripcion: inv.concepto || "Servicio", monto: inv.monto }];
-        return (
-          <InvoiceDocumentModal
-            variant="factura"
-            titulo="Recibo"
-            numero={inv.numeroFactura}
-            fechaDesde={inv.fechaEmision}
-            fechaHasta={inv.fechaVencimiento}
-            destinatarioNombre={cli.razonSocial || inv.empresa}
-            destinatarioSub={cli.direccionFiscal}
-            accentColor={cli.color}
-            clientLogo={cli}
-            items={items}
-            total={inv.monto}
-            paymentInfo={paymentInfo}
-            notaAlPie={inv.notaAlPie}
-            onClose={() => setShowInvoiceDocument(null)}
-          />
-        );
-      })()}
-
-      {showNominaDocument && (() => {
-        const ex = showNominaDocument;
-        const items = (ex.items && ex.items.length > 0)
-          ? ex.items
-          : [{ id: "legacy", descripcion: ex.concepto || "Pago", monto: ex.monto }];
-        const totalItems = items.reduce((s, it) => s + Number(it.monto || 0), 0);
-        const totalFinal = totalItems + Number(ex.extraMonto || 0);
-        return (
-          <InvoiceDocumentModal
-            variant="nomina"
-            titulo="Recibo de nómina"
-            numero={ex.numeroRecibo}
-            fechaDesde={ex.periodoDesde}
-            fechaHasta={ex.periodoHasta}
-            destinatarioNombre={ex.nombreCompleto || ex.concepto}
-            destinatarioSub={ex.rol}
-            items={items}
-            total={totalFinal}
-            extraLinea={ex.extraMonto > 0 ? { label: ex.extraLabel || "Extra/Abono", monto: ex.extraMonto } : null}
-            bsInfo={ex.tasaBcv > 0 ? { tasa: ex.tasaBcv } : null}
-            referencia={ex.referencia}
-            fechaPago={ex.fechaPago}
-            paymentInfo={paymentInfo}
-            onClose={() => setShowNominaDocument(null)}
-          />
-        );
-      })()}
+      {showInvoiceDocument && (
+        <InvoiceLiveEditor
+          variant="factura"
+          existing={showInvoiceDocument}
+          paymentInfo={paymentInfo}
+          onClose={() => setShowInvoiceDocument(null)}
+          onSave={async (doc, { imprimir }) => { patchInvoice(doc.id, doc); if (!imprimir) setShowInvoiceDocument(null); }}
+        />
+      )}
+      {showNominaDocument && (
+        <InvoiceLiveEditor
+          variant="nomina"
+          existing={{
+            ...showNominaDocument,
+            // Compatibilidad — los recibos de nómina creados con el
+            // formulario viejo guardaban esto como extraLabel/extraMonto;
+            // el editor nuevo usa ajusteLabel/ajusteMonto (mismo campo que
+            // Facturas). Sin este mapeo, un recibo viejo se abriría con el
+            // descuento/extra en blanco, aunque el dato siga ahí guardado.
+            ajusteLabel: showNominaDocument.ajusteLabel ?? showNominaDocument.extraLabel ?? "",
+            ajusteMonto: showNominaDocument.ajusteMonto ?? showNominaDocument.extraMonto ?? "",
+          }}
+          paymentInfo={paymentInfo}
+          onClose={() => setShowNominaDocument(null)}
+          onSave={async (doc, { imprimir }) => { patchExpense(doc.id, doc); if (!imprimir) setShowNominaDocument(null); }}
+        />
+      )}
+      {showNewNomina && (
+        <InvoiceLiveEditor
+          variant="nomina"
+          paymentInfo={paymentInfo}
+          onClose={() => setShowNewNomina(false)}
+          onSave={async (doc, { imprimir }) => { addExpense(doc); if (!imprimir) setShowNewNomina(false); }}
+        />
+      )}
 
       {showNewExpense && (
         <NewExpenseModal
