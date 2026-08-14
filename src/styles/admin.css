@@ -683,10 +683,22 @@
 .note-print-body img{ max-width:100%; border-radius:8px; margin:8px 0; }
 .report-picker-modal{ overflow:visible; }
 
-/* Tamaño de página — el ÚNICO parámetro que cambia entre Imprimir y Digital. */
-.report-printable{ padding:0.6in 0.75in; font-size:11pt; line-height:1.45; }
+/* Tamaño de página — el ÚNICO parámetro que cambia entre Imprimir y Digital.
+   El padding grande tipo "margen de hoja" (0.6in/0.75in) es correcto para
+   el PAPEL — para la pantalla es demasiado (72px de cada lado, sobre un
+   modal de ~350-460px de ancho, dejaba muy poco espacio real para el
+   contenido, y con una tabla como la de ítems de Facturas/Nómina —
+   flex en columna, sin ancho propio — terminaba colapsando el texto
+   carácter por carácter en pantallas angostas). En pantalla usa un
+   padding normal de modal; para el papel, @media print más abajo ya lo
+   deja en 0 en formato carta y usa @page{margin:...} en su lugar, así
+   que esto NO cambia nada de lo que sale impreso. */
+.report-printable{ padding:20px; font-size:11pt; line-height:1.45; }
 .report-printable.format-recibo{ max-width:100%; padding:16px 14px; }
 .report-printable.format-carta{ max-width:100%; }
+@media print{
+  .report-printable{ padding:0.6in 0.75in; }
+}
 
 /* Plantilla — igual siempre, tabla formal alineada a la izquierda. */
 .report-header{ text-align:left; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border); }
@@ -1463,7 +1475,7 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 .invoice-doc-to-label{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:9pt; color:var(--primary); text-transform:uppercase; letter-spacing:.04em; }
 .invoice-doc-to-name{ font-weight:700; color:var(--ink); }
 .invoice-doc-to-sub{ color:var(--ink-soft); font-size:9.5pt; white-space:pre-line; }
-.invoice-doc-table{ display:flex; flex-direction:column; gap:0; margin-bottom:8px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
+.invoice-doc-table{ display:flex; flex-direction:column; width:100%; gap:0; margin-bottom:8px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
 .invoice-doc-table-head{
   display:flex; justify-content:space-between; gap:10px; font-size:10pt; font-weight:700; color:#fff;
   text-transform:uppercase; letter-spacing:.03em; padding:12px 16px; background:var(--primary);
@@ -1471,7 +1483,7 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 }
 .invoice-doc-row{ display:flex; justify-content:space-between; gap:16px; padding:14px 16px; border-bottom:1px solid var(--border); font-size:11.5pt; line-height:1.45; }
 .invoice-doc-row:last-child{ border-bottom:none; }
-.invoice-doc-row-desc{ white-space:pre-line; color:var(--ink); flex:1; }
+.invoice-doc-row-desc{ white-space:pre-line; color:var(--ink); flex:1; min-width:0; }
 .invoice-doc-row-monto{ font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--ink); white-space:nowrap; }
 .invoice-doc-subrows{ display:flex; flex-direction:column; gap:2px; padding:2px 10px 8px 24px; background:color-mix(in srgb, var(--primary) 3%, transparent); }
 .invoice-doc-subrow{ display:flex; justify-content:space-between; gap:12px; font-size:9pt; color:var(--ink-soft); }
@@ -1556,12 +1568,12 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 
 .invoice-doc-row-editable{ align-items:flex-start; gap:8px; }
 .invoice-doc-expand-btn{ flex-shrink:0; margin-top:2px; }
-.invoice-doc-row-desc-input{ flex:1; font-size:10.5pt; }
+.invoice-doc-row-desc-input{ flex:1; min-width:0; font-size:10.5pt; }
 .invoice-doc-row-monto-input{ width:90px; flex-shrink:0; text-align:right; font-family:'JetBrains Mono',monospace; font-weight:600; }
 .invoice-doc-row-monto-input:disabled{ opacity:0.5; }
 
 .invoice-doc-subrow-editable{ display:flex; align-items:center; gap:6px; }
-.invoice-doc-subrow-editable .invoice-doc-input:first-child{ flex:1; }
+.invoice-doc-subrow-editable .invoice-doc-input:first-child{ flex:1; min-width:0; }
 .invoice-doc-subrow-editable .invoice-doc-input:nth-child(2){ width:70px; text-align:right; }
 .invoice-doc-add-sub-btn{ font-size:10px; padding:3px 8px; margin-top:2px; align-self:flex-start; }
 
