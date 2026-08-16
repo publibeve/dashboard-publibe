@@ -70,3 +70,27 @@ export async function loadInvoiceCounter() {
 export async function loadNominaCounter() {
   return await readJSON(NOMINA_COUNTER_KEY, true, 0);
 }
+
+/**
+ * Al borrar un recibo/factura, el número que tenía SOLO se libera para
+ * reutilizar si era el más alto en uso (el último creado) — si se borra
+ * uno de en medio, el contador no se toca: el número borrado queda
+ * "perdido" para siempre, para no chocar con documentos posteriores que
+ * ya usan números más altos. `numero` viene con el padding de 5 dígitos
+ * ("00009") tal como se guarda en el documento — se compara como número,
+ * no como texto, para que el padding no afecte la comparación.
+ */
+async function releaseNumberIfLast(key, numero) {
+  const n = Number(numero);
+  if (!n || isNaN(n)) return;
+  const current = Number((await readJSON(key, true, 0)) || 0);
+  if (n === current) {
+    await writeJSON(key, current - 1, true);
+  }
+}
+export async function releaseInvoiceNumberIfLast(numeroFactura) {
+  await releaseNumberIfLast(INVOICE_COUNTER_KEY, numeroFactura);
+}
+export async function releaseNominaNumberIfLast(numeroRecibo) {
+  await releaseNumberIfLast(NOMINA_COUNTER_KEY, numeroRecibo);
+}

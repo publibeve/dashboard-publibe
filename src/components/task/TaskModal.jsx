@@ -217,7 +217,6 @@ export function TaskModal({ task, onClose, onPatch, onDelete, unlocked, onReques
             onClose={() => setShowChat(false)}
             currentUser={currentUser}
             accentColor={accent}
-            anchorRef={chatBtnRef}
             editingCommentId={editingCommentId}
             onAddComment={addComment} onStartEdit={startEditComment} onCancelEdit={cancelEditComment} onSaveEdit={saveEditComment} onDeleteComment={deleteComment}
           />

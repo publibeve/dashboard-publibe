@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  X,
   Trash2,
   Send,
   AlertTriangle,
@@ -10,6 +9,7 @@ import {
   Mic,
 } from "lucide-react";
 import { copyToClipboard, renderMarkdownLite } from "../../utils/helpers";
+import { SidePanel } from "../common/SidePanel";
 
 export function AIChatButton({ onClick, hasNewIndicator }) {
   return (
@@ -86,17 +86,15 @@ export function AIChatPanel({ messages, sending, error, onSend, onClose, onClear
   }, []);
 
   return (
-    <div className="ai-chat-panel">
-      <div className="ai-chat-head">
-        <span className="ai-chat-title"><Sparkles size={15} /> Asistente publiBe</span>
-        <div className="ai-chat-head-actions">
-          {messages.length > 0 && (
-            <button type="button" className="icon-btn subtle" onClick={onClear} title="Limpiar conversación"><Trash2 size={13} /></button>
-          )}
-          <button type="button" className="icon-btn subtle" onClick={onClose}><X size={16} /></button>
-        </div>
-      </div>
-
+    <SidePanel
+      title="Asistente publiBe"
+      icon={Sparkles}
+      onClose={onClose}
+      className="ai-side-panel"
+      headerActions={messages.length > 0 && (
+        <button type="button" className="icon-btn subtle" onClick={onClear} title="Limpiar conversación"><Trash2 size={13} /></button>
+      )}
+    >
       <div className="ai-chat-messages" ref={listRef}>
         {messages.length === 0 && (
           <div className="ai-chat-empty">
@@ -153,6 +151,6 @@ export function AIChatPanel({ messages, sending, error, onSend, onClose, onClear
           <Send size={14} />
         </button>
       </div>
-    </div>
+    </SidePanel>
   );
 }

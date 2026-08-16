@@ -126,6 +126,81 @@ export function readableTextColor(hex) {
   return luminance > 0.5 ? "#1C1C1E" : "#fff";
 }
 
+/**
+ * Cada cliente elige libremente el color de su ícono desde Configuración
+ * de empresas, sin ninguna garantía de que contraste contra el fondo
+ * oscuro del sidebar. Medido con la fórmula de contraste real (WCAG) de
+ * los 9 colores actuales contra el punto más claro del degradado del
+ * sidebar: la mitad da un contraste por debajo del mínimo recomendado
+ * para elementos de interfaz (3:1) — no es solo Méri, Atlantic HS Tours
+ * da todavía peor, y MundoFord/TransfersMérida quedan justo al límite.
+ *
+ * En vez de agregarle un borde/chip a TODOS los íconos (se hubiera visto
+ * como un parche nuevo encima de un diseño que hoy no usa esa forma en
+ * ningún otro ícono del nav), se sube la luminosidad SOLO lo necesario
+ * para cruzar ese piso — el matiz elegido se respeta tal cual. Un color
+ * que ya está bien sale exactamente igual; uno apenas por debajo del
+ * mínimo recibe un empujón chico; el negro puro recibe el empujón más
+ * grande. Se mide contra el punto más CLARO del degradado del sidebar
+ * (el peor caso — ahí el margen es más chico que contra el más oscuro).
+ */
+function relativeLuminance(r, g, b) {
+  const lin = (c) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+const SIDEBAR_LUMINANCE = relativeLuminance(60 / 255, 60 / 255, 60 / 255); // #3C3C3C, el punto más claro del degradado
+const MIN_CONTRAST = 3;
+
+export function ensureSidebarContrast(hex) {
+  if (!hex) return hex;
+  const h = hex.replace("#", "");
+  if (h.length !== 6) return hex;
+  let r = parseInt(h.substring(0, 2), 16) / 255;
+  let g = parseInt(h.substring(2, 4), 16) / 255;
+  let b = parseInt(h.substring(4, 6), 16) / 255;
+  const contrast = (lum) => (Math.max(lum, SIDEBAR_LUMINANCE) + 0.05) / (Math.min(lum, SIDEBAR_LUMINANCE) + 0.05);
+  if (contrast(relativeLuminance(r, g, b)) >= MIN_CONTRAST) return hex;
+
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let hue, sat;
+  let light = (max + min) / 2;
+  if (max === min) {
+    hue = 0; sat = 0;
+  } else {
+    const d = max - min;
+    sat = light > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) hue = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) hue = (b - r) / d + 2;
+    else hue = (r - g) / d + 4;
+    hue /= 6;
+  }
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  const hslToRgb = (l) => {
+    if (sat === 0) return [l, l, l];
+    const q = l < 0.5 ? l * (1 + sat) : l + sat - l * sat;
+    const p = 2 * l - q;
+    return [hue2rgb(p, q, hue + 1 / 3), hue2rgb(p, q, hue), hue2rgb(p, q, hue - 1 / 3)];
+  };
+  // Empuja la luminosidad HSL de a poco hasta que el contraste real
+  // (WCAG) cruce el mínimo — así el ajuste es proporcional al problema
+  // real, no un salto fijo igual para todos.
+  for (let i = 1; i <= 40 && light < 1; i++) {
+    light += 0.02;
+    const [r2, g2, b2] = hslToRgb(light);
+    if (contrast(relativeLuminance(r2, g2, b2)) >= MIN_CONTRAST) { r = r2; g = g2; b = b2; break; }
+    r = r2; g = g2; b = b2;
+  }
+  const toHex = (v) => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 export function noteDetailMaxWidth(size) {
   if (size === "wide") return "min(1200px, 96vw)";
   if (size === "medium") return "min(760px, 92vw)";

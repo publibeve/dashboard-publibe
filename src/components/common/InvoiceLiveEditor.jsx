@@ -10,6 +10,7 @@ import {
   ChevronUp,
   Loader2,
   CheckCircle2,
+  LayoutTemplate,
 } from "lucide-react";
 import { Overlay } from "./Overlay";
 import { PrintBrandLogo } from "./PrintBrandLogo";
@@ -20,6 +21,7 @@ import { waitForFontsReady } from "../../utils/printReady";
 import { fmtMonto, fmtDate, todayISO, uid, clientMeta } from "../../utils/helpers";
 import { CLIENTES } from "../../utils/constants";
 import { nextInvoiceNumber, peekInvoiceNumber, nextNominaNumber, peekNominaNumber } from "../../services/billing.service";
+import { templatesForClient } from "../../services/itemTemplates.service";
 
 /** Ajusta la altura de un textarea a su contenido real — sin esto, una
  * descripción larga que se parte en 2 líneas queda recortada arriba
@@ -50,6 +52,7 @@ export function InvoiceLiveEditor({
   variant = "factura",
   existing, // objeto existente si se está editando, null/undefined si es nuevo
   paymentInfo = [],
+  itemTemplates = [],
   onClose,
   onSave, // (documento, { imprimir }) => Promise
   onDelete, // (id) => void — solo aplica editando uno existente
@@ -76,7 +79,11 @@ export function InvoiceLiveEditor({
   const [referencia, setReferencia] = useState(existing?.referencia || "");
   const [tasaBcv, setTasaBcv] = useState(existing?.tasaBcv || "");
   const [notaAlPie, setNotaAlPie] = useState(existing?.notaAlPie || "");
+  const [metodosSeleccionados, setMetodosSeleccionados] = useState(
+    existing?.metodosPagoSeleccionados || paymentInfo.map((p) => p.id)
+  );
   const [expandedId, setExpandedId] = useState(null);
+  const [mostrarPlantillas, setMostrarPlantillas] = useState(false);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(null); // "guardar" | "imprimir" | null
   const [pendingPrint, setPendingPrint] = useState(false);
@@ -119,6 +126,15 @@ export function InvoiceLiveEditor({
   function addItem() {
     setItems((list) => [...list, { id: uid(), descripcion: "", monto: 0, subitems: [] }]);
   }
+  function insertarPlantilla(t) {
+    // Sub-ítems con id nuevo (no el de la plantilla, para que dos
+    // facturas que usaron la misma plantilla no compartan referencias) y
+    // monto en 0 — la plantilla trae la descripción fija, el precio se
+    // completa cada vez porque varía mes a mes.
+    const subitems = (t.subitems || []).map((s) => ({ id: uid(), descripcion: s.descripcion, monto: 0 }));
+    setItems((list) => [...list, { id: uid(), descripcion: t.descripcion, monto: 0, subitems }]);
+    setMostrarPlantillas(false);
+  }
   function patchItem(id, patch) {
     setItems((list) => list.map((it) => (it.id === id ? { ...it, ...patch } : it)));
   }
@@ -146,6 +162,7 @@ export function InvoiceLiveEditor({
     }));
   }
 
+  const plantillasDisponibles = esNomina ? [] : templatesForClient(itemTemplates, empresa);
   const totalItems = items.reduce((s, it) => s + Number(it.monto || 0), 0);
   const ajusteNum = Number(ajusteMonto || 0);
   const totalFinal = totalItems + ajusteNum;
@@ -190,13 +207,13 @@ export function InvoiceLiveEditor({
         items: itemsLimpios, ajusteLabel: ajusteLabel.trim(), ajusteMonto: ajusteNum,
         referencia: referencia.trim(), tasaBcv: Number(tasaBcv || 0),
         concepto: nombreLibre.trim(), monto: totalFinal, categoria: "Nómina",
-        archivos,
+        archivos, metodosPagoSeleccionados: metodosSeleccionados,
       } : {
         empresa, numeroFactura: numeroFinal, fechaEmision: fechaDesde, fechaVencimiento: fechaHasta,
         items: itemsLimpios, ajusteLabel: ajusteLabel.trim(), ajusteMonto: ajusteNum,
         razonSocialUsada: razonSocialOverride.trim(), direccionUsada: direccionOverride.trim(),
         notaAlPie: notaAlPie.trim(), concepto: itemsLimpios.map((it) => it.descripcion).join(" · "), monto: totalFinal,
-        abonos, archivos,
+        abonos, archivos, metodosPagoSeleccionados: metodosSeleccionados,
       };
       const documento = { id: existing?.id || uid(), ...base, notaAlPie: notaAlPie.trim(), createdAt: existing?.createdAt || new Date().toISOString() };
       await onSave(documento, { imprimir });
@@ -326,6 +343,36 @@ export function InvoiceLiveEditor({
                 )}
               </div>
             ))}
+            {/* Líneas en blanco de relleno — a propósito SÍ se imprimen
+                (no llevan no-print): la idea es que la hoja se vea como
+                una plantilla de tamaño constante, tenga 2 ítems cargados
+                o 5, en vez de un recibo que cambia de alto según cuánto
+                se llenó. Si ya hay 5 o más ítems reales, esto no agrega
+                nada — nunca recorta contenido real, solo rellena cuando
+                falta. */}
+            {Array.from({ length: Math.max(0, 5 - items.length) }).map((_, i) => (
+              <div className="invoice-doc-row invoice-doc-row-blank" key={`blank-${i}`} aria-hidden="true">
+                <span>&nbsp;</span>
+                <span>&nbsp;</span>
+              </div>
+            ))}
+            {plantillasDisponibles.length > 0 && (
+              <div className="invoice-doc-templates-control no-print">
+                <button type="button" className="invoice-doc-add-item-btn" onClick={() => setMostrarPlantillas((v) => !v)}>
+                  <LayoutTemplate size={13} /> Insertar plantilla
+                </button>
+                {mostrarPlantillas && (
+                  <div className="invoice-doc-templates-menu">
+                    {plantillasDisponibles.map((t) => (
+                      <button type="button" className="invoice-doc-templates-menu-item" key={t.id} onClick={() => insertarPlantilla(t)}>
+                        <span className="invoice-doc-templates-menu-nombre">{t.nombre}</span>
+                        <span className="invoice-doc-templates-menu-desc">{t.descripcion}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <button type="button" className="invoice-doc-add-item-btn no-print" onClick={addItem}>
               <Plus size={13} /> Agregar ítem
             </button>
@@ -370,11 +417,22 @@ export function InvoiceLiveEditor({
             <div className="invoice-doc-payment-box">
               <div className="report-extra-title">Información de pago</div>
               <div className="invoice-doc-payment">
-                {paymentInfo.map((it) => (
-                  <div className="invoice-doc-payment-row" key={it.id}>
-                    <b>{it.label}</b> — {it.valor}
-                  </div>
-                ))}
+                {paymentInfo.map((it) => {
+                  const seleccionado = metodosSeleccionados.includes(it.id);
+                  return (
+                    <div className={"invoice-doc-payment-row" + (seleccionado ? "" : " invoice-doc-payment-row-excluded")} key={it.id}>
+                      <label className="invoice-doc-payment-check no-print" title={seleccionado ? "Se imprime en este documento" : "No se imprime en este documento"}>
+                        <input
+                          type="checkbox" checked={seleccionado}
+                          onChange={() => setMetodosSeleccionados((list) => (
+                            seleccionado ? list.filter((id) => id !== it.id) : [...list, it.id]
+                          ))}
+                        />
+                      </label>
+                      <span><b>{it.label}</b> — {it.valor}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -435,7 +493,7 @@ export function InvoiceLiveEditor({
             {guardando === "guardar" ? <Loader2 size={14} className="spin" /> : <Save size={14} />} Guardar
           </button>
           <button type="button" className="btn-primary" onClick={() => guardar(true)} disabled={!!guardando}>
-            {guardando === "imprimir" ? <Loader2 size={14} className="spin" /> : <Printer size={14} />} Guardar e imprimir
+            {guardando === "imprimir" ? <Loader2 size={14} className="spin" /> : <Printer size={14} />} Imprimir
           </button>
         </div>
       </div>

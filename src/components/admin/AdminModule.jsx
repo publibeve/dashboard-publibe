@@ -30,6 +30,7 @@ import { CustomSelect } from "../common/CustomSelect";
 import { Overlay } from "../common/Overlay";
 import { PermissionDeniedModal } from "../common/PermissionDeniedModal";
 import { PaymentInfoPanel } from "./PaymentInfoPanel";
+import { ItemTemplatesPanel } from "./ItemTemplatesPanel";
 import { HeaderUserButton } from "../layout/Sidebar";
 import { ADMIN_GRADIENT, ADMIN_PRIMARY, CLIENTES, DEMO_MODULES, DEMO_MODULE_KEYS, PERMISOS_LIST } from "../../utils/constants";
 import { clientMeta, fmtDate, fmtMonto, invoiceEstado, monthLabelEs, sumAbonos } from "../../utils/helpers";
@@ -176,6 +177,7 @@ export function AdminModule({ invoices = [], expenses = [], onOpenInvoice, onNew
       <main className="pane">
         {subTab === "finanzas" && (
           <>
+          <ItemTemplatesPanel setAppError={setAppError} />
           <section className="overview-section">
             <div className="overview-section-head admin-section-head">
               <span className="overview-section-title"><Receipt size={15} /> Facturación a clientes</span>

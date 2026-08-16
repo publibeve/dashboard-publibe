@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { SidebarSearchBox } from "../common/GlobalSearch";
 import { CLIENTES, PRIMARY_DEFAULT } from "../../utils/constants";
-import { initial } from "../../utils/helpers";
+import { initial, ensureSidebarContrast } from "../../utils/helpers";
 
 export function HeaderUserButton({ currentUser, onLogout }) {
   const [open, setOpen] = useState(false);
@@ -153,7 +153,7 @@ export function Sidebar({ selected, onSelect, counts, collapsed, onToggle, onOpe
               onClick={() => onSelect(c.name)}
               title={c.name}
             >
-              <span className="nav-icon" style={!active ? { color: c.color } : {}}>
+              <span className="nav-icon" style={!active ? { color: ensureSidebarContrast(c.color) } : {}}>
                 <Icon size={16} />
               </span>
               {!collapsed && <span>{c.name}</span>}

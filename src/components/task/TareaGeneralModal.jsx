@@ -221,7 +221,6 @@ export function TareaGeneralModal({ tarea, unlocked, onRequestUnlock, onClose, o
             comentarios={tarea.comentarios}
             onClose={() => setShowChat(false)}
             currentUser={currentUser}
-            anchorRef={chatBtnRef}
             editingCommentId={editingCommentId}
             onAddComment={addComment} onStartEdit={startEditComment} onCancelEdit={cancelEditComment} onSaveEdit={saveEditComment} onDeleteComment={deleteComment}
           />
