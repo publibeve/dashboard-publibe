@@ -49,7 +49,13 @@ export function startZohoAuth() {
     response_type: "token",
     client_id: CLIENT_ID,
     scope: SCOPE,
-    redirect_uri: window.location.origin,
+    // Antes era window.location.origin a secas — con el dashboard movido a
+    // /dashboardapp y la landing estática ocupando "/", volver al origin
+    // pelado aterrizaría en la landing (que no carga React, así que
+    // handleZohoRedirect() de main.jsx nunca llegaría a ejecutarse). OJO:
+    // este valor también hay que actualizarlo en la consola de Zoho
+    // (Redirect URI registrada), si no el login de Zoho lo va a rechazar.
+    redirect_uri: `${window.location.origin}/dashboardapp/`,
     prompt: "consent",
   });
   // Guardamos a dónde volver (pestaña Administrativo) para retomar tras el redirect.

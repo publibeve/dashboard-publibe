@@ -2,7 +2,13 @@
   command = "npm run build"
   publish = "dist"
 
+# Antes había un solo catch-all "/*" -> "/index.html" (todo caía al SPA).
+# Ahora "/" tiene que servir la landing estática de raíz TAL CUAL, sin
+# reescribirse a nada — por eso ya no hay ninguna regla que la toque. Esta
+# de acá solo cubre adentro de /dashboardapp/, para que refrescar una URL
+# profunda del SPA (ej. /dashboardapp/toyoreyna/tareas) no dé 404 — sigue
+# resolviendo al index.html del dashboard, que React Router ya sabe leer.
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from = "/dashboardapp/*"
+  to = "/dashboardapp/index.html"
   status = 200

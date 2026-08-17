@@ -142,8 +142,13 @@ export function isRecoveryMode() {
 
 /** Administrativo → Usuarios y permisos → "Enviar reseteo de clave". */
 export async function sendPasswordReset(email) {
+  // Antes era window.location.origin a secas — con la landing estática
+  // ocupando "/", el link del correo tiene que apuntar puntualmente a
+  // /dashboardapp/ (donde vive React y corre handlePasswordRecoveryRedirect
+  // en main.jsx), si no el usuario cae en la landing con el token en el
+  // hash y nada lo procesa.
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin,
+    redirectTo: `${window.location.origin}/dashboardapp/`,
   });
   if (error) return { ok: false, message: "No se pudo enviar el correo: " + error.message };
   return { ok: true };

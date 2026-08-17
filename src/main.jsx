@@ -17,7 +17,7 @@ async function boot() {
 
   ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>
-      <BrowserRouter>
+      <BrowserRouter basename="/dashboardapp">
         <Root />
       </BrowserRouter>
     </React.StrictMode>
@@ -26,8 +26,13 @@ async function boot() {
   // Service worker mínimo (ver public/sw.js) — sin caché offline real, solo
   // para que Chrome/Edge de escritorio muestren el prompt de "Instalar app"
   // de forma consistente. No interfiere con nada si falla o no es soportado.
+  // import.meta.env.BASE_URL (no una ruta relativa tipo "./sw.js") a
+  // propósito — con el dashboard en /dashboardapp, este código puede
+  // ejecutarse desde una URL profunda (ej. /dashboardapp/facturas/123), y
+  // una ruta relativa ahí resolvería mal ("./sw.js" desde esa URL apuntaría
+  // a /dashboardapp/facturas/sw.js, que no existe).
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js").catch((e) => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((e) => {
       console.warn("No se pudo registrar el service worker (no afecta el uso normal de la app):", e);
     });
   }
