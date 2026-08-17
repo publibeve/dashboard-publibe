@@ -4,7 +4,7 @@
 // dist/index.html mínimo y estático para la raíz del sitio. No usa nada
 // del bundle de React a propósito: tiene que cargar rápido y quedar
 // totalmente independiente de si el dashboard compiló bien o no.
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
@@ -50,3 +50,19 @@ if (!existsSync(distDir)) {
 }
 writeFileSync(join(distDir, "index.html"), html, "utf-8");
 console.log("Landing estática escrita en dist/index.html");
+
+// /belanding — página estática autocontenida de Diego, sin relación ni con
+// la landing de la raíz ni con el dashboard. Se copia tal cual (nada que
+// procesar) — vive en static-pages/ y no en public/ a propósito, porque
+// public/ ahora cae dentro de dist/dashboardapp/ (por el outDir de
+// vite.config.js), no en la raíz de dist/ como estaría antes del cambio a
+// /dashboardapp.
+const belandingSrc = join(root, "static-pages/belanding/index.html");
+if (existsSync(belandingSrc)) {
+  const belandingDir = join(distDir, "belanding");
+  mkdirSync(belandingDir, { recursive: true });
+  copyFileSync(belandingSrc, join(belandingDir, "index.html"));
+  console.log("Página estática /belanding copiada a dist/belanding/index.html");
+} else {
+  console.warn("Aviso: no se encontró static-pages/belanding/index.html — /belanding no se va a servir en este build.");
+}
