@@ -741,14 +741,22 @@
    es independiente del fix del salto de tamaño al imprimir (ese cambio no
    toca el ancho del modal en absoluto, solo cómo se acomodan los logos
    adentro de él). */
-.report-header-logos{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
-/* Solo en Recibo/Nómina — acá los dos logos van en pareja, centrados,
-   no cada uno pegado a un borde como en el reporte de Inversión (que no
-   se tocó, porque no era parte de este pedido). */
-.invoice-doc .report-header-logos{ justify-content:center; margin-bottom:14px; }
-.invoice-doc-title-row{ display:flex; align-items:baseline; justify-content:center; gap:10px; flex-wrap:wrap; }
-.invoice-doc-title-row h2{ margin:0; }
+.report-header-logos{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
 .report-header-logos .report-brand-logo{ margin-bottom:0; flex-shrink:0; }
+/* Más grande específicamente acá — el logo de publiBe tiene que dominar
+   el encabezado del recibo, con el del cliente como secundario (más
+   chico, en su propio recuadro). No se toca el tamaño base porque otros
+   lugares (el reporte de Inversión) no eran parte de este pedido. */
+.invoice-doc .report-brand-logo svg{ width:160px; }
+.invoice-doc-title{ margin:0 0 10px; font-size:15pt; }
+/* El logo del cliente va más chico que el de publiBe (que domina el
+   encabezado) y adentro de un recuadro redondeado, suave — sin fondo
+   oscuro/negro, para que se lea como secundario frente al de la agencia. */
+.invoice-doc-client-logo-box{
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  padding:8px 14px; border-radius:12px; background:#F6F5F2; border:1px solid #E9E7E1;
+  print-color-adjust:exact; -webkit-print-color-adjust:exact;
+}
 /* Alto fijo, ancho libre — a propósito, no lo contrario. Con una caja de
    ancho Y alto fijos, dos logos de proporción distinta ocupan
    visualmente distinto — el más "cuadrado" (ej. Méri, 2.11 ancho/alto)
@@ -760,7 +768,7 @@
    ancho (MundoFord, 8.09) no se coma el encabezado. Confirmado con los
    9 logos reales, uno debajo del otro. */
 .report-header-logos .client-logo.report-client-logo{
-  flex-shrink:0; height:44px; max-width:170px; display:flex; align-items:center; justify-content:flex-end;
+  flex-shrink:0; height:26px; max-width:110px; display:flex; align-items:center; justify-content:center;
 }
 .report-header-logos .client-logo.report-client-logo svg{ max-width:100%; max-height:100%; width:auto; height:100%; display:block; }
 .report-brand-logo{ margin-bottom:8px; }
@@ -1502,36 +1510,47 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 /* ---- Rediseño con color del documento de Recibo/Nómina — Diego lo veía
    "muy plano" en negro sobre blanco; esto usa el color de marca del
    cliente (--primary, ya seteado en el wrapper) en vez de solo el logo. */
-.invoice-doc-topbar{ height:9px; background:var(--primary); border-radius:3px; margin-bottom:14px; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
-.invoice-doc-meta-row{ display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:10px; }
+/* Plantilla neutra en gris — el color de marca del cliente queda
+   reservado solo para su logo (la imagen), no para ningún fondo, franja,
+   o insignia del documento. El "shell" tiene que verse idéntico para
+   los 9 clientes; lo único que cambia entre uno y otro es el logo. */
+.invoice-doc-topbar{ height:9px; background:#4B4B4F; border-radius:3px; margin-bottom:14px; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+.invoice-doc-meta-row{ display:flex; align-items:center; justify-content:flex-start; gap:10px; flex-wrap:wrap; }
 .invoice-doc-numero{
-  font-family:'JetBrains Mono',monospace; font-weight:700; font-size:9.5pt; color:#fff; background:var(--primary);
+  font-family:'JetBrains Mono',monospace; font-weight:700; font-size:9.5pt; color:#fff; background:#4B4B4F;
   padding:2px 8px; border-radius:6px; print-color-adjust:exact; -webkit-print-color-adjust:exact;
 }
 .invoice-doc-to{
   display:flex; flex-direction:column; gap:4px; margin-bottom:22px; padding:16px 18px; font-size:12pt;
-  background:color-mix(in srgb, var(--primary) 6%, transparent); border-left:3px solid var(--primary); border-radius:0 8px 8px 0;
+  background:#F4F3F0; border-left:3px solid #A9A8A3; border-radius:0 8px 8px 0;
   print-color-adjust:exact; -webkit-print-color-adjust:exact;
 }
-.invoice-doc-to-label{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:9pt; color:var(--primary); text-transform:uppercase; letter-spacing:.04em; }
+/* Número + fecha ya no van arriba en su propia fila — se meten en el
+   mismo recuadro que "Dirigido a", del lado derecho, para no dejar ese
+   espacio vacío al lado del nombre del cliente. */
+.invoice-doc-to-split{ flex-direction:row; justify-content:space-between; align-items:flex-start; gap:18px; }
+.invoice-doc-to-main{ display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; }
+.invoice-doc-to-meta{ display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0; text-align:right; }
+.invoice-doc-to-meta .invoice-doc-fecha-editable{ justify-content:flex-end; }
+.invoice-doc-to-label{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:9pt; color:#57565B; text-transform:uppercase; letter-spacing:.04em; }
 .invoice-doc-to-name{ font-weight:700; color:var(--ink); }
 .invoice-doc-to-sub{ color:var(--ink-soft); font-size:9.5pt; white-space:pre-line; }
 .invoice-doc-table{ display:flex; flex-direction:column; width:100%; gap:0; margin-bottom:8px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
 .invoice-doc-table-head{
   display:flex; justify-content:space-between; gap:10px; font-size:10pt; font-weight:700; color:#fff;
-  text-transform:uppercase; letter-spacing:.03em; padding:12px 16px; background:var(--primary);
+  text-transform:uppercase; letter-spacing:.03em; padding:12px 16px; background:#4B4B4F;
   print-color-adjust:exact; -webkit-print-color-adjust:exact;
 }
 .invoice-doc-row{ display:flex; justify-content:space-between; gap:16px; padding:14px 16px; border-bottom:1px solid var(--border); font-size:11.5pt; line-height:1.45; }
 .invoice-doc-row:last-child{ border-bottom:none; }
 .invoice-doc-row-desc{ white-space:pre-line; color:var(--ink); flex:1; min-width:0; }
 .invoice-doc-row-monto{ font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--ink); white-space:nowrap; }
-.invoice-doc-subrows{ display:flex; flex-direction:column; gap:2px; padding:2px 10px 8px 24px; background:color-mix(in srgb, var(--primary) 3%, transparent); }
+.invoice-doc-subrows{ display:flex; flex-direction:column; gap:2px; padding:2px 10px 8px 24px; background:#F8F7F5; }
 .invoice-doc-subrow{ display:flex; justify-content:space-between; gap:12px; font-size:9pt; color:var(--ink-soft); }
 .invoice-doc-subrow span:last-child{ font-family:'JetBrains Mono',monospace; }
 .invoice-doc-total-box{
   display:flex; justify-content:space-between; align-items:center; padding:16px 18px; margin-top:8px; margin-bottom:8px;
-  background:var(--primary); border-radius:8px; font-size:13pt; font-weight:700; color:#fff;
+  background:#38383B; border-radius:8px; font-size:13pt; font-weight:700; color:#fff;
   print-color-adjust:exact; -webkit-print-color-adjust:exact;
 }
 .invoice-doc-total-box b{ font-family:'JetBrains Mono',monospace; font-size:17pt; }
@@ -1539,8 +1558,8 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 .invoice-doc-bs b{ font-family:'JetBrains Mono',monospace; color:var(--ink); }
 .invoice-doc-ref{ font-size:9pt; color:var(--ink-soft); margin-top:2px; }
 .invoice-doc-payment-box{
-  margin-top:24px; margin-bottom:18px; padding:16px 18px; border-radius:8px; background:color-mix(in srgb, var(--primary) 5%, transparent);
-  border:1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
+  margin-top:24px; margin-bottom:18px; padding:16px 18px; border-radius:8px; background:#F4F3F0;
+  border:1px solid #DEDCD6;
   print-color-adjust:exact; -webkit-print-color-adjust:exact;
 }
 /* Grilla compacta de tarjetas en vez de lista de una columna — con 5+
@@ -1583,8 +1602,8 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
   border:1px solid transparent; background:transparent; border-radius:6px; padding:2px 6px; margin:-2px -6px;
   font-family:inherit; color:inherit; width:100%; resize:none; overflow:hidden;
 }
-.invoice-doc-input:hover{ background:color-mix(in srgb, var(--primary) 6%, transparent); }
-.invoice-doc-input:focus{ outline:none; border-color:var(--primary); background:#fff; }
+.invoice-doc-input:hover{ background:rgba(28,28,30,0.04); }
+.invoice-doc-input:focus{ outline:none; border-color:#A9A8A3; background:#fff; }
 @media print{
   .invoice-doc-input:not(.invoice-doc-input-numero){ border:none !important; background:transparent !important; padding:0 !important; margin:0 !important; }
   /* El texto de ejemplo (placeholder) de un campo vacío SÍ se imprime en
@@ -1600,20 +1619,20 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
      insignia (aunque el texto en sí seguía ahí, sin el recuadro azul
      alrededor no se distinguía del resto del encabezado). */
   .invoice-doc-input-numero{
-    border:none !important; color:#fff !important; background:var(--primary) !important;
+    border:none !important; color:#fff !important; background:#4B4B4F !important;
     padding:4px 10px !important; margin:0 !important; border-radius:6px !important;
     print-color-adjust:exact !important; -webkit-print-color-adjust:exact !important;
   }
 }
 
-.invoice-doc-input-numero{ width:auto; min-width:76px; font-family:'JetBrains Mono',monospace; font-weight:600; letter-spacing:.03em; font-size:11.5pt; color:#fff; background:var(--primary); padding:4px 10px; border-radius:6px; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
-.invoice-doc-input-numero:hover, .invoice-doc-input-numero:focus{ background:var(--primary); }
+.invoice-doc-input-numero{ width:auto; min-width:76px; font-family:'JetBrains Mono',monospace; font-weight:600; letter-spacing:.03em; font-size:11.5pt; color:#fff; background:#4B4B4F; padding:4px 10px; border-radius:6px; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+.invoice-doc-input-numero:hover, .invoice-doc-input-numero:focus{ background:#4B4B4F; }
 .invoice-doc-fecha-editable{ display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap; }
 .invoice-doc-fecha-editable .cdate{ width:auto; }
 .invoice-doc-fecha-editable .cdate-trigger{
   width:auto; border:1px solid transparent; background:transparent; padding:3px 6px; gap:4px; font-size:inherit; color:inherit;
 }
-.invoice-doc-fecha-editable .cdate-trigger:hover{ background:color-mix(in srgb, var(--primary) 6%, transparent); border-color:transparent; }
+.invoice-doc-fecha-editable .cdate-trigger:hover{ background:rgba(28,28,30,0.05); border-color:transparent; }
 .invoice-doc-fecha-editable .cdate-trigger svg{ width:12px; height:12px; opacity:.55; }
 .invoice-doc-fecha-editable .custom-datepicker{ display:inline-flex; }
 @media print{
@@ -1749,3 +1768,34 @@ button.pauta-tab.pauta-tab-label:hover:not(.pauta-tab-active){ background:rgba(2
 .invoice-doc-templates-menu-item:hover{ background:var(--bg); }
 .invoice-doc-templates-menu-nombre{ font-weight:700; font-size:12px; color:var(--ink); }
 .invoice-doc-templates-menu-desc{ font-size:11px; color:var(--ink-soft); }
+
+/* ---- Skeleton de carga — evita el salto de layout ---- */
+.section-skeleton-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+.section-skeleton-card{
+  padding:14px 16px; border-radius:16px; background:#fff; border:1px solid rgba(28,28,30,0.06);
+  display:flex; flex-direction:column; gap:8px; height:78px; justify-content:center;
+}
+.section-skeleton-line{
+  height:10px; border-radius:5px; width:100%;
+  background:linear-gradient(90deg, rgba(28,28,30,0.06) 25%, rgba(28,28,30,0.11) 37%, rgba(28,28,30,0.06) 63%);
+  background-size:400% 100%; animation:skeletonShimmer 1.4s ease infinite;
+}
+.section-skeleton-line-short{ width:45%; }
+.section-skeleton-line-medium{ width:70%; }
+@keyframes skeletonShimmer{ 0%{ background-position:100% 50%; } 100%{ background-position:0% 50%; } }
+@media (prefers-reduced-motion: reduce){
+  .section-skeleton-line{ animation:none; }
+}
+
+/* ---- Datos de la agencia — dentro del mismo panel de Información de pago ---- */
+.payment-info-divider{ height:1px; background:var(--border); margin:22px 0 18px; }
+.agency-info-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px 16px; margin-bottom:16px; }
+.agency-info-grid .field span{ display:flex; align-items:center; gap:5px; }
+
+/* ---- Pie con datos fiscales/contacto de publiBe ---- */
+.invoice-doc-agency-footer{ margin-top:14px; padding-top:10px; border-top:1px solid var(--border); text-align:center; }
+.invoice-doc-agency-footer-line{
+  display:flex; flex-wrap:wrap; justify-content:center; gap:4px 10px; font-size:7.5pt; color:var(--ink-soft);
+}
+.invoice-doc-agency-footer-line span:not(:last-child)::after{ content:"·"; margin-left:10px; color:#C9C7C0; }
+.invoice-doc-agency-copyright{ font-size:7pt; color:#A9A8A3; margin-top:4px; }

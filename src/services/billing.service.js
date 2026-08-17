@@ -19,6 +19,23 @@ export async function persistPaymentInfo(list) {
   await writeJSON(PAYMENT_INFO_KEY, list, true);
 }
 
+const AGENCY_INFO_KEY = "publibe-agency-info-v1";
+const AGENCY_INFO_DEFAULT = { rif: "", firmaPersonal: "", correo: "", instagram: "", telefono: "", copyright: "" };
+/**
+ * Datos fiscales/de contacto de publiBe que van al pie de cada recibo —
+ * RIF, firma personal, correo, Instagram, teléfono, línea de copyright.
+ * Configurables acá (igual que los métodos de pago) para que un cambio
+ * de dato no requiera pedir un cambio de código — se editan una vez y
+ * se repiten en todos los recibos que se impriman de ahí en adelante.
+ */
+export async function loadAgencyInfo() {
+  const saved = await readJSON(AGENCY_INFO_KEY, true, null);
+  return { ...AGENCY_INFO_DEFAULT, ...(saved || {}) };
+}
+export async function persistAgencyInfo(info) {
+  await writeJSON(AGENCY_INFO_KEY, info, true);
+}
+
 /**
  * Numeración automática — un contador global compartido para Facturas y
  * otro, aparte, para Nómina (confirmado con Diego: no es por cliente/

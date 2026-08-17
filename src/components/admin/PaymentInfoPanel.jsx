@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import {
   Plus, Trash2, PenTool, Check, X, Landmark, Save, Loader2,
-  Smartphone, Wallet, CreditCard, Banknote,
+  Smartphone, Wallet, CreditCard, Banknote, Building2, Mail, Instagram, Phone, Copyright,
 } from "lucide-react";
 import { uid } from "../../utils/helpers";
-import { loadPaymentInfo, persistPaymentInfo } from "../../services/billing.service";
+import { SectionSkeleton } from "../common/SectionSkeleton";
+import { loadPaymentInfo, persistPaymentInfo, loadAgencyInfo, persistAgencyInfo } from "../../services/billing.service";
 
 /**
  * Ícono según palabras clave en la etiqueta — no hace falta que Diego
@@ -30,9 +31,13 @@ export function PaymentInfoPanel({ setAppError }) {
   const [editValor, setEditValor] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [agency, setAgency] = useState(null);
+  const [savingAgency, setSavingAgency] = useState(false);
+  const [savedAgency, setSavedAgency] = useState(false);
 
   useEffect(() => {
     loadPaymentInfo().then((list) => setItems(list || []));
+    loadAgencyInfo().then((info) => setAgency(info));
   }, []);
 
   function add() {
@@ -66,7 +71,20 @@ export function PaymentInfoPanel({ setAppError }) {
     }
   }
 
-  if (items === null) return null;
+  async function guardarAgencia() {
+    setSavingAgency(true);
+    try {
+      await persistAgencyInfo(agency);
+      setSavedAgency(true);
+      setTimeout(() => setSavedAgency(false), 1800);
+    } catch (e) {
+      setAppError("No se pudieron guardar los datos de la agencia: " + (e && e.message ? e.message : e));
+    } finally {
+      setSavingAgency(false);
+    }
+  }
+
+  if (items === null) return <SectionSkeleton title="Información de pago (facturas y nómina)" icon={Landmark} />;
 
   return (
     <section className="overview-section payment-info-panel">
@@ -133,6 +151,49 @@ export function PaymentInfoPanel({ setAppError }) {
       <button type="button" className="btn-primary payment-info-save-btn" onClick={guardarTodo} disabled={saving}>
         {saving ? <><Loader2 size={14} className="spin" /> Guardando…</> : saved ? <><Check size={14} /> Guardado</> : <><Save size={14} /> Guardar información de pago</>}
       </button>
+
+      <div className="payment-info-divider" />
+
+      <div className="overview-section-head admin-section-head" style={{ marginBottom: 12 }}>
+        <span className="overview-section-title"><Building2 size={15} /> Datos de la agencia (pie de los recibos)</span>
+      </div>
+      <div className="hint hint-tip" style={{ marginBottom: 14 }}>
+        Se imprimen al pie de cada recibo y recibo de nómina — editalos acá una sola vez, no hace falta pedir un
+        cambio de código si alguno cambia.
+      </div>
+      {agency && (
+        <>
+          <div className="agency-info-grid">
+            <label className="field">
+              <span><Building2 size={12} /> RIF</span>
+              <input value={agency.rif} onChange={(e) => setAgency((a) => ({ ...a, rif: e.target.value }))} placeholder="V-28163915-0" />
+            </label>
+            <label className="field">
+              <span><PenTool size={12} /> Firma personal</span>
+              <input value={agency.firmaPersonal} onChange={(e) => setAgency((a) => ({ ...a, firmaPersonal: e.target.value }))} placeholder="Diego Andrés Toro Salcedo" />
+            </label>
+            <label className="field">
+              <span><Mail size={12} /> Correo</span>
+              <input value={agency.correo} onChange={(e) => setAgency((a) => ({ ...a, correo: e.target.value }))} placeholder="ceo@publibe.net" />
+            </label>
+            <label className="field">
+              <span><Instagram size={12} /> Instagram</span>
+              <input value={agency.instagram} onChange={(e) => setAgency((a) => ({ ...a, instagram: e.target.value }))} placeholder="@publibe.ve" />
+            </label>
+            <label className="field">
+              <span><Phone size={12} /> Teléfono</span>
+              <input value={agency.telefono} onChange={(e) => setAgency((a) => ({ ...a, telefono: e.target.value }))} placeholder="+58 412-716-0123" />
+            </label>
+            <label className="field">
+              <span><Copyright size={12} /> Línea de copyright</span>
+              <input value={agency.copyright} onChange={(e) => setAgency((a) => ({ ...a, copyright: e.target.value }))} placeholder="© 2026 publiBe Agencia Gráfica. Todos los derechos reservados." />
+            </label>
+          </div>
+          <button type="button" className="btn-primary payment-info-save-btn" onClick={guardarAgencia} disabled={savingAgency}>
+            {savingAgency ? <><Loader2 size={14} className="spin" /> Guardando…</> : savedAgency ? <><Check size={14} /> Guardado</> : <><Save size={14} /> Guardar datos de la agencia</>}
+          </button>
+        </>
+      )}
     </section>
   );
 }

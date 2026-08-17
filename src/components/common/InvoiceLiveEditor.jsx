@@ -52,6 +52,7 @@ export function InvoiceLiveEditor({
   variant = "factura",
   existing, // objeto existente si se está editando, null/undefined si es nuevo
   paymentInfo = [],
+  agencyInfo,
   itemTemplates = [],
   onClose,
   onSave, // (documento, { imprimir }) => Promise
@@ -248,58 +249,63 @@ export function InvoiceLiveEditor({
           <div className="report-header">
             <div className="report-header-logos">
               <PrintBrandLogo />
-              {cli?.logoSvg && <ClientLogo client={cli} maxHeight={44} className="report-client-logo" />}
+              {cli?.logoSvg && (
+                <span className="invoice-doc-client-logo-box">
+                  <ClientLogo client={cli} maxHeight={26} className="report-client-logo" />
+                </span>
+              )}
             </div>
-            <div className="invoice-doc-title-row">
-              <h2>{esNomina ? "Recibo de nómina" : "Recibo"}</h2>
-              <input
-                className="invoice-doc-input invoice-doc-input-numero"
-                value={numero} onChange={(e) => { setNumero(e.target.value); setNumeroEditadoAMano(true); }}
-                placeholder={numeroCargando ? "…" : "00000"}
-              />
-            </div>
-            <div className="invoice-doc-meta-row">
-              <span className="report-meta invoice-doc-fecha-editable">
-                Del <CustomDatePicker value={fechaDesde} onChange={setFechaDesde} /> al <CustomDatePicker value={fechaHasta} onChange={setFechaHasta} />
-              </span>
-            </div>
+            <h2 className="invoice-doc-title">{esNomina ? "Recibo de nómina" : "Recibo"}</h2>
           </div>
 
-          <div className="invoice-doc-to invoice-doc-to-editable">
-            <span className="invoice-doc-to-label">{destinatarioTitulo}:</span>
-            {esNomina ? (
-              <>
-                <input className="invoice-doc-input invoice-doc-input-name" value={nombreLibre} onChange={(e) => setNombreLibre(e.target.value)} placeholder="Nombre completo de quién recibe el pago" />
-                <input className="invoice-doc-input invoice-doc-input-sub" value={rol} onChange={(e) => setRol(e.target.value)} placeholder="Rol / cargo (opcional)" />
-              </>
-            ) : (
-              <>
-                <div className="invoice-doc-client-select no-print">
-                  <CustomSelect
-                    value={empresa}
-                    onChange={(v) => {
-                      setEmpresa(v);
-                      const nuevoCli = clientMeta(v);
-                      setRazonSocialOverride(nuevoCli?.razonSocial || v);
-                      setDireccionOverride(nuevoCli?.direccionFiscal || "");
-                    }}
-                    placeholder="Elegí el cliente…"
-                    options={CLIENTES.map((c) => ({ value: c.name, label: c.name, icon: c.icon, color: c.color }))}
-                  />
-                </div>
-                {empresa && (
-                  <>
-                    <input className="invoice-doc-input invoice-doc-input-name" value={razonSocialOverride} onChange={(e) => setRazonSocialOverride(e.target.value)} />
-                    <textarea
-                      rows={2} className="invoice-doc-input invoice-doc-input-sub"
-                      value={direccionOverride} onChange={(e) => { setDireccionOverride(e.target.value); autoResize(e.target); }}
-                      ref={(el) => el && autoResize(el)}
-                      placeholder="Dirección fiscal (se puede precargar en Configuración de empresas)"
+          <div className="invoice-doc-to invoice-doc-to-editable invoice-doc-to-split">
+            <div className="invoice-doc-to-main">
+              <span className="invoice-doc-to-label">{destinatarioTitulo}:</span>
+              {esNomina ? (
+                <>
+                  <input className="invoice-doc-input invoice-doc-input-name" value={nombreLibre} onChange={(e) => setNombreLibre(e.target.value)} placeholder="Nombre completo de quién recibe el pago" />
+                  <input className="invoice-doc-input invoice-doc-input-sub" value={rol} onChange={(e) => setRol(e.target.value)} placeholder="Rol / cargo (opcional)" />
+                </>
+              ) : (
+                <>
+                  <div className="invoice-doc-client-select no-print">
+                    <CustomSelect
+                      value={empresa}
+                      onChange={(v) => {
+                        setEmpresa(v);
+                        const nuevoCli = clientMeta(v);
+                        setRazonSocialOverride(nuevoCli?.razonSocial || v);
+                        setDireccionOverride(nuevoCli?.direccionFiscal || "");
+                      }}
+                      placeholder="Elegí el cliente…"
+                      options={CLIENTES.map((c) => ({ value: c.name, label: c.name, icon: c.icon, color: c.color }))}
+                    />
+                  </div>
+                  {empresa && (
+                    <>
+                      <input className="invoice-doc-input invoice-doc-input-name" value={razonSocialOverride} onChange={(e) => setRazonSocialOverride(e.target.value)} />
+                      <textarea
+                        rows={2} className="invoice-doc-input invoice-doc-input-sub"
+                        value={direccionOverride} onChange={(e) => { setDireccionOverride(e.target.value); autoResize(e.target); }}
+                        ref={(el) => el && autoResize(el)}
+                        placeholder="Dirección fiscal (se puede precargar en Configuración de empresas)"
                     />
                   </>
                 )}
               </>
             )}
+            </div>
+            <div className="invoice-doc-to-meta">
+              <span className="invoice-doc-to-label">Número de recibo:</span>
+              <input
+                className="invoice-doc-input invoice-doc-input-numero"
+                value={numero} onChange={(e) => { setNumero(e.target.value); setNumeroEditadoAMano(true); }}
+                placeholder={numeroCargando ? "…" : "00000"}
+              />
+              <span className="report-meta invoice-doc-fecha-editable">
+                Del <CustomDatePicker value={fechaDesde} onChange={setFechaDesde} /> al <CustomDatePicker value={fechaHasta} onChange={setFechaHasta} />
+              </span>
+            </div>
           </div>
 
           <div className="invoice-doc-table">
@@ -443,6 +449,19 @@ export function InvoiceLiveEditor({
             ref={(el) => el && autoResize(el)}
             placeholder='Nota al pie (opcional) — ej: "Desde el mes de marzo se implementó el uso de la IA…"'
           />
+
+          {agencyInfo && (agencyInfo.rif || agencyInfo.firmaPersonal || agencyInfo.correo || agencyInfo.instagram || agencyInfo.telefono || agencyInfo.copyright) && (
+            <div className="invoice-doc-agency-footer">
+              <div className="invoice-doc-agency-footer-line">
+                {agencyInfo.rif && <span>RIF: {agencyInfo.rif}</span>}
+                {agencyInfo.firmaPersonal && <span>{agencyInfo.firmaPersonal}</span>}
+                {agencyInfo.correo && <span>{agencyInfo.correo}</span>}
+                {agencyInfo.instagram && <span>{agencyInfo.instagram}</span>}
+                {agencyInfo.telefono && <span>{agencyInfo.telefono}</span>}
+              </div>
+              {agencyInfo.copyright && <div className="invoice-doc-agency-copyright">{agencyInfo.copyright}</div>}
+            </div>
+          )}
         </div>
 
         {/* Gestión — abonos, adjuntos, eliminar. Fuera de .report-printable

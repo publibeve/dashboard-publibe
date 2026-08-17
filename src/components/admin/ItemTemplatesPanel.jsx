@@ -3,6 +3,7 @@ import {
   Plus, Trash2, PenTool, Check, X, LayoutTemplate, Save, Loader2, Globe2,
 } from "lucide-react";
 import { uid } from "../../utils/helpers";
+import { SectionSkeleton } from "../common/SectionSkeleton";
 import { CLIENTES } from "../../utils/constants";
 import { CustomSelect } from "../common/CustomSelect";
 import { loadItemTemplates, persistItemTemplates } from "../../services/itemTemplates.service";
@@ -76,7 +77,7 @@ export function ItemTemplatesPanel({ setAppError }) {
     }
   }
 
-  if (templates === null) return null;
+  if (templates === null) return <SectionSkeleton title="Plantillas de ítems para facturas" icon={LayoutTemplate} />;
 
   function FormularioPlantilla({ valor, setValor, onConfirm, onCancel, textoConfirmar }) {
     return (

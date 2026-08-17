@@ -26,7 +26,7 @@ import { AdminModule } from "./components/admin/AdminModule";
 import { ExpenseModal, NewExpenseModal } from "./components/admin/ExpensesTab";
 import { InvoiceDocumentModal } from "./components/common/InvoiceDocumentModal";
 import { InvoiceLiveEditor } from "./components/common/InvoiceLiveEditor";
-import { loadPaymentInfo, releaseInvoiceNumberIfLast, releaseNominaNumberIfLast } from "./services/billing.service";
+import { loadPaymentInfo, loadAgencyInfo, releaseInvoiceNumberIfLast, releaseNominaNumberIfLast } from "./services/billing.service";
 import { loadItemTemplates } from "./services/itemTemplates.service";
 import { AIChatButton, AIChatPanel } from "./components/ai/AIChatPanel";
 import { CustomSelect } from "./components/common/CustomSelect";
@@ -288,6 +288,8 @@ function App() {
   const [showNewNomina, setShowNewNomina] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState([]);
   useEffect(() => { loadPaymentInfo().then((list) => setPaymentInfo(list || [])); }, []);
+  const [agencyInfo, setAgencyInfo] = useState(null);
+  useEffect(() => { loadAgencyInfo().then((info) => setAgencyInfo(info)); }, []);
   const [itemTemplates, setItemTemplates] = useState([]);
   useEffect(() => { loadItemTemplates().then((list) => setItemTemplates(list || [])); }, []);
   const [showNewExpense, setShowNewExpense] = useState(false);
@@ -1475,6 +1477,7 @@ function App() {
         <InvoiceLiveEditor
           variant="factura"
           paymentInfo={paymentInfo}
+          agencyInfo={agencyInfo}
           itemTemplates={itemTemplates}
           onClose={() => setShowNewInvoice(false)}
           onSave={async (doc, { imprimir }) => { addInvoice(doc); if (!imprimir) setShowNewInvoice(false); }}
@@ -1488,6 +1491,7 @@ function App() {
               variant="factura"
               existing={inv}
               paymentInfo={paymentInfo}
+          agencyInfo={agencyInfo}
               itemTemplates={itemTemplates}
               onClose={() => setOpenInvoiceId(null)}
               onSave={async (doc, { imprimir }) => { patchInvoice(inv.id, doc); if (!imprimir) setOpenInvoiceId(null); }}
@@ -1502,6 +1506,7 @@ function App() {
         <InvoiceLiveEditor
           variant="nomina"
           paymentInfo={paymentInfo}
+          agencyInfo={agencyInfo}
           onClose={() => setShowNewNomina(false)}
           onSave={async (doc, { imprimir }) => { addExpense(doc); if (!imprimir) setShowNewNomina(false); }}
         />
@@ -1533,6 +1538,7 @@ function App() {
                   ajusteMonto: ex.ajusteMonto ?? ex.extraMonto ?? "",
                 }}
                 paymentInfo={paymentInfo}
+          agencyInfo={agencyInfo}
                 onClose={() => setOpenExpenseId(null)}
                 onSave={async (doc, { imprimir }) => { patchExpense(ex.id, doc); if (!imprimir) setOpenExpenseId(null); }}
                 onDelete={(id) => { releaseNominaNumberIfLast(ex.numeroRecibo); deleteExpense(id); setOpenExpenseId(null); }}
